@@ -1,0 +1,165 @@
+{
+  "address": "0xA61121D363D4568578BE7cEa6cb9Db6CE63D3701",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "loan",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "lender",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        }
+      ],
+      "name": "computePositionId",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32[]",
+          "name": "positions",
+          "type": "bytes32[]"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "id",
+          "type": "bytes32"
+        }
+      ],
+      "name": "removePosition",
+      "outputs": [
+        {
+          "internalType": "bytes32[]",
+          "name": "",
+          "type": "bytes32[]"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32[]",
+          "name": "positions",
+          "type": "bytes32[]"
+        }
+      ],
+      "name": "stepQ",
+      "outputs": [
+        {
+          "internalType": "bytes32[]",
+          "name": "",
+          "type": "bytes32[]"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x29645d6a03629d633da9c8901fa7a0412cd95bfa4eceaf5fa47b390fbc2d69dc",
+  "receipt": {
+    "to": null,
+    "from": "0xDe8f0F6769284e41Bf0f82d0545141c15A3E4aD1",
+    "contractAddress": "0xA61121D363D4568578BE7cEa6cb9Db6CE63D3701",
+    "transactionIndex": 29,
+    "gasUsed": "810143",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0xd8c5172ea4a4dceb38e256781b486f97a64221e97e462a2e39fca175b2dfc66e",
+    "transactionHash": "0x29645d6a03629d633da9c8901fa7a0412cd95bfa4eceaf5fa47b390fbc2d69dc",
+    "logs": [],
+    "blockNumber": 7353206,
+    "cumulativeGasUsed": "5450779",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [],
+  "numDeployments": 1,
+  "solcInputHash": "c9946f40425898595ffdf05b633e603a",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.9+commit.e5eed63a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"loan\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"lender\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"}],\"name\":\"computePositionId\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32[]\",\"name\":\"positions\",\"type\":\"bytes32[]\"},{\"internalType\":\"bytes32\",\"name\":\"id\",\"type\":\"bytes32\"}],\"name\":\"removePosition\",\"outputs\":[{\"internalType\":\"bytes32[]\",\"name\":\"\",\"type\":\"bytes32[]\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32[]\",\"name\":\"positions\",\"type\":\"bytes32[]\"}],\"name\":\"stepQ\",\"outputs\":[{\"internalType\":\"bytes32[]\",\"name\":\"\",\"type\":\"bytes32[]\"}],\"stateMutability\":\"pure\",\"type\":\"function\"}],\"devdoc\":{\"author\":\"Kiba Gateaux\",\"kind\":\"dev\",\"methods\":{\"computePositionId(address,address,address)\":{\"details\":\"- Create deterministic hash id for a debt position on `loan` given position details\",\"params\":{\"lender\":\"- address managing debt position\",\"loan\":\"- loan that debt position exists on\",\"token\":\"- token that is being lent out in debt position\"},\"returns\":{\"_0\":\"positionId\"}},\"getValuation(IOracle,address,uint256,uint8)\":{\"details\":\"- Assumes oracles all return answers in USD with 1e8 decimals - Does not check if price < 0. HAndled in Oracle or Loan\",\"params\":{\"amount\":\"- token amount\",\"decimals\":\"- token decimals\",\"oracle\":\"- oracle contract specified by loan getting valuation\",\"token\":\"- token to value on oracle\"},\"returns\":{\"_0\":\"- total value in usd of all tokens \"}},\"removePosition(bytes32[],bytes32)\":{\"details\":\"assumes that `id` is stored only once in `positions` array bc no reason for Loans to store multiple times. This means cleanup on _close() and checks on addDebtPosition are CRITICAL. If `id` is duplicated then the position can't be closed\",\"params\":{\"id\":\"- hash id that must be removed from active positions\",\"positions\":\"- all current active positions on the loan\"},\"returns\":{\"_0\":\"newPositions - all active positions on loan after `id` is removed\"}},\"stepQ(bytes32[])\":{\"params\":{\"positions\":\"- all current active positions on the loan\"},\"returns\":{\"_0\":\"newPositions - positions after moving first to last in array\"}}},\"title\":\"Debt DAO P2P Loan Library\",\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"getValuation(IOracle,address,uint256,uint8)\":{\"notice\":\"- Gets total valuation for amount of tokens using given oracle. \"},\"stepQ(bytes32[])\":{\"notice\":\"- removes debt position from head of repayement queue and puts it at end of line         - moves 2nd in line to first\"}},\"notice\":\"Core logic and variables to be reused across all Debt DAO Marketplace loans\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/utils/LoanLib.sol\":\"LoanLib\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"contracts/interfaces/IOracle.sol\":{\"content\":\"pragma solidity 0.8.9;\\n\\ninterface IOracle {\\n    /** current price for token asset. denominated in USD */\\n    function getLatestAnswer(address token) external returns(int);\\n}\\n\",\"keccak256\":\"0xdefae1f6dd298ddfba2a88c77096e77e59ac0a567bc3c8e76ef5a3424e4b832f\"},\"contracts/utils/LoanLib.sol\":{\"content\":\"pragma solidity 0.8.9;\\nimport { IOracle } from \\\"../interfaces/IOracle.sol\\\";\\n/**\\n  * @title Debt DAO P2P Loan Library\\n  * @author Kiba Gateaux\\n  * @notice Core logic and variables to be reused across all Debt DAO Marketplace loans\\n */\\nlibrary LoanLib {\\n    address constant DEBT_TOKEN = address(0xdebf);\\n\\n    enum STATUS {\\n        // \\u00bfhoo dis\\n        // Loan has been deployed but terms and conditions are still being signed off by parties\\n        UNINITIALIZED,\\n        INITIALIZED,\\n\\n        // ITS ALLLIIIIVVEEE\\n        // Loan is operational and actively monitoring status\\n        ACTIVE,\\n        UNDERCOLLATERALIZED,\\n        LIQUIDATABLE, // [#X\\n        DELINQUENT,\\n\\n        // Loan is in distress and paused\\n        LIQUIDATING,\\n        OVERDRAWN,\\n        DEFAULT,\\n        ARBITRATION,\\n\\n        // L\\u00f6n izz ded\\n        // Loan is no longer active, successfully repaid or insolvent\\n        REPAID,\\n        INSOLVENT\\n    }\\n\\n    /**\\n     * @notice         - Gets total valuation for amount of tokens using given oracle. \\n     * @dev            - Assumes oracles all return answers in USD with 1e8 decimals\\n                       - Does not check if price < 0. HAndled in Oracle or Loan\\n     * @param oracle   - oracle contract specified by loan getting valuation\\n     * @param token    - token to value on oracle\\n     * @param amount   - token amount\\n     * @param decimals - token decimals\\n     * @return         - total value in usd of all tokens \\n     */\\n    function getValuation(\\n      IOracle oracle,\\n      address token,\\n      uint256 amount,\\n      uint8 decimals\\n    )\\n      external\\n      returns(uint256)\\n    {\\n      return _calculateValue(oracle.getLatestAnswer(token), amount, decimals);\\n    }\\n\\n    /**\\n     * @notice\\n     * @dev            - Assumes oracles all return answers in USD with 1e8 decimals\\n                       - Does not check if price < 0. HAndled in Oracle or Loan\\n     * @param price    - oracle price of asset. 8 decimals\\n     * @param amount   - amount of tokens vbeing valued.\\n     * @param decimals - token decimals to remove for usd price\\n     * @return         - total USD value of amount in 8 decimals \\n     */\\n    function calculateValue(\\n      int price,\\n      uint256 amount,\\n      uint8 decimals\\n    )\\n      internal\\n      returns(uint256)\\n    {\\n      return _calculateValue(price, amount, decimals);\\n    }\\n\\n\\n      /**\\n     * @notice         - calculates value of tokens and denominates in USD 8\\n     * @dev            - Assumes all oracles return USD responses in 1e8 decimals\\n     * @param price    - oracle price of asset. 8 decimals\\n     * @param amount   - amount of tokens vbeing valued.\\n     * @param decimals - token decimals to remove for usd price\\n     * @return         - total value in usd of all tokens \\n     */\\n    function _calculateValue(\\n      int price,\\n      uint256 amount,\\n      uint8 decimals\\n    )\\n      internal pure\\n      returns(uint256)\\n    {\\n      return price <= 0 ? 0 : (amount * uint(price)) / (1 * 10 ** decimals);\\n    }\\n\\n\\n    /**\\n     * @dev          - Create deterministic hash id for a debt position on `loan` given position details\\n     * @param loan   - loan that debt position exists on\\n     * @param lender - address managing debt position\\n     * @param token  - token that is being lent out in debt position\\n     * @return positionId\\n     */\\n    function computePositionId(address loan, address lender, address token) external pure returns(bytes32) {\\n      return keccak256(abi.encode(loan, lender, token));\\n    }\\n\\n    /**\\n     * @dev assumes that `id` is stored only once in `positions` array bc no reason for Loans to store multiple times.\\n          This means cleanup on _close() and checks on addDebtPosition are CRITICAL. If `id` is duplicated then the position can't be closed\\n     * @param positions - all current active positions on the loan\\n     * @param id - hash id that must be removed from active positions\\n     * @return newPositions - all active positions on loan after `id` is removed\\n     */\\n    function removePosition(bytes32[] calldata positions, bytes32 id) external pure returns(bytes32[] memory) {\\n      uint256 newLength = positions.length - 1;\\n      uint256 count = 0;\\n      bytes32[] memory newPositions = new bytes32[](newLength);\\n\\n      for(uint i = 0; i < positions.length; i++) {\\n          if(positions[i] != id) {\\n              newPositions[count] = positions[i];\\n              count++;\\n          }\\n      }\\n\\n      return newPositions;\\n    }\\n\\n    /**\\n     * @notice - removes debt position from head of repayement queue and puts it at end of line\\n     *         - moves 2nd in line to first\\n     * @param positions - all current active positions on the loan\\n     * @return newPositions - positions after moving first to last in array\\n     */\\n    function stepQ(bytes32[] calldata positions) external pure returns(bytes32[] memory) {\\n      uint256 len = positions.length ;\\n      if(len <= 1) return positions; // already ordered\\n\\n      bytes32[] memory newPositions = new bytes32[](len);\\n      \\n      if(len == 2) {\\n        newPositions[0] = positions[1];\\n        newPositions[1] = positions[0];\\n        return newPositions;\\n      }\\n      \\n      // move all existing positions up in line\\n      for(uint i = 1; i < len; i++) {\\n        newPositions[i - 1] = positions[i];\\n      }\\n      // cycle first el back to end of queue\\n      newPositions[len - 1] = positions[0];\\n\\n      return newPositions;\\n    }\\n}\\n\",\"keccak256\":\"0x71d59ab61198082d37bec68f3e579523509be49483506b531ac56e33d24c85f1\"}},\"version\":1}",
+  "bytecode": "0x610db7610053600b82828239805160001a607314610046577f4e487b7100000000000000000000000000000000000000000000000000000000600052600060045260246000fd5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600436106100565760003560e01c80634706a0f31461005b5780635ee973961461008b578063cae8b712146100bb578063eb21469a146100f8575b600080fd5b610075600480360381019061007091906105d5565b610128565b60405161008291906106f3565b60405180910390f35b6100a560048036038101906100a09190610715565b610223565b6040516100b291906106f3565b60405180910390f35b8180156100c757600080fd5b506100e260048036038101906100dd919061086d565b61040f565b6040516100ef91906108e3565b60405180910390f35b610112600480360381019061010d91906108fe565b6104b0565b60405161011f9190610960565b60405180910390f35b6060600060018585905061013c91906109aa565b90506000808267ffffffffffffffff81111561015b5761015a6109de565b5b6040519080825280602002602001820160405280156101895781602001602082028036833780820191505090505b50905060005b8787905081101561021557858888838181106101ae576101ad610a0d565b5b9050602002013514610202578787828181106101cd576101cc610a0d565b5b905060200201358284815181106101e7576101e6610a0d565b5b60200260200101818152505082806101fe90610a3c565b9350505b808061020d90610a3c565b91505061018f565b508093505050509392505050565b606060008383905090506001811161027f57838380806020026020016040519081016040528093929190818152602001838360200280828437600081840152601f19601f82011690508083019250505050505050915050610409565b60008167ffffffffffffffff81111561029b5761029a6109de565b5b6040519080825280602002602001820160405280156102c95781602001602082028036833780820191505090505b509050600282141561035557848460018181106102e9576102e8610a0d565b5b905060200201358160008151811061030457610303610a0d565b5b6020026020010181815250508484600081811061032457610323610a0d565b5b905060200201358160018151811061033f5761033e610a0d565b5b6020026020010181815250508092505050610409565b6000600190505b828110156103bc5785858281811061037757610376610a0d565b5b905060200201358260018361038c91906109aa565b8151811061039d5761039c610a0d565b5b60200260200101818152505080806103b490610a3c565b91505061035c565b50848460008181106103d1576103d0610a0d565b5b90506020020135816001846103e691906109aa565b815181106103f7576103f6610a0d565b5b60200260200101818152505080925050505b92915050565b60006104a68573ffffffffffffffffffffffffffffffffffffffff16636849a3ba866040518263ffffffff1660e01b815260040161044d9190610a94565b602060405180830381600087803b15801561046757600080fd5b505af115801561047b573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061049f9190610ae5565b84846104e6565b9050949350505050565b60008383836040516020016104c793929190610b12565b6040516020818303038152906040528051906020012090509392505050565b6000808413156105245781600a6104fd9190610c7c565b60016105099190610cc7565b84846105159190610cc7565b61051f9190610d50565b610527565b60005b90509392505050565b600080fd5b600080fd5b600080fd5b600080fd5b600080fd5b60008083601f84011261055f5761055e61053a565b5b8235905067ffffffffffffffff81111561057c5761057b61053f565b5b60208301915083602082028301111561059857610597610544565b5b9250929050565b6000819050919050565b6105b28161059f565b81146105bd57600080fd5b50565b6000813590506105cf816105a9565b92915050565b6000806000604084860312156105ee576105ed610530565b5b600084013567ffffffffffffffff81111561060c5761060b610535565b5b61061886828701610549565b9350935050602061062b868287016105c0565b9150509250925092565b600081519050919050565b600082825260208201905092915050565b6000819050602082019050919050565b61066a8161059f565b82525050565b600061067c8383610661565b60208301905092915050565b6000602082019050919050565b60006106a082610635565b6106aa8185610640565b93506106b583610651565b8060005b838110156106e65781516106cd8882610670565b97506106d883610688565b9250506001810190506106b9565b5085935050505092915050565b6000602082019050818103600083015261070d8184610695565b905092915050565b6000806020838503121561072c5761072b610530565b5b600083013567ffffffffffffffff81111561074a57610749610535565b5b61075685828601610549565b92509250509250929050565b600073ffffffffffffffffffffffffffffffffffffffff82169050919050565b600061078d82610762565b9050919050565b600061079f82610782565b9050919050565b6107af81610794565b81146107ba57600080fd5b50565b6000813590506107cc816107a6565b92915050565b6107db81610782565b81146107e657600080fd5b50565b6000813590506107f8816107d2565b92915050565b6000819050919050565b610811816107fe565b811461081c57600080fd5b50565b60008135905061082e81610808565b92915050565b600060ff82169050919050565b61084a81610834565b811461085557600080fd5b50565b60008135905061086781610841565b92915050565b6000806000806080858703121561088757610886610530565b5b6000610895878288016107bd565b94505060206108a6878288016107e9565b93505060406108b78782880161081f565b92505060606108c887828801610858565b91505092959194509250565b6108dd816107fe565b82525050565b60006020820190506108f860008301846108d4565b92915050565b60008060006060848603121561091757610916610530565b5b6000610925868287016107e9565b9350506020610936868287016107e9565b9250506040610947868287016107e9565b9150509250925092565b61095a8161059f565b82525050565b60006020820190506109756000830184610951565b92915050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052601160045260246000fd5b60006109b5826107fe565b91506109c0836107fe565b9250828210156109d3576109d261097b565b5b828203905092915050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b7f4e487b7100000000000000000000000000000000000000000000000000000000600052603260045260246000fd5b6000610a47826107fe565b91507fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff821415610a7a57610a7961097b565b5b600182019050919050565b610a8e81610782565b82525050565b6000602082019050610aa96000830184610a85565b92915050565b6000819050919050565b610ac281610aaf565b8114610acd57600080fd5b50565b600081519050610adf81610ab9565b92915050565b600060208284031215610afb57610afa610530565b5b6000610b0984828501610ad0565b91505092915050565b6000606082019050610b276000830186610a85565b610b346020830185610a85565b610b416040830184610a85565b949350505050565b60008160011c9050919050565b6000808291508390505b6001851115610ba057808604811115610b7c57610b7b61097b565b5b6001851615610b8b5780820291505b8081029050610b9985610b49565b9450610b60565b94509492505050565b600082610bb95760019050610c75565b81610bc75760009050610c75565b8160018114610bdd5760028114610be757610c16565b6001915050610c75565b60ff841115610bf957610bf861097b565b5b8360020a915084821115610c1057610c0f61097b565b5b50610c75565b5060208310610133831016604e8410600b8410161715610c4b5782820a905083811115610c4657610c4561097b565b5b610c75565b610c588484846001610b56565b92509050818404811115610c6f57610c6e61097b565b5b81810290505b9392505050565b6000610c87826107fe565b9150610c9283610834565b9250610cbf7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff8484610ba9565b905092915050565b6000610cd2826107fe565b9150610cdd836107fe565b9250817fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0483118215151615610d1657610d1561097b565b5b828202905092915050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052601260045260246000fd5b6000610d5b826107fe565b9150610d66836107fe565b925082610d7657610d75610d21565b5b82820490509291505056fea264697066735822122072c27734df6c0ba98e8143c15085a64455d8fec0b7f55067f5d6d0732a66d5f264736f6c63430008090033",
+  "deployedBytecode": "0x73000000000000000000000000000000000000000030146080604052600436106100565760003560e01c80634706a0f31461005b5780635ee973961461008b578063cae8b712146100bb578063eb21469a146100f8575b600080fd5b610075600480360381019061007091906105d5565b610128565b60405161008291906106f3565b60405180910390f35b6100a560048036038101906100a09190610715565b610223565b6040516100b291906106f3565b60405180910390f35b8180156100c757600080fd5b506100e260048036038101906100dd919061086d565b61040f565b6040516100ef91906108e3565b60405180910390f35b610112600480360381019061010d91906108fe565b6104b0565b60405161011f9190610960565b60405180910390f35b6060600060018585905061013c91906109aa565b90506000808267ffffffffffffffff81111561015b5761015a6109de565b5b6040519080825280602002602001820160405280156101895781602001602082028036833780820191505090505b50905060005b8787905081101561021557858888838181106101ae576101ad610a0d565b5b9050602002013514610202578787828181106101cd576101cc610a0d565b5b905060200201358284815181106101e7576101e6610a0d565b5b60200260200101818152505082806101fe90610a3c565b9350505b808061020d90610a3c565b91505061018f565b508093505050509392505050565b606060008383905090506001811161027f57838380806020026020016040519081016040528093929190818152602001838360200280828437600081840152601f19601f82011690508083019250505050505050915050610409565b60008167ffffffffffffffff81111561029b5761029a6109de565b5b6040519080825280602002602001820160405280156102c95781602001602082028036833780820191505090505b509050600282141561035557848460018181106102e9576102e8610a0d565b5b905060200201358160008151811061030457610303610a0d565b5b6020026020010181815250508484600081811061032457610323610a0d565b5b905060200201358160018151811061033f5761033e610a0d565b5b6020026020010181815250508092505050610409565b6000600190505b828110156103bc5785858281811061037757610376610a0d565b5b905060200201358260018361038c91906109aa565b8151811061039d5761039c610a0d565b5b60200260200101818152505080806103b490610a3c565b91505061035c565b50848460008181106103d1576103d0610a0d565b5b90506020020135816001846103e691906109aa565b815181106103f7576103f6610a0d565b5b60200260200101818152505080925050505b92915050565b60006104a68573ffffffffffffffffffffffffffffffffffffffff16636849a3ba866040518263ffffffff1660e01b815260040161044d9190610a94565b602060405180830381600087803b15801561046757600080fd5b505af115801561047b573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061049f9190610ae5565b84846104e6565b9050949350505050565b60008383836040516020016104c793929190610b12565b6040516020818303038152906040528051906020012090509392505050565b6000808413156105245781600a6104fd9190610c7c565b60016105099190610cc7565b84846105159190610cc7565b61051f9190610d50565b610527565b60005b90509392505050565b600080fd5b600080fd5b600080fd5b600080fd5b600080fd5b60008083601f84011261055f5761055e61053a565b5b8235905067ffffffffffffffff81111561057c5761057b61053f565b5b60208301915083602082028301111561059857610597610544565b5b9250929050565b6000819050919050565b6105b28161059f565b81146105bd57600080fd5b50565b6000813590506105cf816105a9565b92915050565b6000806000604084860312156105ee576105ed610530565b5b600084013567ffffffffffffffff81111561060c5761060b610535565b5b61061886828701610549565b9350935050602061062b868287016105c0565b9150509250925092565b600081519050919050565b600082825260208201905092915050565b6000819050602082019050919050565b61066a8161059f565b82525050565b600061067c8383610661565b60208301905092915050565b6000602082019050919050565b60006106a082610635565b6106aa8185610640565b93506106b583610651565b8060005b838110156106e65781516106cd8882610670565b97506106d883610688565b9250506001810190506106b9565b5085935050505092915050565b6000602082019050818103600083015261070d8184610695565b905092915050565b6000806020838503121561072c5761072b610530565b5b600083013567ffffffffffffffff81111561074a57610749610535565b5b61075685828601610549565b92509250509250929050565b600073ffffffffffffffffffffffffffffffffffffffff82169050919050565b600061078d82610762565b9050919050565b600061079f82610782565b9050919050565b6107af81610794565b81146107ba57600080fd5b50565b6000813590506107cc816107a6565b92915050565b6107db81610782565b81146107e657600080fd5b50565b6000813590506107f8816107d2565b92915050565b6000819050919050565b610811816107fe565b811461081c57600080fd5b50565b60008135905061082e81610808565b92915050565b600060ff82169050919050565b61084a81610834565b811461085557600080fd5b50565b60008135905061086781610841565b92915050565b6000806000806080858703121561088757610886610530565b5b6000610895878288016107bd565b94505060206108a6878288016107e9565b93505060406108b78782880161081f565b92505060606108c887828801610858565b91505092959194509250565b6108dd816107fe565b82525050565b60006020820190506108f860008301846108d4565b92915050565b60008060006060848603121561091757610916610530565b5b6000610925868287016107e9565b9350506020610936868287016107e9565b9250506040610947868287016107e9565b9150509250925092565b61095a8161059f565b82525050565b60006020820190506109756000830184610951565b92915050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052601160045260246000fd5b60006109b5826107fe565b91506109c0836107fe565b9250828210156109d3576109d261097b565b5b828203905092915050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b7f4e487b7100000000000000000000000000000000000000000000000000000000600052603260045260246000fd5b6000610a47826107fe565b91507fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff821415610a7a57610a7961097b565b5b600182019050919050565b610a8e81610782565b82525050565b6000602082019050610aa96000830184610a85565b92915050565b6000819050919050565b610ac281610aaf565b8114610acd57600080fd5b50565b600081519050610adf81610ab9565b92915050565b600060208284031215610afb57610afa610530565b5b6000610b0984828501610ad0565b91505092915050565b6000606082019050610b276000830186610a85565b610b346020830185610a85565b610b416040830184610a85565b949350505050565b60008160011c9050919050565b6000808291508390505b6001851115610ba057808604811115610b7c57610b7b61097b565b5b6001851615610b8b5780820291505b8081029050610b9985610b49565b9450610b60565b94509492505050565b600082610bb95760019050610c75565b81610bc75760009050610c75565b8160018114610bdd5760028114610be757610c16565b6001915050610c75565b60ff841115610bf957610bf861097b565b5b8360020a915084821115610c1057610c0f61097b565b5b50610c75565b5060208310610133831016604e8410600b8410161715610c4b5782820a905083811115610c4657610c4561097b565b5b610c75565b610c588484846001610b56565b92509050818404811115610c6f57610c6e61097b565b5b81810290505b9392505050565b6000610c87826107fe565b9150610c9283610834565b9250610cbf7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff8484610ba9565b905092915050565b6000610cd2826107fe565b9150610cdd836107fe565b9250817fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0483118215151615610d1657610d1561097b565b5b828202905092915050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052601260045260246000fd5b6000610d5b826107fe565b9150610d66836107fe565b925082610d7657610d75610d21565b5b82820490509291505056fea264697066735822122072c27734df6c0ba98e8143c15085a64455d8fec0b7f55067f5d6d0732a66d5f264736f6c63430008090033",
+  "devdoc": {
+    "author": "Kiba Gateaux",
+    "kind": "dev",
+    "methods": {
+      "computePositionId(address,address,address)": {
+        "details": "- Create deterministic hash id for a debt position on `loan` given position details",
+        "params": {
+          "lender": "- address managing debt position",
+          "loan": "- loan that debt position exists on",
+          "token": "- token that is being lent out in debt position"
+        },
+        "returns": {
+          "_0": "positionId"
+        }
+      },
+      "getValuation(IOracle,address,uint256,uint8)": {
+        "details": "- Assumes oracles all return answers in USD with 1e8 decimals - Does not check if price < 0. HAndled in Oracle or Loan",
+        "params": {
+          "amount": "- token amount",
+          "decimals": "- token decimals",
+          "oracle": "- oracle contract specified by loan getting valuation",
+          "token": "- token to value on oracle"
+        },
+        "returns": {
+          "_0": "- total value in usd of all tokens "
+        }
+      },
+      "removePosition(bytes32[],bytes32)": {
+        "details": "assumes that `id` is stored only once in `positions` array bc no reason for Loans to store multiple times. This means cleanup on _close() and checks on addDebtPosition are CRITICAL. If `id` is duplicated then the position can't be closed",
+        "params": {
+          "id": "- hash id that must be removed from active positions",
+          "positions": "- all current active positions on the loan"
+        },
+        "returns": {
+          "_0": "newPositions - all active positions on loan after `id` is removed"
+        }
+      },
+      "stepQ(bytes32[])": {
+        "params": {
+          "positions": "- all current active positions on the loan"
+        },
+        "returns": {
+          "_0": "newPositions - positions after moving first to last in array"
+        }
+      }
+    },
+    "title": "Debt DAO P2P Loan Library",
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {
+      "getValuation(IOracle,address,uint256,uint8)": {
+        "notice": "- Gets total valuation for amount of tokens using given oracle. "
+      },
+      "stepQ(bytes32[])": {
+        "notice": "- removes debt position from head of repayement queue and puts it at end of line         - moves 2nd in line to first"
+      }
+    },
+    "notice": "Core logic and variables to be reused across all Debt DAO Marketplace loans",
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [],
+    "types": null
+  }
+}

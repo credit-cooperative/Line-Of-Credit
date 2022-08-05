@@ -1,0 +1,167 @@
+{
+  "address": "0xa2F25Bd7439B40616d580556F56576B6754a3724",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_supportedToken1",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_supportedToken2",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "internalType": "int256",
+          "name": "newPrice",
+          "type": "int256"
+        }
+      ],
+      "name": "changePrice",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        }
+      ],
+      "name": "getLatestAnswer",
+      "outputs": [
+        {
+          "internalType": "int256",
+          "name": "",
+          "type": "int256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "healthcheck",
+      "outputs": [
+        {
+          "internalType": "enum LoanLib.STATUS",
+          "name": "status",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "init",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "loan",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x427100ce7456180b4115012568d619b37c5a2ef71fd394a0487e6001751fcb87",
+  "receipt": {
+    "to": null,
+    "from": "0xDe8f0F6769284e41Bf0f82d0545141c15A3E4aD1",
+    "contractAddress": "0xa2F25Bd7439B40616d580556F56576B6754a3724",
+    "transactionIndex": 42,
+    "gasUsed": "379163",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x657b805c96f79a994dc0cb0ba1017b4c54a7af43c24b2dd41a2bcd65edd58877",
+    "transactionHash": "0x427100ce7456180b4115012568d619b37c5a2ef71fd394a0487e6001751fcb87",
+    "logs": [],
+    "blockNumber": 7353193,
+    "cumulativeGasUsed": "11681846",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [
+    "0x681c2796f7DD8A0627844828a52fE81E7d883064",
+    "0x0000000000000000000000000000000000000000"
+  ],
+  "numDeployments": 1,
+  "solcInputHash": "c9946f40425898595ffdf05b633e603a",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.9+commit.e5eed63a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_supportedToken1\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_supportedToken2\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"int256\",\"name\":\"newPrice\",\"type\":\"int256\"}],\"name\":\"changePrice\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"}],\"name\":\"getLatestAnswer\",\"outputs\":[{\"internalType\":\"int256\",\"name\":\"\",\"type\":\"int256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"healthcheck\",\"outputs\":[{\"internalType\":\"enum LoanLib.STATUS\",\"name\":\"status\",\"type\":\"uint8\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"init\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"loan\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"getLatestAnswer(address)\":{\"notice\":\"current price for token asset. denominated in USD \"}},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/mock/SimpleOracle.sol\":\"SimpleOracle\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"contracts/interfaces/IOracle.sol\":{\"content\":\"pragma solidity 0.8.9;\\n\\ninterface IOracle {\\n    /** current price for token asset. denominated in USD */\\n    function getLatestAnswer(address token) external returns(int);\\n}\\n\",\"keccak256\":\"0xdefae1f6dd298ddfba2a88c77096e77e59ac0a567bc3c8e76ef5a3424e4b832f\"},\"contracts/mock/SimpleOracle.sol\":{\"content\":\"pragma solidity 0.8.9;\\n\\nimport { IOracle } from \\\"../interfaces/IOracle.sol\\\";\\nimport { LoanLib } from \\\"../utils/LoanLib.sol\\\";\\n\\ncontract SimpleOracle is IOracle {\\n\\n    mapping(address => int) prices;\\n\\n    constructor(address _supportedToken1, address _supportedToken2) {\\n        prices[_supportedToken1] = 1000 * 1e8; // 1000 USD\\n        prices[_supportedToken2] = 2000 * 1e8; // 2000 USD\\n    }\\n\\n    function init() external returns(bool) {\\n        return true;\\n    }\\n\\n    function changePrice(address token, int newPrice) external {\\n        prices[token] = newPrice;\\n    }\\n\\n    function getLatestAnswer(address token) external returns(int256) {\\n        // mimic eip4626\\n        // (bool success, bytes memory result) = token.call(abi.encodeWithSignature(\\\"asset()\\\"));\\n        // if(success && result.length > 0) {\\n        //     // get the underlying token value (if ERC4626)\\n        //     // NB: Share token to underlying ratio might not be 1:1\\n        //     token = abi.decode(result, (address));\\n        // }\\n        require(prices[token] != 0, \\\"SimpleOracle: unsupported token\\\");\\n        return prices[token];\\n    }\\n\\n    function healthcheck() external returns (LoanLib.STATUS status) {\\n        return LoanLib.STATUS.ACTIVE;\\n    }\\n\\n    function loan() external returns (address) {\\n        return address(0);\\n    }\\n\\n}\\n\",\"keccak256\":\"0xe9fa59d281af8191f18421edd2c9790468a690ca139e76f7cdf1a1289e1eeaae\"},\"contracts/utils/LoanLib.sol\":{\"content\":\"pragma solidity 0.8.9;\\nimport { IOracle } from \\\"../interfaces/IOracle.sol\\\";\\n/**\\n  * @title Debt DAO P2P Loan Library\\n  * @author Kiba Gateaux\\n  * @notice Core logic and variables to be reused across all Debt DAO Marketplace loans\\n */\\nlibrary LoanLib {\\n    address constant DEBT_TOKEN = address(0xdebf);\\n\\n    enum STATUS {\\n        // \\u00bfhoo dis\\n        // Loan has been deployed but terms and conditions are still being signed off by parties\\n        UNINITIALIZED,\\n        INITIALIZED,\\n\\n        // ITS ALLLIIIIVVEEE\\n        // Loan is operational and actively monitoring status\\n        ACTIVE,\\n        UNDERCOLLATERALIZED,\\n        LIQUIDATABLE, // [#X\\n        DELINQUENT,\\n\\n        // Loan is in distress and paused\\n        LIQUIDATING,\\n        OVERDRAWN,\\n        DEFAULT,\\n        ARBITRATION,\\n\\n        // L\\u00f6n izz ded\\n        // Loan is no longer active, successfully repaid or insolvent\\n        REPAID,\\n        INSOLVENT\\n    }\\n\\n    /**\\n     * @notice         - Gets total valuation for amount of tokens using given oracle. \\n     * @dev            - Assumes oracles all return answers in USD with 1e8 decimals\\n                       - Does not check if price < 0. HAndled in Oracle or Loan\\n     * @param oracle   - oracle contract specified by loan getting valuation\\n     * @param token    - token to value on oracle\\n     * @param amount   - token amount\\n     * @param decimals - token decimals\\n     * @return         - total value in usd of all tokens \\n     */\\n    function getValuation(\\n      IOracle oracle,\\n      address token,\\n      uint256 amount,\\n      uint8 decimals\\n    )\\n      external\\n      returns(uint256)\\n    {\\n      return _calculateValue(oracle.getLatestAnswer(token), amount, decimals);\\n    }\\n\\n    /**\\n     * @notice\\n     * @dev            - Assumes oracles all return answers in USD with 1e8 decimals\\n                       - Does not check if price < 0. HAndled in Oracle or Loan\\n     * @param price    - oracle price of asset. 8 decimals\\n     * @param amount   - amount of tokens vbeing valued.\\n     * @param decimals - token decimals to remove for usd price\\n     * @return         - total USD value of amount in 8 decimals \\n     */\\n    function calculateValue(\\n      int price,\\n      uint256 amount,\\n      uint8 decimals\\n    )\\n      internal\\n      returns(uint256)\\n    {\\n      return _calculateValue(price, amount, decimals);\\n    }\\n\\n\\n      /**\\n     * @notice         - calculates value of tokens and denominates in USD 8\\n     * @dev            - Assumes all oracles return USD responses in 1e8 decimals\\n     * @param price    - oracle price of asset. 8 decimals\\n     * @param amount   - amount of tokens vbeing valued.\\n     * @param decimals - token decimals to remove for usd price\\n     * @return         - total value in usd of all tokens \\n     */\\n    function _calculateValue(\\n      int price,\\n      uint256 amount,\\n      uint8 decimals\\n    )\\n      internal pure\\n      returns(uint256)\\n    {\\n      return price <= 0 ? 0 : (amount * uint(price)) / (1 * 10 ** decimals);\\n    }\\n\\n\\n    /**\\n     * @dev          - Create deterministic hash id for a debt position on `loan` given position details\\n     * @param loan   - loan that debt position exists on\\n     * @param lender - address managing debt position\\n     * @param token  - token that is being lent out in debt position\\n     * @return positionId\\n     */\\n    function computePositionId(address loan, address lender, address token) external pure returns(bytes32) {\\n      return keccak256(abi.encode(loan, lender, token));\\n    }\\n\\n    /**\\n     * @dev assumes that `id` is stored only once in `positions` array bc no reason for Loans to store multiple times.\\n          This means cleanup on _close() and checks on addDebtPosition are CRITICAL. If `id` is duplicated then the position can't be closed\\n     * @param positions - all current active positions on the loan\\n     * @param id - hash id that must be removed from active positions\\n     * @return newPositions - all active positions on loan after `id` is removed\\n     */\\n    function removePosition(bytes32[] calldata positions, bytes32 id) external pure returns(bytes32[] memory) {\\n      uint256 newLength = positions.length - 1;\\n      uint256 count = 0;\\n      bytes32[] memory newPositions = new bytes32[](newLength);\\n\\n      for(uint i = 0; i < positions.length; i++) {\\n          if(positions[i] != id) {\\n              newPositions[count] = positions[i];\\n              count++;\\n          }\\n      }\\n\\n      return newPositions;\\n    }\\n\\n    /**\\n     * @notice - removes debt position from head of repayement queue and puts it at end of line\\n     *         - moves 2nd in line to first\\n     * @param positions - all current active positions on the loan\\n     * @return newPositions - positions after moving first to last in array\\n     */\\n    function stepQ(bytes32[] calldata positions) external pure returns(bytes32[] memory) {\\n      uint256 len = positions.length ;\\n      if(len <= 1) return positions; // already ordered\\n\\n      bytes32[] memory newPositions = new bytes32[](len);\\n      \\n      if(len == 2) {\\n        newPositions[0] = positions[1];\\n        newPositions[1] = positions[0];\\n        return newPositions;\\n      }\\n      \\n      // move all existing positions up in line\\n      for(uint i = 1; i < len; i++) {\\n        newPositions[i - 1] = positions[i];\\n      }\\n      // cycle first el back to end of queue\\n      newPositions[len - 1] = positions[0];\\n\\n      return newPositions;\\n    }\\n}\\n\",\"keccak256\":\"0x71d59ab61198082d37bec68f3e579523509be49483506b531ac56e33d24c85f1\"}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b506040516106793803806106798339818101604052810190610032919061012c565b64174876e8006000808473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002081905550642e90edd0006000808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002081905550505061016c565b600080fd5b600073ffffffffffffffffffffffffffffffffffffffff82169050919050565b60006100f9826100ce565b9050919050565b610109816100ee565b811461011457600080fd5b50565b60008151905061012681610100565b92915050565b60008060408385031215610143576101426100c9565b5b600061015185828601610117565b925050602061016285828601610117565b9150509250929050565b6104fe8061017b6000396000f3fe608060405234801561001057600080fd5b50600436106100575760003560e01c80634f42fc021461005c5780636849a3ba1461007a578063b8745802146100aa578063d285b7b4146100c6578063e1c7392a146100e4575b600080fd5b610064610102565b60405161007191906102a0565b60405180910390f35b610094600480360381019061008f919061031e565b61010b565b6040516100a19190610364565b60405180910390f35b6100c460048036038101906100bf91906103ab565b6101d4565b005b6100ce61021b565b6040516100db91906103fa565b60405180910390f35b6100ec610220565b6040516100f99190610430565b60405180910390f35b60006002905090565b6000806000808473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002054141561018e576040517f08c379a0000000000000000000000000000000000000000000000000000000008152600401610185906104a8565b60405180910390fd5b6000808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020549050919050565b806000808473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020819055505050565b600090565b60006001905090565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052602160045260246000fd5b600c811061026957610268610229565b5b50565b600081905061027a82610258565b919050565b600061028a8261026c565b9050919050565b61029a8161027f565b82525050565b60006020820190506102b56000830184610291565b92915050565b600080fd5b600073ffffffffffffffffffffffffffffffffffffffff82169050919050565b60006102eb826102c0565b9050919050565b6102fb816102e0565b811461030657600080fd5b50565b600081359050610318816102f2565b92915050565b600060208284031215610334576103336102bb565b5b600061034284828501610309565b91505092915050565b6000819050919050565b61035e8161034b565b82525050565b60006020820190506103796000830184610355565b92915050565b6103888161034b565b811461039357600080fd5b50565b6000813590506103a58161037f565b92915050565b600080604083850312156103c2576103c16102bb565b5b60006103d085828601610309565b92505060206103e185828601610396565b9150509250929050565b6103f4816102e0565b82525050565b600060208201905061040f60008301846103eb565b92915050565b60008115159050919050565b61042a81610415565b82525050565b60006020820190506104456000830184610421565b92915050565b600082825260208201905092915050565b7f53696d706c654f7261636c653a20756e737570706f7274656420746f6b656e00600082015250565b6000610492601f8361044b565b915061049d8261045c565b602082019050919050565b600060208201905081810360008301526104c181610485565b905091905056fea2646970667358221220be62210762624c72b21e4287af1cc7d991308a59c998350d4dbe1caf360bfcc864736f6c63430008090033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106100575760003560e01c80634f42fc021461005c5780636849a3ba1461007a578063b8745802146100aa578063d285b7b4146100c6578063e1c7392a146100e4575b600080fd5b610064610102565b60405161007191906102a0565b60405180910390f35b610094600480360381019061008f919061031e565b61010b565b6040516100a19190610364565b60405180910390f35b6100c460048036038101906100bf91906103ab565b6101d4565b005b6100ce61021b565b6040516100db91906103fa565b60405180910390f35b6100ec610220565b6040516100f99190610430565b60405180910390f35b60006002905090565b6000806000808473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002054141561018e576040517f08c379a0000000000000000000000000000000000000000000000000000000008152600401610185906104a8565b60405180910390fd5b6000808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020549050919050565b806000808473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020819055505050565b600090565b60006001905090565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052602160045260246000fd5b600c811061026957610268610229565b5b50565b600081905061027a82610258565b919050565b600061028a8261026c565b9050919050565b61029a8161027f565b82525050565b60006020820190506102b56000830184610291565b92915050565b600080fd5b600073ffffffffffffffffffffffffffffffffffffffff82169050919050565b60006102eb826102c0565b9050919050565b6102fb816102e0565b811461030657600080fd5b50565b600081359050610318816102f2565b92915050565b600060208284031215610334576103336102bb565b5b600061034284828501610309565b91505092915050565b6000819050919050565b61035e8161034b565b82525050565b60006020820190506103796000830184610355565b92915050565b6103888161034b565b811461039357600080fd5b50565b6000813590506103a58161037f565b92915050565b600080604083850312156103c2576103c16102bb565b5b60006103d085828601610309565b92505060206103e185828601610396565b9150509250929050565b6103f4816102e0565b82525050565b600060208201905061040f60008301846103eb565b92915050565b60008115159050919050565b61042a81610415565b82525050565b60006020820190506104456000830184610421565b92915050565b600082825260208201905092915050565b7f53696d706c654f7261636c653a20756e737570706f7274656420746f6b656e00600082015250565b6000610492601f8361044b565b915061049d8261045c565b602082019050919050565b600060208201905081810360008301526104c181610485565b905091905056fea2646970667358221220be62210762624c72b21e4287af1cc7d991308a59c998350d4dbe1caf360bfcc864736f6c63430008090033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {
+      "getLatestAnswer(address)": {
+        "notice": "current price for token asset. denominated in USD "
+      }
+    },
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 2467,
+        "contract": "contracts/mock/SimpleOracle.sol:SimpleOracle",
+        "label": "prices",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_mapping(t_address,t_int256)"
+      }
+    ],
+    "types": {
+      "t_address": {
+        "encoding": "inplace",
+        "label": "address",
+        "numberOfBytes": "20"
+      },
+      "t_int256": {
+        "encoding": "inplace",
+        "label": "int256",
+        "numberOfBytes": "32"
+      },
+      "t_mapping(t_address,t_int256)": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => int256)",
+        "numberOfBytes": "32",
+        "value": "t_int256"
+      }
+    }
+  }
+}
