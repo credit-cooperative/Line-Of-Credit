@@ -6,6 +6,17 @@ import "hardhat-contract-sizer";
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-waffle";
 
+import { subtask } from "hardhat/config";
+import {TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS} from "hardhat/builtin-tasks/task-names";
+
+// Ignore forge test files in hardhat
+subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS)
+  .setAction(async (_, __, runSuper) => {
+    const paths = await runSuper();
+
+    return paths.filter((p: string) => !p.endsWith(".t.sol"));
+  });
+
 // require("@nomicfoundation/hardhat-toolbox");
 
 // This adds support for typescript paths mappings
@@ -67,7 +78,7 @@ module.exports = {
     },
   },
   docgen: { // create doc site from NATSPEC
-    pages: 'files',
-    sourcesDir: 'contracts/modules'
+    pages: 'files', // one page per file
+    exclude: ['mock'],
   }
 };
