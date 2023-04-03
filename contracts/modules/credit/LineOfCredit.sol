@@ -27,19 +27,19 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     using CreditListLib for bytes32[];
 
     /// @notice - the timestamp that all creditors must be repaid by
-    uint256 public immutable deadline;
+    uint256 public  deadline;
 
     /// @notice - the account that can drawdown and manage debt positions
-    address public immutable borrower;
+    address public  borrower;
 
     /// @notice - neutral 3rd party that mediates btw borrower and all lenders
-    address public immutable arbiter;
+    address public  arbiter;
 
     /// @notice - price feed to use for valuing credit tokens
-    IOracle public immutable oracle;
+    IOracle public  oracle;
 
     /// @notice - contract responsible for calculating interest owed on debt positions
-    InterestRateCredit public immutable interestRate;
+    InterestRateCredit public  interestRate;
 
     /// @notice - current amount of active positions (aka non-null ids) in `ids` list
     uint256 private count;

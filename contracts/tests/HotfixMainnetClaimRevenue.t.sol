@@ -35,13 +35,10 @@ import { IERC20 } from "openzeppelin/token/ERC20/IERC20.sol";
     *   @link:      https://debtdao.notion.site/Spigot-Claim-Revenue-Accounting-01153e95f1be47d194ec9f252304855b
     *   @dev:       This test file tests against a fork of mainnet and evaluates the actual function calls for correctness.
     *   @dev:       The block number of, and a link to, each transaction is included in the comments above each step
-<<<<<<< HEAD
     *               in the sequence, ie. test fn.
     *   @dev:       The tests intentionally make use of the incorrect math that's present in the contract.  The assertions 
     *               for the corrected contracts are included in the tests, but left commented-out.
-=======
     *               in the sequence.
->>>>>>> master
     *   @dev:       Original Spigot: 0x6E3a81f41210D45A2bBBBad00f25Fd96567b9af2
     *   @dev:       Original Escrow: 0x46898c8c8082c4d67f8d45d24859a92beef86306
     *   @dev:       Original Line Of Credit: 0x5bda5b7a953f71f03711f9c0bd2c10c1738f6ee4
