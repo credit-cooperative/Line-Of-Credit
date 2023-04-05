@@ -80,8 +80,13 @@ libraries = [
         ]
 
 [profile.mainnet]
-libraries = [
-]
+libraries = ["contracts/utils/LineLib.sol:LineLib:0xe639a9c07f39ED07F04f348D06f76dc80DC3EDeb",
+            "contracts/utils/CreditLib.sol:CreditLib:0x713cCD56D4353224880Bdf4aB5BC1f9eB0947a5B",
+            "contracts/utils/CreditListLib.sol:CreditListLib:0x9f48ccF9BA57ce89bb50ba9960a6B7C320183F19",
+            "contracts/utils/SpigotLib.sol:SpigotLib:0x87fc87EC34C290963aE55CB42B4A481Ad3850E31",
+            "contracts/utils/EscrowLib.sol:EscrowLib:0xA5C5f0c572c0f843d4234C6316D75fBD5A9C5bf1",
+            "contracts/utils/SpigotedLineLib.sol:SpigotedLineLib:0x06e5E43210e76149996f344eDfC09D432FCaeBc9",
+    ]
 
 [profile.default.rpc_storage_caching]
 chains = 'all'
