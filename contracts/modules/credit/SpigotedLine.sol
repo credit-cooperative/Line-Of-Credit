@@ -22,7 +22,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
     using SafeERC20 for IERC20;
 
     /// @notice see Spigot
-    ISpigot public  spigot;
+    ISpigot public spigot;
 
     /// @notice - maximum revenue we want to be able to take from spigots if Line is in default
     uint8 constant MAX_SPLIT = 100;
