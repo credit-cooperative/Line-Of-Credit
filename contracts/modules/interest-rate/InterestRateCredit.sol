@@ -10,7 +10,7 @@ contract InterestRateCredit is IInterestRateCredit {
     // = 31557600 * 10000 = 315576000000;
     uint256 constant INTEREST_DENOMINATOR = ONE_YEAR * BASE_DENOMINATOR;
 
-    address immutable lineContract;
+    address lineContract;
 
     mapping(bytes32 => Rate) public rates; // position id -> lending rates
 
