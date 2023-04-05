@@ -22,16 +22,16 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
     using SafeERC20 for IERC20;
 
     /// @notice see Spigot
-    ISpigot public immutable spigot;
+    ISpigot public spigot;
 
     /// @notice - maximum revenue we want to be able to take from spigots if Line is in default
     uint8 constant MAX_SPLIT = 100;
 
     /// @notice % of revenue tokens to take from Spigot if the Line of Credit is healthy. 0 decimals
-    uint8 public immutable defaultRevenueSplit;
+    uint8 public defaultRevenueSplit;
 
     /// @notice exchange aggregator (mainly 0x router) to trade revenue tokens from a Spigot for credit tokens owed to lenders
-    address payable public immutable swapTarget;
+    address payable public swapTarget;
 
     /**
      * @notice - excess unsold revenue claimed from Spigot to be sold later or excess credit tokens bought from revenue but not yet used to repay debt
