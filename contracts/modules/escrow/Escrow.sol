@@ -22,13 +22,13 @@ contract Escrow is IEscrow, ReentrancyGuard {
     using EscrowLib for EscrowState;
 
     /// @notice the minimum value of the collateral in relation to the outstanding debt e.g. 10% of outstanding debt
-    uint32 public immutable minimumCollateralRatio;
+    uint32 public  minimumCollateralRatio;
 
     /// @notice Stakeholders and contracts used in Escrow
-    address public  immutable oracle;
+    address public   oracle;
 
     /// @notice borrower on line contract
-    address public immutable borrower;
+    address public  borrower;
 
     /// @notice all data around terms for collateral and current deposits
     EscrowState private state;

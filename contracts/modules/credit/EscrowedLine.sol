@@ -12,7 +12,7 @@ import {LineOfCredit} from "./LineOfCredit.sol";
 
 abstract contract EscrowedLine is IEscrowedLine, ILineOfCredit {
     // contract holding all collateral for borrower
-    IEscrow public immutable escrow;
+    IEscrow public  escrow;
 
     constructor(address _escrow) {
         escrow = IEscrow(_escrow);
