@@ -70,15 +70,14 @@ libraries = []
 
 [profile.goerli]
 libraries = [
-    "contracts/utils/LineLib.sol:LineLib:0xec6e736d8774f9949Cb0985cB4cc1ec9224a601c",
-    "contracts/utils/CreditLib.sol:CreditLib:0xDb19FCFe818493ee84Ce33137b0851DE88c9fF13",
-    "contracts/utils/CreditListLib.sol:CreditListLib:0x627A8B08F7d0F10F6BDC4Ef668841fb10B3B2b1d",
-    "contracts/utils/SpigotLib.sol:SpigotLib:0x78064A7b6259BcE045d377593288273D22459dfe",
-    "contracts/utils/EscrowLib.sol:EscrowLib:0x20b7C07AF032C3a999D9CECf804f4D3b9Fac6a3F",
-    "contracts/utils/SpigotedLineLib.sol:SpigotedLineLib:0x09d811eEab9893d2285b38728574c55401Ea6A9B",
-    "contracts/utils/LineFactoryLib.sol:LineFactoryLib:0xC6805c0B1Ba484128cE97e92CF5ca09d82B3D51e",
-    "contracts/modules/factories/ModuleFactory.sol:ModuleFactory:0x70a951E2D2Ee4Fc6D38325AB0e0ED1a789Eb2D8E"
-    ]
+            "contracts/utils/LineLib.sol:LineLib:0xd6EC4E0D237C72bE6e4d1d2a7d338D2C0281cf41",
+            "contracts/utils/CreditLib.sol:CreditLib:0x31C3cBE78D63a8a0729fC5DB62Ca9013538979b8",
+            "contracts/utils/CreditListLib.sol:CreditListLib:0x37C3456249016FB74F9741a2B51911f0B509539F",
+            "contracts/utils/SpigotLib.sol:SpigotLib:0xdBcEce25E03dDba43ef21C15035dC9B2c5A72d79",
+            "contracts/utils/EscrowLib.sol:EscrowLib:0x333551a0645d77d6d74B77F6DC6F87F93012c1Ad",
+            "contracts/utils/SpigotedLineLib.sol:SpigotedLineLib:0x30ba55c483f5a09592ff72e36924512B3EB8Fe2b",
+            "contracts/utils/LineFactoryLib.sol:LineFactoryLib:0x244c9A8746735C315B8eF914e4D70a017fF197D9"
+        ]
 
 [profile.mainnet]
 libraries = [
