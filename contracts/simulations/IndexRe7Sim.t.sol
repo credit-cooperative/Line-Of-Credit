@@ -15,6 +15,7 @@ import {ISpigotedLine} from "../interfaces/ISpigotedLine.sol";
 import {IEscrow} from "../interfaces/IEscrow.sol";
 import {ISpigot} from "../interfaces/ISpigot.sol";
 import {ILineOfCredit} from "../interfaces/ILineOfCredit.sol";
+import {ISecuredLine} from "../interfaces/ISecuredLine.sol";
 
 interface IWeth {
     function deposit() external payable;
@@ -110,11 +111,16 @@ contract IndexRe7Sim is Test {
         // assertEq(mincRatio, ILineOfCredit(address(securedLine)).arbiter()); // TODO: check minCRatio
     }
 
-    // function test_arbiter_enables_stablecoin_collateral() public {
-    //     vm.startPrank(arbiterAddress);
-    //     ILineOfCredit(address(securedLine)).enableCollateral(DAI);
-    //     assertEq(true, ILineOfCredit(address(securedLine)).collateralEnabled(DAI));
-    // }
+    function test_arbiter_enables_stablecoin_collateral() public {
+        vm.startPrank(borrowerAddress);
+        securedLine = _deployLoCWithConfig();
+        vm.stopPrank();
+
+        vm.startPrank(arbiterAddress);
+        address escrowAddress = address(ISecuredLine(address(securedLine)).escrow());
+        bool collateralEnabled = IEscrow(address(escrowAddress)).enableCollateral(DAI);
+        assertEq(true, collateralEnabled);
+    }
 
     ///////////////////////////////////////////////////////
     //          I N T E R N A L   H E L P E R S          //
