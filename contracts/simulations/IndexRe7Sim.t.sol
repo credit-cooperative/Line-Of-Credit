@@ -21,13 +21,17 @@ interface IWeth {
     function deposit() external payable;
 }
 
-interface IdsETH {} //  TODO - define this
+interface IdsETH {
+    function setManager(address _manager) external;
+
+} //  TODO - define this
 
 contract IndexRe7Sim is Test {
     bytes32 constant DEFAULT_ADMIN_ROLE = 0x00;
 
     ILineFactory lineFactory;
     IOracle oracle;
+    ISpigot.Setting private settings;
 
     address constant lineFactoryAddress = 0x89989dBe4CFa289dE6179e8d54EE755E471a4251; 
     address constant oracleAddress = 0x5a4AAF300473eaF8A9763318e7F30FA8a3f5Dd48;
@@ -40,13 +44,15 @@ contract IndexRe7Sim is Test {
 
     address constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    uint256 MAX_INT =
+        115792089237316195423570985008687907853269984665640564039457584007913129639935;
 
     uint256 ttl = 90 days;
-    uint32 minCRatio = 12.5; // TODO: 12.5 - how does Solidity handle decimals?
+    uint32 minCRatio = 1250; // BPS
     uint8 revenueSplit = 100;
-    uint256 loanSizeInWETH = 100 ether; // 
-    uint128 dRate = 12.5; // TODO: how does Solidity handle decimals?
-    uint128 fRate = 12.5;
+    uint256 loanSizeInWETH = 200 ether; 
+    uint128 dRate = 1250; // BPS
+    uint128 fRate = 1250; // BPS
 
     address public securedLine;
 
@@ -76,9 +82,17 @@ contract IndexRe7Sim is Test {
 
         vm.deal(borrowerAddress, 100 ether);
         vm.deal(arbiterAddress, 100 ether);
+        vm.deal(lenderAddress, 100 ether);
+
+        deal(DAI, borrowerAddress, 200000000000000000000000);
+        deal(WETH, borrowerAddress, 100 ether);
+        deal(WETH, lenderAddress, 10000 ether);
 
         vm.startPrank(borrowerAddress);
         securedLine = _deployLoCWithConfig();
+        uint256 status = uint256(ILineOfCredit(securedLine).status());
+        console.log("status", status);
+
         vm.stopPrank();
 
     }
@@ -88,25 +102,62 @@ contract IndexRe7Sim is Test {
     ///////////////////////////////////////////////////////
 
     function test_index_re7_simulation() public {
-        // index deploy's LoC
 
-        // arbiter approves collataral for escrow
+        // arbiter enables collateral
+        vm.startPrank(arbiterAddress);
+        address escrowAddress = address(ISecuredLine(address(securedLine)).escrow());
+        address spigotAddress = address(ISecuredLine(address(securedLine)).spigot());
+      
 
-        // arbiter adds spigot (dsETH)
-
-        // index transfers ownership of dsETH to spigot
+        bool collateralEnabled = IEscrow(address(escrowAddress)).enableCollateral(DAI);
+        vm.stopPrank();
 
         // index deposits collateral
+        vm.startPrank(borrowerAddress);
+        IERC20(DAI).approve(address(escrowAddress), MAX_INT);
+        IEscrow(escrowAddress).addCollateral(190000000000000000000000, DAI); // 190,000 DAI --> 190000000000000000000000
+        vm.stopPrank();
+
+        // TODO - Work with Index team to get spigot sorted
+
+        // // arbiter adds spigot (dsETH)
+        // vm.startPrank(arbiterAddress);
+        // ISpigot(spigotAddress).addSpigot();
+        // index transfers ownership of dsETH to spigot
 
         // re7 proposes position
-
         // index accepts position
+        bytes32 positionId =  _lenderFundLoan(securedLine);
+
+        uint256 balance = IERC20(WETH).balanceOf(securedLine);
+        console.log(balance);
 
         // index draws down full amount
+        vm.startPrank(borrowerAddress);
 
+        // ILineOfCredit(securedLine).healthcheck();
+        // uint256 status2 = uint256(ILineOfCredit(securedLine).status());
+        // console.log("status  before borrow", status2);
+
+        ILineOfCredit(securedLine).borrow(positionId, 200 ether);
+        vm.stopPrank();
+        
         // fast forward 3 months
+        vm.warp(block.timestamp + (ttl - 1 days));
 
         // index repaysAndCloses line
+
+        uint256 amountOwed = ILineOfCredit(securedLine).interestAccrued(positionId);
+
+        emit log_named_uint("Principal + Interest: ", amountOwed);
+
+        vm.startPrank(borrowerAddress);
+        IERC20(WETH).approve(securedLine, MAX_INT);
+        ILineOfCredit(securedLine).depositAndClose();
+        vm.stopPrank();
+
+        vm.startPrank(lenderAddress);
+        ILineOfCredit(securedLine).withdraw(positionId, amountOwed);
 
     }
 
@@ -129,8 +180,8 @@ contract IndexRe7Sim is Test {
     }
 
     function test_borrower_can_deploy_LoC() public {
-        // vm.startPrank(borrowerAddress);
-        // securedLine = _deployLoCWithConfig();
+        vm.startPrank(borrowerAddress);
+        securedLine = _deployLoCWithConfig();
 
         assertEq(borrowerAddress, ILineOfCredit(address(securedLine)).borrower());
         assertEq(arbiterAddress, ILineOfCredit(address(securedLine)).arbiter());
@@ -187,7 +238,7 @@ contract IndexRe7Sim is Test {
     //          I N T E R N A L   H E L P E R S          //
     ///////////////////////////////////////////////////////
 
-    function _deployLoCWithConfig() internal returns (address securedLine){
+    function _deployLoCWithConfig() internal returns (address){
         ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
             borrower: borrowerAddress,
             ttl: ttl, // time to live
@@ -257,7 +308,7 @@ contract IndexRe7Sim is Test {
         vm.stopPrank();
 
         vm.startPrank(lenderAddress);
-        IERC20(DAI).approve(_lineOfCredit, loanSizeInWETH);
+        IERC20(WETH).approve(_lineOfCredit, loanSizeInWETH);
         id = ILineOfCredit(_lineOfCredit).addCredit(
             dRate, // drate
             fRate, // frate
@@ -267,7 +318,8 @@ contract IndexRe7Sim is Test {
         );
         vm.stopPrank();
 
-        assertEq(IERC20(DAI).balanceOf(address(_lineOfCredit)), loanSizeInWETH, "LoC balance doesn't match");
+        assertEq(IERC20(WETH).balanceOf(address(_lineOfCredit)), loanSizeInWETH, "LoC balance doesn't match");
+        return id;
 
         emit log_named_bytes32("credit id", id);
     }
@@ -281,5 +333,28 @@ contract IndexRe7Sim is Test {
     // returns the function selector (first 4 bytes) of the hashed signature
     function _getSelector(string memory _signature) internal pure returns (bytes4) {
         return bytes4(keccak256(bytes(_signature)));
+    }
+
+    function _initSpigot(
+    
+        address spigot,
+        uint8 split,
+        bytes4 claimFunc,
+        bytes4 newOwnerFunc
+        // bytes4[] memory _whitelist
+    ) internal {
+        
+        settings = ISpigot.Setting(split, claimFunc, newOwnerFunc);
+
+        // add spigot for revenue contract
+        require(
+            ISpigot(spigot).addSpigot(revenueContractAddress, settings),
+            "Failed to add spigot"
+        );
+
+        // give spigot ownership to claim revenue
+        revenueContractAddress.call(
+            abi.encodeWithSelector(newOwnerFunc, spigot)
+        );
     }
 }
