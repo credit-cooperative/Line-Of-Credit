@@ -42,11 +42,11 @@ contract IndexRe7Sim is Test {
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
     uint256 ttl = 90 days;
-    uint32 minCRatio = 0; // TODO: 12.5 - how does Solidity handle decimals?
+    uint32 minCRatio = 12.5; // TODO: 12.5 - how does Solidity handle decimals?
     uint8 revenueSplit = 100;
     uint256 loanSizeInWETH = 100 ether; // 
-    uint128 dRate = 15; // TODO: how does Solidity handle decimals?
-    uint128 fRate = 0;
+    uint128 dRate = 12.5; // TODO: how does Solidity handle decimals?
+    uint128 fRate = 12.5;
 
     address public securedLine;
 
@@ -88,7 +88,26 @@ contract IndexRe7Sim is Test {
     ///////////////////////////////////////////////////////
 
     function test_index_re7_simulation() public {
-        
+        // index deploy's LoC
+
+        // arbiter approves collataral for escrow
+
+        // arbiter adds spigot (dsETH)
+
+        // index transfers ownership of dsETH to spigot
+
+        // index deposits collateral
+
+        // re7 proposes position
+
+        // index accepts position
+
+        // index draws down full amount
+
+        // fast forward 3 months
+
+        // index repaysAndCloses line
+
     }
 
 
