@@ -23,8 +23,17 @@ interface IWeth {
 
 interface IdsETH {
     function setManager(address _manager) external;
-
 } //  TODO - define this
+
+interface IdsETHFeeSplitExtension {
+    
+    function owner() external view returns (address);
+
+    function transferOwnership(address newOwner) external;
+
+    function accrueFeesAndDistribute() external;
+
+}
 
 contract IndexRe7Sim is Test {
     bytes32 constant DEFAULT_ADMIN_ROLE = 0x00;
@@ -37,7 +46,9 @@ contract IndexRe7Sim is Test {
     ISpigot.Setting private settings;
     ISecuredLine securedLine;
     ILineOfCredit line;
+    ISpigotedLine spigotedLine;
     IEscrow escrow;
+    IdsETHFeeSplitExtension dsETH;
 
 
     // Credit Coop Infra Addresses
@@ -49,9 +60,13 @@ contract IndexRe7Sim is Test {
 
     // Borrower and Lender Addresses
 
-    address borrowerAddress = makeAddr("borrower"); // TODO  - Index Coop Multisig
-    address lenderAddress = makeAddr("lender"); // TODO - Re7 Depositer Address
+    address borrowerAddress = makeAddr("borrower"); // TODO  - Mock Borrower Address
+    address lenderAddress = makeAddr("lender"); // TODO - Mock Lender Address
+
+    address constant indexCoopOperations = 0xFafd604d1CC8b6B3B6CC859cF80Fd902972371C1; // Index Coop Operations Multisig
     address constant revenueContractAddress = 0x341c05c0E9b33C0E38d64de76516b2Ce970bB3BE;  // dsETH Address 
+    address constant dsETHFeeSplitExtension  = 0xFCDEE96D9df5b318ea0EEB39d5d7642d9AFd7FdA; // FeeSplitExtensionAddress
+    address constant feeSplitExtensionOwner = 0x4e59b44847b379578588920cA78FbF26c0B4956C; // Owner of the dsETH fee split extension
     address constant arbiterAddress = 0xeb0566b1EF38B95da2ed631eBB8114f3ac7b9a8a ; // Credit Coop MultiSig
     address public securedLineAddress; // Line address, to be defined in setUp()
 
@@ -60,8 +75,12 @@ contract IndexRe7Sim is Test {
 
     address constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+
+    
+    // Money Vars
     uint256 MAX_INT =
         115792089237316195423570985008687907853269984665640564039457584007913129639935;
+    uint256 collateralAmtDAI = 50000000000000000000000; // 50,000 DAI --> 50000000000000000000000
 
     
     // Loan Terms
@@ -87,7 +106,7 @@ contract IndexRe7Sim is Test {
 
         emit log_named_string("rpc", vm.envString("MAINNET_RPC_URL"));
 
-        emit log_named_address("borrower", borrowerAddress);
+        emit log_named_address("borrower", indexCoopOperations);
         emit log_named_address("lender", lenderAddress);
     }
 
@@ -107,21 +126,28 @@ contract IndexRe7Sim is Test {
         deal(DAI, borrowerAddress, 200000000000000000000000);
         deal(WETH, borrowerAddress, 100 ether);
         deal(WETH, lenderAddress, 10000 ether);
+        deal(WETH, indexCoopOperations, 10 ether);
 
         
         // Borrower Deploys Line of Credit
 
-        vm.startPrank(borrowerAddress);
+        vm.startPrank(indexCoopOperations);
 
         securedLineAddress = _deployLoCWithConfig();
 
 
-        // Define interfaces for all modules
+        // Define interfaces for all CC modules
 
         securedLine = ISecuredLine(securedLineAddress);
         line = ILineOfCredit(securedLineAddress);
+        spigotedLine = ISpigotedLine(securedLineAddress);
         escrow = IEscrow(address(securedLine.escrow()));
         spigot = ISpigot(address(securedLine.spigot()));
+
+
+        // Define Interfaces for Index Coop Modules 
+
+        dsETH = IdsETHFeeSplitExtension(dsETHFeeSplitExtension);
 
         
         // Check status after creation
@@ -143,24 +169,39 @@ contract IndexRe7Sim is Test {
 
         vm.startPrank(arbiterAddress);
         bool collateralEnabled = escrow.enableCollateral(DAI);
+        assertEq(true, collateralEnabled);
         vm.stopPrank();
 
 
         // index deposits collateral
 
-        vm.startPrank(borrowerAddress);
+        vm.startPrank(indexCoopOperations);
         IERC20(DAI).approve(address(securedLine.escrow()), MAX_INT);
-        escrow.addCollateral(190000000000000000000000, DAI); // 190,000 DAI --> 190000000000000000000000
+        escrow.addCollateral(collateralAmtDAI, DAI);
         vm.stopPrank();
 
         // TODO - Work with Index team to get spigot sorted
 
         // // arbiter adds spigot (dsETH)
-        // vm.startPrank(arbiterAddress);
-        // ISpigot(spigotAddress).addSpigot();
+
+        vm.startPrank(arbiterAddress);
+        uint8 split = 100;
+        bytes4 claimFunc = _getSelector("accrueFeesAndDistribute()");
+        bytes4 newOwnerFunc = _getSelector("transferOwnership(address newOwner)");
+
+        _initSpigot(split, claimFunc, newOwnerFunc);
+
+        vm.stopPrank();
+
+        
         // index transfers ownership of dsETH to spigot
 
+        vm.startPrank(feeSplitExtensionOwner);
 
+        dsETH.transferOwnership(address(securedLine.spigot()));
+
+        vm.stopPrank();
+    
         // re7 proposes position
         // index accepts position
 
@@ -173,7 +214,7 @@ contract IndexRe7Sim is Test {
         
         // index draws down full amount
 
-        vm.startPrank(borrowerAddress);
+        vm.startPrank(indexCoopOperations);
 
         line.borrow(positionId, 200 ether);
         vm.stopPrank();
@@ -190,7 +231,7 @@ contract IndexRe7Sim is Test {
 
         emit log_named_uint("Interest: ", amountOwed);
 
-        vm.startPrank(borrowerAddress);
+        vm.startPrank(indexCoopOperations);
         IERC20(WETH).approve(securedLineAddress, MAX_INT);
         line.depositAndClose();
         vm.stopPrank();
@@ -200,8 +241,16 @@ contract IndexRe7Sim is Test {
 
         vm.startPrank(lenderAddress);
         line.withdraw(positionId, amountOwed);
+        vm.stopPrank();
 
         // Borrower Releases Collateral
+        vm.startPrank(indexCoopOperations);
+        escrow.releaseCollateral(collateralAmtDAI, DAI, indexCoopOperations);
+        vm.stopPrank();
+
+        vm.startPrank(indexCoopOperations);
+        spigotedLine.releaseSpigot(feeSplitExtensionOwner);
+        vm.stopPrank();
 
     }
 
@@ -224,10 +273,10 @@ contract IndexRe7Sim is Test {
     }
 
     function test_borrower_can_deploy_LoC() public {
-        vm.startPrank(borrowerAddress);
+        vm.startPrank(indexCoopOperations);
         securedLineAddress = _deployLoCWithConfig();
 
-        assertEq(borrowerAddress, line.borrower());
+        assertEq(indexCoopOperations, line.borrower());
         assertEq(arbiterAddress, line.arbiter());
         
         // assertEq(ttl, ILineOfCredit(address(securedLine)).arbiter()); // TODO: check ttl
@@ -235,12 +284,11 @@ contract IndexRe7Sim is Test {
     }
 
     function test_arbiter_enables_stablecoin_collateral() public {
-        // vm.startPrank(borrowerAddress);
+        // vm.startPrank(indexCoopOperations);
         // securedLine = _deployLoCWithConfig();
         // vm.stopPrank();
 
         vm.startPrank(arbiterAddress);
-        address escrowAddress = address(securedLine.escrow());
         bool collateralEnabled = escrow.enableCollateral(DAI);
         assertEq(true, collateralEnabled);
     }
@@ -284,7 +332,7 @@ contract IndexRe7Sim is Test {
 
     function _deployLoCWithConfig() internal returns (address){
         ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
-            borrower: borrowerAddress,
+            borrower: indexCoopOperations,
             ttl: ttl, // time to live
             cratio: minCRatio, // uint32(creditRatio),
             revenueSplit: revenueSplit // uint8(revenueSplit) - 100% to spigot
@@ -334,7 +382,7 @@ contract IndexRe7Sim is Test {
     function _lenderFundLoan() internal returns (bytes32 id) {
         assertEq(vm.activeFork(), ethMainnetFork, "mainnet fork is not active");
 
-        vm.startPrank(borrowerAddress);
+        vm.startPrank(indexCoopOperations);
         line.addCredit(
             dRate, // drate
             fRate, // frate
@@ -356,9 +404,10 @@ contract IndexRe7Sim is Test {
         vm.stopPrank();
 
         assertEq(IERC20(WETH).balanceOf(address(line)), loanSizeInWETH, "LoC balance doesn't match");
+        emit log_named_bytes32("credit id", id);
         return id;
 
-        emit log_named_bytes32("credit id", id);
+        
     }
 
 
@@ -373,8 +422,6 @@ contract IndexRe7Sim is Test {
     }
 
     function _initSpigot(
-    
-        address spigot,
         uint8 split,
         bytes4 claimFunc,
         bytes4 newOwnerFunc
@@ -385,7 +432,7 @@ contract IndexRe7Sim is Test {
 
         // add spigot for revenue contract
         require(
-            ISpigot(spigot).addSpigot(revenueContractAddress, settings),
+            spigotedLine.addSpigot(revenueContractAddress, settings),
             "Failed to add spigot"
         );
 
