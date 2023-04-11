@@ -29,23 +29,42 @@ interface IdsETH {
 contract IndexRe7Sim is Test {
     bytes32 constant DEFAULT_ADMIN_ROLE = 0x00;
 
+    // Interfaces 
+
     ILineFactory lineFactory;
     IOracle oracle;
+    ISpigot spigot;
     ISpigot.Setting private settings;
+    ISecuredLine securedLine;
+    ILineOfCredit line;
+    IEscrow escrow;
+
+
+    // Credit Coop Infra Addresses
 
     address constant lineFactoryAddress = 0x89989dBe4CFa289dE6179e8d54EE755E471a4251; 
     address constant oracleAddress = 0x5a4AAF300473eaF8A9763318e7F30FA8a3f5Dd48;
     address constant zeroExSwapTarget = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
 
+
+    // Borrower and Lender Addresses
+
     address borrowerAddress = makeAddr("borrower"); // TODO  - Index Coop Multisig
     address lenderAddress = makeAddr("lender"); // TODO - Re7 Depositer Address
     address constant revenueContractAddress = 0x341c05c0E9b33C0E38d64de76516b2Ce970bB3BE;  // dsETH Address 
     address constant arbiterAddress = 0xeb0566b1EF38B95da2ed631eBB8114f3ac7b9a8a ; // Credit Coop MultiSig
+    address public securedLineAddress; // Line address, to be defined in setUp()
+
+    
+    // Asset Addresses
 
     address constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     uint256 MAX_INT =
         115792089237316195423570985008687907853269984665640564039457584007913129639935;
+
+    
+    // Loan Terms
 
     uint256 ttl = 90 days;
     uint32 minCRatio = 1250; // BPS
@@ -54,12 +73,10 @@ contract IndexRe7Sim is Test {
     uint128 dRate = 1250; // BPS
     uint128 fRate = 1250; // BPS
 
-    address public securedLine;
 
-    uint256 constant FORK_BLOCK_NUMBER = 16_991_081;
+    // Fork Settings
 
-
-    // fork settings
+    uint256 constant FORK_BLOCK_NUMBER = 16_991_081; // Forking mainnet at block right after Line Factory was deployed
     uint256 ethMainnetFork;
 
     event log_named_bytes4(string key, bytes4 value);
@@ -72,13 +89,16 @@ contract IndexRe7Sim is Test {
 
         emit log_named_address("borrower", borrowerAddress);
         emit log_named_address("lender", lenderAddress);
-
     }
 
     function setUp() public {
-        // perform the tests on the mainnet fork
+        // Create  Interfaces for CC infra
+
         oracle = IOracle(address(oracleAddress));
         lineFactory = ILineFactory(address(lineFactoryAddress));
+
+
+        // Deal assets to all 3 parties (borrower, lender, arbiter) NOTE: will use actual address of parties whhen they are known
 
         vm.deal(borrowerAddress, 100 ether);
         vm.deal(arbiterAddress, 100 ether);
@@ -88,9 +108,25 @@ contract IndexRe7Sim is Test {
         deal(WETH, borrowerAddress, 100 ether);
         deal(WETH, lenderAddress, 10000 ether);
 
+        
+        // Borrower Deploys Line of Credit
+
         vm.startPrank(borrowerAddress);
-        securedLine = _deployLoCWithConfig();
-        uint256 status = uint256(ILineOfCredit(securedLine).status());
+
+        securedLineAddress = _deployLoCWithConfig();
+
+
+        // Define interfaces for all modules
+
+        securedLine = ISecuredLine(securedLineAddress);
+        line = ILineOfCredit(securedLineAddress);
+        escrow = IEscrow(address(securedLine.escrow()));
+        spigot = ISpigot(address(securedLine.spigot()));
+
+        
+        // Check status after creation
+
+        uint256 status = uint256(line.status());
         console.log("status", status);
 
         vm.stopPrank();
@@ -104,18 +140,17 @@ contract IndexRe7Sim is Test {
     function test_index_re7_simulation() public {
 
         // arbiter enables collateral
-        vm.startPrank(arbiterAddress);
-        address escrowAddress = address(ISecuredLine(address(securedLine)).escrow());
-        address spigotAddress = address(ISecuredLine(address(securedLine)).spigot());
-      
 
-        bool collateralEnabled = IEscrow(address(escrowAddress)).enableCollateral(DAI);
+        vm.startPrank(arbiterAddress);
+        bool collateralEnabled = escrow.enableCollateral(DAI);
         vm.stopPrank();
 
+
         // index deposits collateral
+
         vm.startPrank(borrowerAddress);
-        IERC20(DAI).approve(address(escrowAddress), MAX_INT);
-        IEscrow(escrowAddress).addCollateral(190000000000000000000000, DAI); // 190,000 DAI --> 190000000000000000000000
+        IERC20(DAI).approve(address(securedLine.escrow()), MAX_INT);
+        escrow.addCollateral(190000000000000000000000, DAI); // 190,000 DAI --> 190000000000000000000000
         vm.stopPrank();
 
         // TODO - Work with Index team to get spigot sorted
@@ -125,39 +160,48 @@ contract IndexRe7Sim is Test {
         // ISpigot(spigotAddress).addSpigot();
         // index transfers ownership of dsETH to spigot
 
+
         // re7 proposes position
         // index accepts position
-        bytes32 positionId =  _lenderFundLoan(securedLine);
 
-        uint256 balance = IERC20(WETH).balanceOf(securedLine);
+        bytes32 positionId =  _lenderFundLoan();
+
+        // check that the line position has the credit funds
+        uint256 balance = IERC20(WETH).balanceOf(securedLineAddress);
         console.log(balance);
 
+        
         // index draws down full amount
+
         vm.startPrank(borrowerAddress);
 
-        // ILineOfCredit(securedLine).healthcheck();
-        // uint256 status2 = uint256(ILineOfCredit(securedLine).status());
-        // console.log("status  before borrow", status2);
-
-        ILineOfCredit(securedLine).borrow(positionId, 200 ether);
+        line.borrow(positionId, 200 ether);
         vm.stopPrank();
+
         
         // fast forward 3 months
+
         vm.warp(block.timestamp + (ttl - 1 days));
 
+        
         // index repaysAndCloses line
 
-        uint256 amountOwed = ILineOfCredit(securedLine).interestAccrued(positionId);
+        uint256 amountOwed = line.interestAccrued(positionId);
 
-        emit log_named_uint("Principal + Interest: ", amountOwed);
+        emit log_named_uint("Interest: ", amountOwed);
 
         vm.startPrank(borrowerAddress);
-        IERC20(WETH).approve(securedLine, MAX_INT);
-        ILineOfCredit(securedLine).depositAndClose();
+        IERC20(WETH).approve(securedLineAddress, MAX_INT);
+        line.depositAndClose();
         vm.stopPrank();
 
+
+        // Lender withdraws principal + interest owed
+
         vm.startPrank(lenderAddress);
-        ILineOfCredit(securedLine).withdraw(positionId, amountOwed);
+        line.withdraw(positionId, amountOwed);
+
+        // Borrower Releases Collateral
 
     }
 
@@ -181,10 +225,10 @@ contract IndexRe7Sim is Test {
 
     function test_borrower_can_deploy_LoC() public {
         vm.startPrank(borrowerAddress);
-        securedLine = _deployLoCWithConfig();
+        securedLineAddress = _deployLoCWithConfig();
 
-        assertEq(borrowerAddress, ILineOfCredit(address(securedLine)).borrower());
-        assertEq(arbiterAddress, ILineOfCredit(address(securedLine)).arbiter());
+        assertEq(borrowerAddress, line.borrower());
+        assertEq(arbiterAddress, line.arbiter());
         
         // assertEq(ttl, ILineOfCredit(address(securedLine)).arbiter()); // TODO: check ttl
         // assertEq(mincRatio, ILineOfCredit(address(securedLine)).arbiter()); // TODO: check minCRatio
@@ -196,8 +240,8 @@ contract IndexRe7Sim is Test {
         // vm.stopPrank();
 
         vm.startPrank(arbiterAddress);
-        address escrowAddress = address(ISecuredLine(address(securedLine)).escrow());
-        bool collateralEnabled = IEscrow(address(escrowAddress)).enableCollateral(DAI);
+        address escrowAddress = address(securedLine.escrow());
+        bool collateralEnabled = escrow.enableCollateral(DAI);
         assertEq(true, collateralEnabled);
     }
 
@@ -246,13 +290,8 @@ contract IndexRe7Sim is Test {
             revenueSplit: revenueSplit // uint8(revenueSplit) - 100% to spigot
         });
 
-        securedLine = lineFactory.deploySecuredLineWithConfig(coreParams);
-        return securedLine;
-    }
-
-
-    function _addSpigot(address _lineOfCredit) internal returns (bool){
-
+        securedLineAddress = lineFactory.deploySecuredLineWithConfig(coreParams);
+        return securedLineAddress;
     }
 
     function _borrowerDrawsOnCredit(bytes32 id, uint256 amount) internal returns (bool) {
@@ -292,13 +331,11 @@ contract IndexRe7Sim is Test {
 
     
     // fund a loan as a lender
-    function _lenderFundLoan(address _lineOfCredit) internal returns (bytes32 id) {
+    function _lenderFundLoan() internal returns (bytes32 id) {
         assertEq(vm.activeFork(), ethMainnetFork, "mainnet fork is not active");
 
-        // vm.roll(block.number + 5000);
-
         vm.startPrank(borrowerAddress);
-        ILineOfCredit(_lineOfCredit).addCredit(
+        line.addCredit(
             dRate, // drate
             fRate, // frate
             loanSizeInWETH, // amount
@@ -308,8 +345,8 @@ contract IndexRe7Sim is Test {
         vm.stopPrank();
 
         vm.startPrank(lenderAddress);
-        IERC20(WETH).approve(_lineOfCredit, loanSizeInWETH);
-        id = ILineOfCredit(_lineOfCredit).addCredit(
+        IERC20(WETH).approve(address(line), loanSizeInWETH);
+        id = line.addCredit(
             dRate, // drate
             fRate, // frate
             loanSizeInWETH, // amount
@@ -318,7 +355,7 @@ contract IndexRe7Sim is Test {
         );
         vm.stopPrank();
 
-        assertEq(IERC20(WETH).balanceOf(address(_lineOfCredit)), loanSizeInWETH, "LoC balance doesn't match");
+        assertEq(IERC20(WETH).balanceOf(address(line)), loanSizeInWETH, "LoC balance doesn't match");
         return id;
 
         emit log_named_bytes32("credit id", id);
