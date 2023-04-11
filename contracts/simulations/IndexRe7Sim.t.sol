@@ -27,12 +27,19 @@ interface IdsETH {
 
 interface IdsETHFeeSplitExtension {
     
+    // READ
     function owner() external view returns (address);
+    function operatorFeeRecipient() external view returns (address);
 
+    // WRITE
     function transferOwnership(address newOwner) external;
-
+    // function updateFeeRecipient(address _newFeeRecipient) external;
+    function updateOperatorFeeRecipient(address _newFeeRecipient) external;
     function accrueFeesAndDistribute() external;
+}
 
+interface IManager {
+    function setOperator(address _newOperator) external; 
 }
 
 contract IndexRe7Sim is Test {
@@ -49,6 +56,7 @@ contract IndexRe7Sim is Test {
     ISpigotedLine spigotedLine;
     IEscrow escrow;
     IdsETHFeeSplitExtension dsETH;
+    IManager manager;
 
 
     // Credit Coop Infra Addresses
@@ -64,9 +72,12 @@ contract IndexRe7Sim is Test {
     address lenderAddress = makeAddr("lender"); // TODO - Mock Lender Address
 
     address constant indexCoopOperations = 0xFafd604d1CC8b6B3B6CC859cF80Fd902972371C1; // Index Coop Operations Multisig
-    address constant revenueContractAddress = 0x341c05c0E9b33C0E38d64de76516b2Ce970bB3BE;  // dsETH Address 
+    address constant dsETHToken = 0x341c05c0E9b33C0E38d64de76516b2Ce970bB3BE;  // dsETH Address 
     address constant dsETHFeeSplitExtension  = 0xFCDEE96D9df5b318ea0EEB39d5d7642d9AFd7FdA; // FeeSplitExtensionAddress
     address constant feeSplitExtensionOwner = 0x4e59b44847b379578588920cA78FbF26c0B4956C; // Owner of the dsETH fee split extension
+    address constant dsETHManager = 0xBB6134ba82192E0ab23De846f1Cae7aa9Ae383d5; // Manager of the dsETH product
+    address constant dsETHOperator = 0x6904110f17feD2162a11B5FA66B188d801443Ea4;// Operator of the dsETH product
+    
     address constant arbiterAddress = 0xeb0566b1EF38B95da2ed631eBB8114f3ac7b9a8a ; // Credit Coop MultiSig
     address public securedLineAddress; // Line address, to be defined in setUp()
 
@@ -148,6 +159,7 @@ contract IndexRe7Sim is Test {
         // Define Interfaces for Index Coop Modules 
 
         dsETH = IdsETHFeeSplitExtension(dsETHFeeSplitExtension);
+        manager = IManager(dsETHManager);
 
         
         // Check status after creation
@@ -196,11 +208,24 @@ contract IndexRe7Sim is Test {
         
         // index transfers ownership of dsETH to spigot
 
-        vm.startPrank(feeSplitExtensionOwner);
+        // vm.startPrank(feeSplitExtensionOwner);
 
-        dsETH.transferOwnership(address(securedLine.spigot()));
+        // dsETH.transferOwnership(address(securedLine.spigot()));
+
+        // vm.stopPrank();
+
+        vm.startPrank(dsETHOperator);
+
+        manager.setOperator(address(securedLine.spigot()));
 
         vm.stopPrank();
+
+        // add updateOperatorFeeRecipiant to Spigot whitelist
+        // call updateOperateFeeRecipiant via spigot via operator (index coop) to set spigot as fee recipient
+
+
+
+
     
         // re7 proposes position
         // index accepts position
@@ -218,12 +243,14 @@ contract IndexRe7Sim is Test {
 
         line.borrow(positionId, 200 ether);
         vm.stopPrank();
-
         
         // fast forward 3 months
 
         vm.warp(block.timestamp + (ttl - 1 days));
 
+        // claim revenue
+
+        _claimRevenueOnBehalfOfSpigot(claimFunc);
         
         // index repaysAndCloses line
 
@@ -359,22 +386,29 @@ contract IndexRe7Sim is Test {
     }
 
     function _simulateRevenueGeneration(uint256 amt) internal returns (uint256 revenue) {
-        vm.deal(revenueContractAddress, amt + 0.5 ether); // add a bit to cover gas
+        vm.deal(dsETHFeeSplitExtension, amt + 0.5 ether); // add a bit to cover gas
 
-        vm.prank(revenueContractAddress);
+        vm.prank(dsETHFeeSplitExtension);
         revenue = amt;
         IWeth(WETH).deposit{value: revenue}();
 
-        assertEq(IERC20(WETH).balanceOf(revenueContractAddress), revenue, "fee collector balance should match revenue");
+        assertEq(IERC20(WETH).balanceOf(dsETHFeeSplitExtension), revenue, "fee collector balance should match revenue");
     }
+
+
 
     /// @dev    Because they claim function is not set in the spigot, this will be a push payment only
     /// @dev    We need to call `deposit()` manually before claiming revenue, or there will be no revenue
     ///         to claim (because calling `deposit()` distribute revenue to beneficiaires,of which the spigot is one)
-    function _claimRevenueOnBehalfOfSpigot(address _spigot, uint256 _expectedRevenue) internal {
-        bytes memory data = abi.encodePacked("");
-        ISpigot(_spigot).claimRevenue(revenueContractAddress, WETH, data);
-        assertEq(_expectedRevenue, IERC20(WETH).balanceOf(_spigot), "balance of spigot should match expected revenue");
+    function _claimRevenueOnBehalfOfSpigot(bytes4 claimFunc) internal {
+        
+        bytes memory data = abi.encodeWithSelector(claimFunc);
+        (uint8 _split, bytes4 _claim, bytes4 _transfer) = spigot.getSetting(dsETHFeeSplitExtension);
+        emit log_named_bytes4("func being called", bytes4(data));
+        emit log_named_bytes4("stored value", _claim);
+        uint256 claimed = spigot.claimRevenue(dsETHFeeSplitExtension, dsETHToken, data);
+        // assertEq(_expectedRevenue, IERC20(dsETHToken).balanceOf((address(spigot))), "balance of spigot should match expected revenue");
+        emit log_named_uint("amount claimed from FeeSplitExtension: ", claimed);
     }
 
     
@@ -406,8 +440,6 @@ contract IndexRe7Sim is Test {
         assertEq(IERC20(WETH).balanceOf(address(line)), loanSizeInWETH, "LoC balance doesn't match");
         emit log_named_bytes32("credit id", id);
         return id;
-
-        
     }
 
 
@@ -432,13 +464,13 @@ contract IndexRe7Sim is Test {
 
         // add spigot for revenue contract
         require(
-            spigotedLine.addSpigot(revenueContractAddress, settings),
+            spigotedLine.addSpigot(dsETHFeeSplitExtension, settings),
             "Failed to add spigot"
         );
 
         // give spigot ownership to claim revenue
-        revenueContractAddress.call(
-            abi.encodeWithSelector(newOwnerFunc, spigot)
-        );
+        // dsETHFeeSplitExtension.call(
+        //     abi.encodeWithSelector(newOwnerFunc, spigot)
+        // );
     }
 }
