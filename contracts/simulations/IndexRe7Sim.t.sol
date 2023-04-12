@@ -26,15 +26,9 @@ interface IdsETH {
 } //  TODO - define this
 
 interface IdsETHFeeSplitExtension {
-
-    // READ
     function owner() external view returns (address);
-
     function operatorFeeRecipient() external view returns (address);
-
-    // WRITE
     function transferOwnership(address newOwner) external;
-    // function updateFeeRecipient(address _newFeeRecipient) external;
     function updateOperatorFeeRecipient(address _newFeeRecipient) external;
     function accrueFeesAndDistribute() external;
 }
@@ -48,7 +42,6 @@ contract IndexRe7Sim is Test {
     bytes32 constant DEFAULT_ADMIN_ROLE = 0x00;
 
     // Interfaces
-
     ILineFactory lineFactory;
     IOracle oracle;
 
@@ -64,21 +57,18 @@ contract IndexRe7Sim is Test {
 
 
     // Credit Coop Infra Addresses
-
     address constant lineFactoryAddress = 0x89989dBe4CFa289dE6179e8d54EE755E471a4251;
     address constant oracleAddress = 0x5a4AAF300473eaF8A9763318e7F30FA8a3f5Dd48;
     address constant zeroExSwapTarget = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
 
+    // Index Addresses
+    address constant indexCoopOperations = 0xFafd604d1CC8b6B3B6CC859cF80Fd902972371C1; // Index Coop Operations Multisig
+    address constant indexCoopLiquidityOperations = 0x3a36b94689f303aAf9BFE761068Efb8F78912023; // Index Coop Liquidity Operations Multisig - THIS IS THE BORROWER ADDRESSS
 
     // Borrower and Lender Addresses
-
-    // address borrowerAddress = makeAddr("borrower"); // TODO  - Mock Borrower Address
+    // address borrowerAddress = makeAddr("borrower"); // TODO  - indexCoopLiquidityOperations
     address lenderAddress = makeAddr("lender"); // TODO - Mock Lender Address
 
-
-    // Index Address(s)
-    address constant indexCoopOperations = 0xFafd604d1CC8b6B3B6CC859cF80Fd902972371C1; // Index Coop Operations Multisig
-    address constant indexCoopLiquidityOperations = 0x3a36b94689f303aAf9BFE761068Efb8F78912023; // Index Coop Liquidity Operations Multisig
 
    // dsETH Addresses
     address constant dsETHToken = 0x341c05c0E9b33C0E38d64de76516b2Ce970bB3BE;  // dsETH Address
@@ -87,16 +77,13 @@ contract IndexRe7Sim is Test {
     address constant dsETHManager = 0xBB6134ba82192E0ab23De846f1Cae7aa9Ae383d5; // Manager of the dsETH product
     address constant dsETHOperator = 0x6904110f17feD2162a11B5FA66B188d801443Ea4;// Operator of the dsETH product
 
-
     // Credit Coop Addresses
     address constant arbiterAddress = 0xeb0566b1EF38B95da2ed631eBB8114f3ac7b9a8a ; // Credit Coop MultiSig
     address public securedLineAddress; // Line address, to be defined in setUp()
 
-
     // Asset Addresses
     address constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-
 
     // Money Vars
     uint256 MAX_INT =
@@ -105,14 +92,12 @@ contract IndexRe7Sim is Test {
 
 
     // Loan Terms
-
     uint256 ttl = 90 days;
     uint32 minCRatio = 1250; // BPS
     uint8 revenueSplit = 100;
     uint256 loanSizeInWETH = 200 ether;
     uint128 dRate = 1250; // BPS
     uint128 fRate = 1250; // BPS
-
 
     // Fork Settings
 
@@ -143,14 +128,15 @@ contract IndexRe7Sim is Test {
         vm.deal(arbiterAddress, 100 ether);
         vm.deal(lenderAddress, 100 ether);
 
-        // deal(DAI, borrowerAddress, 200000000000000000000000);
+        deal(DAI, indexCoopLiquidityOperations, 50000000000000000000000);
         // deal(WETH, borrowerAddress, 100 ether);
         deal(WETH, lenderAddress, 10000 ether);
         deal(WETH, indexCoopOperations, 10 ether);
+        deal(WETH, indexCoopLiquidityOperations, 10 ether);
 
         // Borrower Deploys Line of Credit
-        vm.startPrank(indexCoopOperations);
-        emit log_named_string("\nBorrower Deploys Line of Credit: ", "");
+        vm.startPrank(indexCoopLiquidityOperations);
+        emit log_named_string("\n \u2713 Borrower Deploys Line of Credit", "");
         securedLineAddress = _deployLoCWithConfig();
 
         // Define interfaces for all CC modules
@@ -160,17 +146,17 @@ contract IndexRe7Sim is Test {
         escrow = IEscrow(address(securedLine.escrow()));
         spigot = ISpigot(address(securedLine.spigot()));
 
-
         // Define Interfaces for Index Coop Modules
         dsETH = IdsETHFeeSplitExtension(dsETHFeeSplitExtension);
         manager = IManager(dsETHManager);
 
-
         // Check status after creation
-
         uint256 status = uint256(line.status());
         assertEq(1, uint256(line.status()));
         console.log("- status: ", status);
+
+        // Check LOC parameters
+
 
         vm.stopPrank();
 
@@ -183,77 +169,60 @@ contract IndexRe7Sim is Test {
     function test_index_re7_simulation() public {
 
         // arbiter enables collateral
-
         vm.startPrank(arbiterAddress);
-        emit log_named_string("\nArbiter Enables Collateral: ", "");
+        emit log_named_string("\n \u2713 Arbiter Enables Collateral", "");
         bool collateralEnabled = escrow.enableCollateral(DAI);
         assertEq(true, collateralEnabled);
         vm.stopPrank();
 
         uint256 dsETHBalance = IERC20(dsETHToken).totalSupply();
         emit log_named_uint("- total Supply of dsETH ", dsETHBalance);
-        // index deposits collateral
 
-        vm.startPrank(indexCoopOperations);
-        emit log_named_string("\nBorrower Adds Collateral: ", "");
+        // index deposits collateral
+        vm.startPrank(indexCoopLiquidityOperations);
+        emit log_named_string("\n \u2713 Borrower Adds Collateral", "");
         IERC20(DAI).approve(address(securedLine.escrow()), MAX_INT);
         escrow.addCollateral(collateralAmtDAI, DAI);
         vm.stopPrank();
 
         // TODO - Work with Index team to get spigot sorted
 
-        // // arbiter adds spigot (dsETH)
-
+        // arbiter adds revenue contract (dsETH) to spigot as push payment
         vm.startPrank(arbiterAddress);
         uint8 split = 100;
-
-        // do not care
         bytes4 claimFunc = 0x000000;
-
-        // setOperator
-        //bytes4 newOwnerFunc = _getSelector("transferOwnership(address newOwner)");
         bytes4 newOwnerFunc = _getSelector("setOperator(address)");
 
+        emit log_named_string("\n \u2713 Arbiter Adds dsETH Revenue Contract to Spigot", "");
         _initSpigot(split, claimFunc, newOwnerFunc);
 
         vm.stopPrank();
 
-
-        // index transfers ownership of dsETH to spigot
-
-        // vm.startPrank(feeSplitExtensionOwner);
-        // dsETH.transferOwnership(address(securedLine.spigot()));
-        // vm.stopPrank();
-
-
-
-        // 1. Index Coop changes updateOperatorFeeRecipient to Spigot address in Fee Split Extension
+        // Index Coop transfers ownership of dsETH revenue contracts to spigot
+        // Index Coop changes updateOperatorFeeRecipient to Spigot address in Fee Split Extension
         vm.startPrank(dsETHOperator);
-        emit log_named_string("\ndsETH Operator Sets Spigot as OperatorFeeRecipient: ", "");
+        emit log_named_string("\n \u2713 dsETH Operator Sets Spigot as OperatorFeeRecipient", "");
         dsETH.updateOperatorFeeRecipient(address(securedLine.spigot()));
         assertEq(address(securedLine.spigot()), dsETH.operatorFeeRecipient());
 
-
-        // 2. Index Coop changes dsETH operator revenue to spigot address via setOperator function
-        emit log_named_string("\ndsETH Operator Sets Spigot as Operator: ", "");
+        // Index Coop changes dsETH operator revenue to spigot address via setOperator function
+        emit log_named_string("\n \u2713 dsETH Operator Sets Spigot as Operator: ", "");
         manager.setOperator(address(securedLine.spigot()));
         vm.stopPrank();
 
 
         // re7 proposes position
         // index accepts position
-        emit log_named_string("\nLender Proposes Position to Line of Credit: ", "");
+        emit log_named_string("\n \u2713 Lender Proposes Position to Line of Credit", "");
         bytes32 positionId =  _lenderFundLoan();
-        emit log_named_string("\nBorrower Accepts Lender Proposal to Line of Credit: ", "");
+        emit log_named_string("\n \u2713 Borrower Accepts Lender Proposal to Line of Credit", "");
         // check that the line position has the credit funds
         uint256 balance = IERC20(WETH).balanceOf(securedLineAddress);
-        console.log(balance);
-
+        console.log("- balance (WETH): ", balance);
 
         // index draws down full amount
-
-        vm.startPrank(indexCoopOperations);
-        emit log_named_string("\nBorrower Borrows Full Amount from Line of Credit: ", "");
+        vm.startPrank(indexCoopLiquidityOperations);
+        emit log_named_string("\n \u2713 Borrower Borrows Full Amount from Line of Credit", "");
         line.borrow(positionId, 200 ether);
         vm.stopPrank();
 
@@ -261,21 +230,22 @@ contract IndexRe7Sim is Test {
         emit log_named_string("\n<---------- Fast Forward 89 Days ----------> ", "");
         vm.warp(block.timestamp + (ttl - 1 days));
 
+        // TODO: Arbiter or Lender should call accrueFeesAndDistribute, not the Index Coop multsig
         vm.startPrank(indexCoopOperations);
-        emit log_named_string("\n[Borrower/Lender/Arbiter] Calls dsETH accrueFeesAndDistrubtion Function: ", "");
+        emit log_named_string("\n \u2713 [Borrower/Lender/Arbiter] Calls dsETH accrueFeesAndDistrubtion Function", "");
         dsETH.accrueFeesAndDistribute();
 
         vm.stopPrank();
 
         // claim revenue
-        emit log_named_string("\n[Borrower/Lender/Arbiter] Calls the Spigot Claim Function: ", "");
+        emit log_named_string("\n \u2713 [Borrower/Lender/Arbiter] Calls the Spigot Claim Function", "");
         _claimRevenueOnBehalfOfSpigot(claimFunc);
 
         // claim and repay
 
     // TODO: Figure out why 0x trade is failing
 
-        emit log_named_string("\nBorrower Calls ClaimAndRepay to Repay Line of Credit with Spigot Revenue: ", "");
+        emit log_named_string("\n \u2713 Borrower Calls ClaimAndRepay to Repay Line of Credit with Spigot Revenue", "");
     //     vm.startPrank(arbiterAddress);
     //     uint claimable = spigot.getOwnerTokens(dsETHToken);
     //     emit log_named_uint("Owner Tokens in Spigot: ", claimable);
@@ -298,45 +268,43 @@ contract IndexRe7Sim is Test {
 
         emit log_named_uint("- Interest ", amountOwed);
 
-        vm.startPrank(indexCoopOperations);
-        emit log_named_string("\nBorrower Calls depositDndClose to Fully Repay and Close Line of Credit", "");
+        vm.startPrank(indexCoopLiquidityOperations);
+        emit log_named_string("\n \u2713 Borrower Calls depositDndClose to Fully Repay and Close Line of Credit", "");
         IERC20(WETH).approve(securedLineAddress, MAX_INT);
         line.depositAndClose();
         vm.stopPrank();
 
 
         // Lender withdraws principal + interest owed
-
         vm.startPrank(lenderAddress);
-        emit log_named_string("\nLender Withdraws All Repaid Principal and Interest", "");
+        emit log_named_string("\n \u2713 Lender Withdraws All Repaid Principal and Interest", "");
         line.withdraw(positionId, amountOwed);
         vm.stopPrank();
 
         // Borrower Releases Collateral
-        vm.startPrank(indexCoopOperations);
-        emit log_named_string("\nBorrower Releases Collateral", "");
+        vm.startPrank(indexCoopLiquidityOperations);
+        emit log_named_string("\n \u2713 Borrower Releases Collateral", "");
         escrow.releaseCollateral(collateralAmtDAI, DAI, indexCoopOperations);
 
-        emit log_named_string("\nBorrower Releases Spigot", "");
-        spigotedLine.releaseSpigot(indexCoopOperations);
+        emit log_named_string("\n \u2713 Borrower Releases Spigot", "");
+        spigotedLine.releaseSpigot(indexCoopLiquidityOperations);
         address whoIsOperator = manager.operator();
         emit log_named_address("- The Operator of dsETH is ", whoIsOperator);
         emit log_named_address("- Spigot address is ", address(securedLine.spigot()));
         emit log_named_string("                ", "           ");
 
-        emit log_named_string("\n (unconfirmed) Borrower Releases Spigot", "");
+        emit log_named_string("\n \u2713 (unconfirmed) Borrower Releases Spigot", "");
         spigot.removeSpigot(dsETHManager);
         whoIsOperator = manager.operator();
 
         emit log_named_address("- The Operator of dsETH is ", whoIsOperator);
         emit log_named_address("- Spigot address is ", indexCoopOperations);
-        // emit log_named_string("                ", "             ");
 
-        emit log_named_string("\n (unconfirmed) OperatorFeeRecipient is set to the original dsETH OperatorFeeRecipient", "");
+        emit log_named_string("\n \u2713 (unconfirmed) OperatorFeeRecipient is set to the original dsETH OperatorFeeRecipient", "");
         dsETH.updateOperatorFeeRecipient(indexCoopOperations);
         assertEq(indexCoopOperations, dsETH.operatorFeeRecipient());
 
-        emit log_named_string("\n (unconfirmed) dsETH Operator is set to Original dsETH Operator", "");
+        emit log_named_string("\n \u2713 (unconfirmed) dsETH Operator is set to Original dsETH Operator", "");
         manager.setOperator(dsETHOperator);
         whoIsOperator = manager.operator();
         emit log_named_address("- The Operator of dsETH is ", whoIsOperator);
@@ -423,7 +391,7 @@ contract IndexRe7Sim is Test {
 
     function _deployLoCWithConfig() internal returns (address){
         ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
-            borrower: indexCoopOperations,
+            borrower: indexCoopLiquidityOperations,
             ttl: ttl, // time to live
             cratio: minCRatio, // uint32(creditRatio),
             revenueSplit: revenueSplit // uint8(revenueSplit) - 100% to spigot
@@ -480,7 +448,7 @@ contract IndexRe7Sim is Test {
     function _lenderFundLoan() internal returns (bytes32 id) {
         assertEq(vm.activeFork(), ethMainnetFork, "mainnet fork is not active");
 
-        vm.startPrank(indexCoopOperations);
+        vm.startPrank(indexCoopLiquidityOperations);
         line.addCredit(
             dRate, // drate
             fRate, // frate
