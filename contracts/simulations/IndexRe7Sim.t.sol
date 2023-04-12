@@ -337,18 +337,36 @@ contract IndexRe7Sim is Test {
     }
 
     function test_arbiter_enables_stablecoin_collateral() public {
-        // vm.startPrank(indexCoopOperations);
-        // securedLine = _deployLoCWithConfig();
-        // vm.stopPrank();
-
         vm.startPrank(arbiterAddress);
         bool collateralEnabled = escrow.enableCollateral(DAI);
         assertEq(true, collateralEnabled);
     }
 
+    // function test_arbiter_adds_revenue_contract_to_spigot() public {
+    //     vm.startPrank(arbiterAddress);
+    //     uint8 split = 100;
+    //     bytes4 claimFunc = 0x000000;
+    //     bytes4 newOwnerFunc = _getSelector("setOperator(address)");
+    //     _initSpigot(split, claimFunc, newOwnerFunc);
+    //     // ISpigot spigot2 = spigotedLine.spigot();
+    //     assertEq(spigot2, address(spigotedLine.spigot()));
+    //     // assert(;
+    //     // assert that spigot is set w/ appropriate parameters
+    // }
+
+    // function test_borrower_deposits_collateral() public {
+    //     vm.startPrank(indexCoopLiquidityOperations);
+    //     IERC20(DAI).approve(address(securedLine.escrow()), MAX_INT);
+    //     escrow.addCollateral(collateralAmtDAI, DAI);
+    //     // escrow.Deposit.amount
+    //     // assertEq(collateralAmtDAI, escrow.Deposit.amount);
+    // }
 
     function test_borrower_can_draw_on_credit() public {
-
+        // index draws down full amount
+        // vm.startPrank(indexCoopLiquidityOperations);
+        // emit log_named_string("\n \u2713 Borrower Borrows Full Amount from Line of Credit", "");
+        // line.borrow(positionId, 200 ether);
     }
 
     function test_borrower_can_deposit_and_repay_debt() public {
