@@ -134,6 +134,10 @@ contract IndexRe7Sim is Test {
         deal(WETH, indexCoopOperations, 10 ether);
         deal(WETH, indexCoopLiquidityOperations, 10 ether);
 
+        // Define Interfaces for Index Coop Modules
+        dsETH = IdsETHFeeSplitExtension(dsETHFeeSplitExtension);
+        manager = IManager(dsETHManager);
+
         // Borrower Deploys Line of Credit
         vm.startPrank(indexCoopLiquidityOperations);
         emit log_named_string("\n \u2713 Borrower Deploys Line of Credit", "");
@@ -145,10 +149,6 @@ contract IndexRe7Sim is Test {
         spigotedLine = ISpigotedLine(securedLineAddress);
         escrow = IEscrow(address(securedLine.escrow()));
         spigot = ISpigot(address(securedLine.spigot()));
-
-        // Define Interfaces for Index Coop Modules
-        dsETH = IdsETHFeeSplitExtension(dsETHFeeSplitExtension);
-        manager = IManager(dsETHManager);
 
         // Check status after creation
         uint256 status = uint256(line.status());
@@ -178,16 +178,12 @@ contract IndexRe7Sim is Test {
         uint256 dsETHBalance = IERC20(dsETHToken).totalSupply();
         emit log_named_uint("- total Supply of dsETH ", dsETHBalance);
 
-        // index deposits collateral
+        // Index Coop deposits collateral
         vm.startPrank(indexCoopLiquidityOperations);
-        emit log_named_string("\n \u2713 Borrower Adds Collateral", "");
-        IERC20(DAI).approve(address(securedLine.escrow()), MAX_INT);
-        escrow.addCollateral(collateralAmtDAI, DAI);
+        _borrowerDepositsCollateral();
         vm.stopPrank();
 
-        // TODO - Work with Index team to get spigot sorted
-
-        // arbiter adds revenue contract (dsETH) to spigot as push payment
+        // Credit Coop Arbiter adds revenue contract (dsETH) to spigot as push payment
         vm.startPrank(arbiterAddress);
         uint8 split = 100;
         bytes4 claimFunc = 0x000000;
@@ -210,12 +206,10 @@ contract IndexRe7Sim is Test {
         manager.setOperator(address(securedLine.spigot()));
         vm.stopPrank();
 
-
         // re7 proposes position
         // index accepts position
-        emit log_named_string("\n \u2713 Lender Proposes Position to Line of Credit", "");
         bytes32 positionId =  _lenderFundLoan();
-        emit log_named_string("\n \u2713 Borrower Accepts Lender Proposal to Line of Credit", "");
+
         // check that the line position has the credit funds
         uint256 balance = IERC20(WETH).balanceOf(securedLineAddress);
         console.log("- balance (WETH): ", balance);
@@ -332,10 +326,10 @@ contract IndexRe7Sim is Test {
     }
 
     function test_borrower_can_deploy_LoC() public {
-        vm.startPrank(indexCoopOperations);
+        vm.startPrank(indexCoopLiquidityOperations);
         securedLineAddress = _deployLoCWithConfig();
 
-        assertEq(indexCoopOperations, line.borrower());
+        assertEq(indexCoopLiquidityOperations, line.borrower());
         assertEq(arbiterAddress, line.arbiter());
 
         // assertEq(ttl, ILineOfCredit(address(securedLine)).arbiter()); // TODO: check ttl
@@ -401,11 +395,25 @@ contract IndexRe7Sim is Test {
         return securedLineAddress;
     }
 
+    function _borrowerDepositsCollateral() internal {
+        emit log_named_string("\n \u2713 Borrower Adds Collateral", "");
+        IERC20(DAI).approve(address(securedLine.escrow()), MAX_INT);
+        escrow.addCollateral(collateralAmtDAI, DAI);
+    }
+
+    // function _arbiterAddsRevenueContractToSpigot() internal {
+    //     emit log_named_string("\n \u2713 Arbiter Adds dsETH Revenue Contract to Spigot", "");
+    //     uint8 split = 100;
+    //     bytes4 claimFunc = 0x000000;
+    //     bytes4 newOwnerFunc = _getSelector("setOperator(address)");
+    //     _initSpigot(split, claimFunc, newOwnerFunc);
+    // }
+
     function _borrowerDrawsOnCredit(bytes32 id, uint256 amount) internal returns (bool) {
 
     }
 
-    function _depoistAndRepay(uint256 amount) internal {
+    function _depositAndRepay(uint256 amount) internal {
 
     }
 
@@ -448,6 +456,7 @@ contract IndexRe7Sim is Test {
     function _lenderFundLoan() internal returns (bytes32 id) {
         assertEq(vm.activeFork(), ethMainnetFork, "mainnet fork is not active");
 
+        emit log_named_string("\n \u2713 Lender Proposes Position to Line of Credit", "");
         vm.startPrank(indexCoopLiquidityOperations);
         line.addCredit(
             dRate, // drate
@@ -458,6 +467,7 @@ contract IndexRe7Sim is Test {
         );
         vm.stopPrank();
 
+        emit log_named_string("\n \u2713 Borrower Accepts Lender Proposal to Line of Credit", "");
         vm.startPrank(lenderAddress);
         IERC20(WETH).approve(address(line), loanSizeInWETH);
         id = line.addCredit(
