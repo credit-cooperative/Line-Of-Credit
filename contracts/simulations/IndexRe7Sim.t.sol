@@ -29,6 +29,7 @@ interface IdsETHFeeSplitExtension {
     
     // READ
     function owner() external view returns (address);
+    
     function operatorFeeRecipient() external view returns (address);
 
     // WRITE
@@ -39,6 +40,7 @@ interface IdsETHFeeSplitExtension {
 }
 
 interface IManager {
+    function operator() external view returns (address);
     function setOperator(address _newOperator) external; 
 }
 
@@ -49,12 +51,14 @@ contract IndexRe7Sim is Test {
 
     ILineFactory lineFactory;
     IOracle oracle;
+
     ISpigot spigot;
     ISpigot.Setting private settings;
     ISecuredLine securedLine;
     ILineOfCredit line;
     ISpigotedLine spigotedLine;
     IEscrow escrow;
+
     IdsETHFeeSplitExtension dsETH;
     IManager manager;
 
@@ -68,22 +72,28 @@ contract IndexRe7Sim is Test {
 
     // Borrower and Lender Addresses
 
-    address borrowerAddress = makeAddr("borrower"); // TODO  - Mock Borrower Address
+    // address borrowerAddress = makeAddr("borrower"); // TODO  - Mock Borrower Address
     address lenderAddress = makeAddr("lender"); // TODO - Mock Lender Address
 
+    
+    // Index Address(s)
     address constant indexCoopOperations = 0xFafd604d1CC8b6B3B6CC859cF80Fd902972371C1; // Index Coop Operations Multisig
+
+   
+   // dsETH Addresses
     address constant dsETHToken = 0x341c05c0E9b33C0E38d64de76516b2Ce970bB3BE;  // dsETH Address 
     address constant dsETHFeeSplitExtension  = 0xFCDEE96D9df5b318ea0EEB39d5d7642d9AFd7FdA; // FeeSplitExtensionAddress
     address constant feeSplitExtensionOwner = 0x4e59b44847b379578588920cA78FbF26c0B4956C; // Owner of the dsETH fee split extension
     address constant dsETHManager = 0xBB6134ba82192E0ab23De846f1Cae7aa9Ae383d5; // Manager of the dsETH product
     address constant dsETHOperator = 0x6904110f17feD2162a11B5FA66B188d801443Ea4;// Operator of the dsETH product
     
+    
+    // Credit Coop Addresses
     address constant arbiterAddress = 0xeb0566b1EF38B95da2ed631eBB8114f3ac7b9a8a ; // Credit Coop MultiSig
     address public securedLineAddress; // Line address, to be defined in setUp()
 
     
     // Asset Addresses
-
     address constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
@@ -106,7 +116,8 @@ contract IndexRe7Sim is Test {
 
     // Fork Settings
 
-    uint256 constant FORK_BLOCK_NUMBER = 16_991_081; // Forking mainnet at block right after Line Factory was deployed
+    // uint256 constant FORK_BLOCK_NUMBER = 16_991_081; // Forking mainnet at block right after Line Factory was deployed
+    uint256 constant FORK_BLOCK_NUMBER = 17_032_817; // Forking mainnet at block on 4/12/23 at 11 30 AM EST
     uint256 ethMainnetFork;
 
     event log_named_bytes4(string key, bytes4 value);
@@ -130,12 +141,12 @@ contract IndexRe7Sim is Test {
 
         // Deal assets to all 3 parties (borrower, lender, arbiter) NOTE: will use actual address of parties whhen they are known
 
-        vm.deal(borrowerAddress, 100 ether);
+        // vm.deal(borrowerAddress, 100 ether);
         vm.deal(arbiterAddress, 100 ether);
         vm.deal(lenderAddress, 100 ether);
 
-        deal(DAI, borrowerAddress, 200000000000000000000000);
-        deal(WETH, borrowerAddress, 100 ether);
+        // deal(DAI, borrowerAddress, 200000000000000000000000);
+        // deal(WETH, borrowerAddress, 100 ether);
         deal(WETH, lenderAddress, 10000 ether);
         deal(WETH, indexCoopOperations, 10 ether);
 
@@ -184,7 +195,8 @@ contract IndexRe7Sim is Test {
         assertEq(true, collateralEnabled);
         vm.stopPrank();
 
-
+        uint256 dsETHBalance = IERC20(dsETHToken).totalSupply();
+        emit log_named_uint("total Supply of dsETH ", dsETHBalance);
         // index deposits collateral
 
         vm.startPrank(indexCoopOperations);
@@ -198,8 +210,13 @@ contract IndexRe7Sim is Test {
 
         vm.startPrank(arbiterAddress);
         uint8 split = 100;
-        bytes4 claimFunc = _getSelector("accrueFeesAndDistribute()");
-        bytes4 newOwnerFunc = _getSelector("transferOwnership(address newOwner)");
+
+        // do not care
+        bytes4 claimFunc = 0x000000;
+
+        // setOperator
+        //bytes4 newOwnerFunc = _getSelector("transferOwnership(address newOwner)");
+        bytes4 newOwnerFunc = _getSelector("setOperator(address)");
 
         _initSpigot(split, claimFunc, newOwnerFunc);
 
@@ -209,24 +226,22 @@ contract IndexRe7Sim is Test {
         // index transfers ownership of dsETH to spigot
 
         // vm.startPrank(feeSplitExtensionOwner);
-
         // dsETH.transferOwnership(address(securedLine.spigot()));
-
         // vm.stopPrank();
 
+       
+
+        // 1. Index Coop changes updateOperatorFeeRecipient to Spigot address in Fee Split Extension 
         vm.startPrank(dsETHOperator);
+        dsETH.updateOperatorFeeRecipient(address(securedLine.spigot()));
 
+
+
+        // 2. Index Coop changes dsETH operator revenue to spigot address via setOperator function        
         manager.setOperator(address(securedLine.spigot()));
-
         vm.stopPrank();
 
-        // add updateOperatorFeeRecipiant to Spigot whitelist
-        // call updateOperateFeeRecipiant via spigot via operator (index coop) to set spigot as fee recipient
 
-
-
-
-    
         // re7 proposes position
         // index accepts position
 
@@ -248,15 +263,42 @@ contract IndexRe7Sim is Test {
 
         vm.warp(block.timestamp + (ttl - 1 days));
 
+        vm.startPrank(indexCoopOperations);
+
+        dsETH.accrueFeesAndDistribute();
+
+        vm.stopPrank();
+        
         // claim revenue
 
         _claimRevenueOnBehalfOfSpigot(claimFunc);
-        
+
+        // claim and repay
+
+    // TODO: Figure out why 0x trade is failing
+
+    
+    //     vm.startPrank(arbiterAddress);
+    //     uint claimable = spigot.getOwnerTokens(dsETHToken);
+    //     emit log_named_uint("Owner Tokens in Spigot: ", claimable);
+
+    //     bytes memory tradeData = abi.encodeWithSignature(
+    //     'trade(address,address,uint256,uint256)',
+    //     address(dsETHToken),
+    //     address(WETH),
+    //     claimable,
+    //     1
+    //   );
+    //     spigotedLine.claimAndRepay(address(dsETHToken), tradeData);
+
+    //     vm.stopPrank();
+
+
         // index repaysAndCloses line
 
         uint256 amountOwed = line.interestAccrued(positionId);
 
-        emit log_named_uint("Interest: ", amountOwed);
+        emit log_named_uint("Interest ", amountOwed);
 
         vm.startPrank(indexCoopOperations);
         IERC20(WETH).approve(securedLineAddress, MAX_INT);
@@ -273,10 +315,25 @@ contract IndexRe7Sim is Test {
         // Borrower Releases Collateral
         vm.startPrank(indexCoopOperations);
         escrow.releaseCollateral(collateralAmtDAI, DAI, indexCoopOperations);
-        vm.stopPrank();
+        spigotedLine.releaseSpigot(indexCoopOperations);
+        address whoIsOperator = manager.operator();
+        emit log_named_address("The Operator of dsETH is ", whoIsOperator);
+        emit log_named_address("Spigot address is ", address(securedLine.spigot()));
+        emit log_named_string("                ", "           ");
+        spigot.removeSpigot(dsETHManager);
+        whoIsOperator = manager.operator();
+        
+        emit log_named_address("The Operator of dsETH is ", whoIsOperator);
+        emit log_named_address("Spigot address is ", indexCoopOperations);
+        emit log_named_string("                ", "             ");
+        // feeRecipient: indexCoopOperations
 
-        vm.startPrank(indexCoopOperations);
-        spigotedLine.releaseSpigot(feeSplitExtensionOwner);
+        dsETH.updateOperatorFeeRecipient(indexCoopOperations);
+
+        manager.setOperator(dsETHOperator);
+        whoIsOperator = manager.operator();
+        emit log_named_address("The Operator of dsETH is ", whoIsOperator);
+        emit log_named_address("Spigot address is ", dsETHOperator);
         vm.stopPrank();
 
     }
@@ -403,12 +460,12 @@ contract IndexRe7Sim is Test {
     function _claimRevenueOnBehalfOfSpigot(bytes4 claimFunc) internal {
         
         bytes memory data = abi.encodeWithSelector(claimFunc);
-        (uint8 _split, bytes4 _claim, bytes4 _transfer) = spigot.getSetting(dsETHFeeSplitExtension);
+        (uint8 _split, bytes4 _claim, bytes4 _transfer) = spigot.getSetting(dsETHManager);
         emit log_named_bytes4("func being called", bytes4(data));
         emit log_named_bytes4("stored value", _claim);
-        uint256 claimed = spigot.claimRevenue(dsETHFeeSplitExtension, dsETHToken, data);
+        uint256 claimed = spigot.claimRevenue(dsETHManager, dsETHToken, data);
         // assertEq(_expectedRevenue, IERC20(dsETHToken).balanceOf((address(spigot))), "balance of spigot should match expected revenue");
-        emit log_named_uint("amount claimed from FeeSplitExtension: ", claimed);
+        emit log_named_uint("amount claimed from FeeSplitExtension ", claimed);
     }
 
     
@@ -464,7 +521,7 @@ contract IndexRe7Sim is Test {
 
         // add spigot for revenue contract
         require(
-            spigotedLine.addSpigot(dsETHFeeSplitExtension, settings),
+            spigotedLine.addSpigot(dsETHManager, settings),
             "Failed to add spigot"
         );
 
