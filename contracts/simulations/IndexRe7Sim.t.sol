@@ -134,6 +134,8 @@ contract IndexRe7Sim is Test {
         deal(WETH, indexCoopOperations, 10 ether);
         deal(WETH, indexCoopLiquidityOperations, 10 ether);
 
+        
+
         // Define Interfaces for Index Coop Modules
         dsETH = IdsETHFeeSplitExtension(dsETHFeeSplitExtension);
         manager = IManager(dsETHManager);
@@ -167,6 +169,7 @@ contract IndexRe7Sim is Test {
 
         // arbiter enables collateral
         vm.startPrank(arbiterAddress);
+        uint256 lenderBalanceAtStart = IERC20(WETH).balanceOf(lenderAddress);
         emit log_named_string("\n \u2713 Arbiter Enables Collateral", "");
         bool collateralEnabled = escrow.enableCollateral(DAI);
         assertEq(true, collateralEnabled);
@@ -238,7 +241,7 @@ contract IndexRe7Sim is Test {
 
     // TODO: Figure out why 0x trade is failing
 
-        emit log_named_string("\n \u2713 Borrower Calls ClaimAndRepay to Repay Line of Credit with Spigot Revenue", "");
+        // emit log_named_string("\n \u2713 Borrower Calls ClaimAndRepay to Repay Line of Credit with Spigot Revenue", "");
     //     vm.startPrank(arbiterAddress);
     //     uint claimable = spigot.getOwnerTokens(dsETHToken);
     //     emit log_named_uint("Owner Tokens in Spigot: ", claimable);
@@ -263,12 +266,32 @@ contract IndexRe7Sim is Test {
         emit log_named_string("\n \u2713 Borrower Calls depositAndClose to Fully Repay and Close Line of Credit", "");
         IERC20(WETH).approve(securedLineAddress, MAX_INT);
         line.depositAndClose();
+
+        // Check status == REPAID after position is repaid and closed
+        uint256 statusIsRepaid = uint256(line.status());
+        assertEq(3, statusIsRepaid);
+        emit log_named_uint("- status (3 == REPAID) ", statusIsRepaid);
         vm.stopPrank();
+
+        // check reserves
+
+        uint256 unusedTokensAfterClose = spigotedLine.unused(dsETHToken);
+        uint256 ownerTokensAfterClose = spigot.getOwnerTokens(dsETHToken);
+        uint256 operatorTokensAfterClose = spigot.getOperatorTokens(dsETHToken);
+
+        emit log_named_uint("Unused Tokens after Position is closed and line is repaid", unusedTokensAfterClose);
+        emit log_named_uint("Owner Tokens after Position is closed and line is repaid", ownerTokensAfterClose);
+        emit log_named_uint("Operator Tokens after Position is closed and line is repaid", operatorTokensAfterClose);
 
         // Lender withdraws principal + interest owed
         vm.startPrank(lenderAddress);
         emit log_named_string("\n \u2713 Lender Withdraws All Repaid Principal and Interest", "");
-        line.withdraw(positionId, interestOwed);
+        line.withdraw(positionId, interestOwed + loanSizeInWETH);
+
+        // check that the lender balance is principal + interest
+        uint256 lenderBalanceAfterClose = IERC20(WETH).balanceOf(lenderAddress);
+        uint256 lenderBalanceAfterRepayment = lenderBalanceAtStart +  interestOwed;
+        assertEq(lenderBalanceAfterClose, lenderBalanceAfterRepayment, "Lender has not been full repaid");
         vm.stopPrank();
 
         // Borrower Releases Collateral
@@ -278,6 +301,21 @@ contract IndexRe7Sim is Test {
 
         emit log_named_string("\n \u2713 Borrower Releases Spigot", "");
         spigotedLine.releaseSpigot(indexCoopLiquidityOperations);
+
+
+        
+        spigot.claimOwnerTokens(dsETHToken);
+
+        uint256 ownerTokensAfterRelease = spigot.getOwnerTokens(dsETHToken);
+        emit log_named_uint("- Owner Tokens after Position is closed and line is repaid", ownerTokensAfterRelease);
+        
+        assertEq(ownerTokensAfterRelease, 0, "Spigot should not have any owner tokens");
+
+        uint256 borrowerClaimedTokens = IERC20(dsETHToken).balanceOf(indexCoopLiquidityOperations);
+        emit log_named_uint("- Borrower has tokens after Position is closed and line is repaid", borrowerClaimedTokens);
+        
+        assertEq(borrowerClaimedTokens, ownerTokensAfterClose, "Borrower has not claimed correct amount of tokens");
+
         address whoIsOperator = manager.operator();
         emit log_named_address("- The Operator of dsETH is ", whoIsOperator);
         emit log_named_address("- Spigot address is ", address(securedLine.spigot()));
@@ -485,7 +523,8 @@ contract IndexRe7Sim is Test {
         assertEq(vm.activeFork(), ethMainnetFork, "mainnet fork is not active");
 
         emit log_named_string("\n \u2713 Lender Proposes Position to Line of Credit", "");
-        vm.startPrank(indexCoopLiquidityOperations);
+        vm.startPrank( lenderAddress );
+        IERC20(WETH).approve(address(line), loanSizeInWETH);
         line.addCredit(
             dRate, // drate
             fRate, // frate
@@ -496,8 +535,8 @@ contract IndexRe7Sim is Test {
         vm.stopPrank();
 
         emit log_named_string("\n \u2713 Borrower Accepts Lender Proposal to Line of Credit", "");
-        vm.startPrank(lenderAddress);
-        IERC20(WETH).approve(address(line), loanSizeInWETH);
+        vm.startPrank(indexCoopLiquidityOperations);
+        
         id = line.addCredit(
             dRate, // drate
             fRate, // frate
