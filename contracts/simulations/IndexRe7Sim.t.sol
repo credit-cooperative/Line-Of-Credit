@@ -347,6 +347,141 @@ contract IndexRe7Sim is Test {
     }
 
 
+    ///////////////////////////////////////////////////////
+    //          I N T E R N A L   H E L P E R S          //
+    ///////////////////////////////////////////////////////
+
+    function _deployLoCWithConfig() internal returns (address){
+        ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
+            borrower: indexCoopLiquidityOperations,
+            ttl: ttl, // time to live
+            cratio: minCRatio, // uint32(creditRatio),
+            revenueSplit: revenueSplit // uint8(revenueSplit) - 100% to spigot
+        });
+
+        securedLineAddress = lineFactory.deploySecuredLineWithConfig(coreParams);
+        return securedLineAddress;
+    }
+
+    function _borrowerDepositsCollateral() internal {
+        emit log_named_string("\n \u2713 Borrower Adds Collateral", "");
+        IERC20(DAI).approve(address(securedLine.escrow()), MAX_INT);
+        escrow.addCollateral(collateralAmtDAI, DAI);
+    }
+
+    function _simulateRevenueGeneration(uint256 amt) internal returns (uint256 revenue) {
+        vm.deal(dsETHFeeSplitExtension, amt + 0.5 ether); // add a bit to cover gas
+
+        vm.prank(dsETHFeeSplitExtension);
+        revenue = amt;
+        IWeth(WETH).deposit{value: revenue}();
+
+        assertEq(IERC20(WETH).balanceOf(dsETHFeeSplitExtension), revenue, "fee collector balance should match revenue");
+    }
+
+
+
+    /// @dev    Because they claim function is not set in the spigot, this will be a push payment only
+    /// @dev    We need to call `deposit()` manually before claiming revenue, or there will be no revenue
+    ///         to claim (because calling `deposit()` distribute revenue to beneficiaires,of which the spigot is one)
+    function _claimRevenueOnBehalfOfSpigot(bytes4 claimFunc) internal {
+
+        bytes memory data = abi.encodeWithSelector(claimFunc);
+        (uint8 _split, bytes4 _claim, bytes4 _transfer) = spigot.getSetting(dsETHManager);
+        emit log_named_bytes4("func being called", bytes4(data));
+        emit log_named_bytes4("stored value", _claim);
+        uint256 claimed = spigot.claimRevenue(dsETHManager, dsETHToken, data);
+        // assertEq(_expectedRevenue, IERC20(dsETHToken).balanceOf((address(spigot))), "balance of spigot should match expected revenue");
+        emit log_named_uint("- amount claimed from FeeSplitExtension ", claimed);
+    }
+
+
+    // fund a loan as a lender
+    function _lenderFundLoan() internal returns (bytes32 id) {
+        assertEq(vm.activeFork(), ethMainnetFork, "mainnet fork is not active");
+
+        emit log_named_string("\n \u2713 Lender Proposes Position to Line of Credit", "");
+        vm.startPrank( lenderAddress );
+        IERC20(WETH).approve(address(line), loanSizeInWETH);
+        line.addCredit(
+            dRate, // drate
+            fRate, // frate
+            loanSizeInWETH, // amount
+            WETH, // token
+            lenderAddress // lender
+        );
+        vm.stopPrank();
+
+        emit log_named_string("\n \u2713 Borrower Accepts Lender Proposal to Line of Credit", "");
+        vm.startPrank(indexCoopLiquidityOperations);
+        
+        id = line.addCredit(
+            dRate, // drate
+            fRate, // frate
+            loanSizeInWETH, // amount
+            WETH, // token
+            lenderAddress // lender
+        );
+        vm.stopPrank();
+
+        assertEq(IERC20(WETH).balanceOf(address(line)), loanSizeInWETH, "LoC balance doesn't match");
+        emit log_named_bytes32("- credit id", id);
+        return id;
+    }
+
+    // function _arbiterAddsRevenueContractToSpigot() internal {
+    //     emit log_named_string("\n \u2713 Arbiter Adds dsETH Revenue Contract to Spigot", "");
+    //     uint8 split = 100;
+    //     bytes4 claimFunc = 0x000000;
+    //     bytes4 newOwnerFunc = _getSelector("setOperator(address)");
+    //     _initSpigot(split, claimFunc, newOwnerFunc);
+    // }
+
+    // function _borrowerDrawsOnCredit(bytes32 id, uint256 amount) internal returns (bool) {
+
+    // }
+
+    // function _depositAndRepay(uint256 amount) internal {
+
+    // }
+
+    // function _depositAndClose() internal {
+
+    // }
+
+    // function _lenderWithdraws(bytes32 id, uint256 amount) internal {
+
+    // }
+
+    ///////////////////////////////////////////////////////
+    //                      U T I L S                    //
+    ///////////////////////////////////////////////////////
+
+    // returns the function selector (first 4 bytes) of the hashed signature
+    function _getSelector(string memory _signature) internal pure returns (bytes4) {
+        return bytes4(keccak256(bytes(_signature)));
+    }
+
+    function _initSpigot(
+        uint8 split,
+        bytes4 claimFunc,
+        bytes4 newOwnerFunc
+        // bytes4[] memory _whitelist
+    ) internal {
+
+        settings = ISpigot.Setting(split, claimFunc, newOwnerFunc);
+
+        // add spigot for revenue contract
+        require(
+            spigotedLine.addSpigot(dsETHManager, settings),
+            "Failed to add spigot"
+        );
+
+        // give spigot ownership to claim revenue
+        // dsETHFeeSplitExtension.call(
+        //     abi.encodeWithSelector(newOwnerFunc, spigot)
+        // );
+    }
 
     ///////////////////////////////////////////////////////
     //                U N I T   T E S T S                //
@@ -445,143 +580,5 @@ contract IndexRe7Sim is Test {
         // warp time
 
         // check interest accrued
-    }
-
-    ///////////////////////////////////////////////////////
-    //          I N T E R N A L   H E L P E R S          //
-    ///////////////////////////////////////////////////////
-
-    function _deployLoCWithConfig() internal returns (address){
-        ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
-            borrower: indexCoopLiquidityOperations,
-            ttl: ttl, // time to live
-            cratio: minCRatio, // uint32(creditRatio),
-            revenueSplit: revenueSplit // uint8(revenueSplit) - 100% to spigot
-        });
-
-        securedLineAddress = lineFactory.deploySecuredLineWithConfig(coreParams);
-        return securedLineAddress;
-    }
-
-    function _borrowerDepositsCollateral() internal {
-        emit log_named_string("\n \u2713 Borrower Adds Collateral", "");
-        IERC20(DAI).approve(address(securedLine.escrow()), MAX_INT);
-        escrow.addCollateral(collateralAmtDAI, DAI);
-    }
-
-    // function _arbiterAddsRevenueContractToSpigot() internal {
-    //     emit log_named_string("\n \u2713 Arbiter Adds dsETH Revenue Contract to Spigot", "");
-    //     uint8 split = 100;
-    //     bytes4 claimFunc = 0x000000;
-    //     bytes4 newOwnerFunc = _getSelector("setOperator(address)");
-    //     _initSpigot(split, claimFunc, newOwnerFunc);
-    // }
-
-    function _borrowerDrawsOnCredit(bytes32 id, uint256 amount) internal returns (bool) {
-
-    }
-
-    function _depositAndRepay(uint256 amount) internal {
-
-    }
-
-    function _depositAndClose() internal {
-
-    }
-
-    function _lenderWithdraws(bytes32 id, uint256 amount) internal {
-
-    }
-
-    function _simulateRevenueGeneration(uint256 amt) internal returns (uint256 revenue) {
-        vm.deal(dsETHFeeSplitExtension, amt + 0.5 ether); // add a bit to cover gas
-
-        vm.prank(dsETHFeeSplitExtension);
-        revenue = amt;
-        IWeth(WETH).deposit{value: revenue}();
-
-        assertEq(IERC20(WETH).balanceOf(dsETHFeeSplitExtension), revenue, "fee collector balance should match revenue");
-    }
-
-
-
-    /// @dev    Because they claim function is not set in the spigot, this will be a push payment only
-    /// @dev    We need to call `deposit()` manually before claiming revenue, or there will be no revenue
-    ///         to claim (because calling `deposit()` distribute revenue to beneficiaires,of which the spigot is one)
-    function _claimRevenueOnBehalfOfSpigot(bytes4 claimFunc) internal {
-
-        bytes memory data = abi.encodeWithSelector(claimFunc);
-        (uint8 _split, bytes4 _claim, bytes4 _transfer) = spigot.getSetting(dsETHManager);
-        emit log_named_bytes4("func being called", bytes4(data));
-        emit log_named_bytes4("stored value", _claim);
-        uint256 claimed = spigot.claimRevenue(dsETHManager, dsETHToken, data);
-        // assertEq(_expectedRevenue, IERC20(dsETHToken).balanceOf((address(spigot))), "balance of spigot should match expected revenue");
-        emit log_named_uint("- amount claimed from FeeSplitExtension ", claimed);
-    }
-
-
-    // fund a loan as a lender
-    function _lenderFundLoan() internal returns (bytes32 id) {
-        assertEq(vm.activeFork(), ethMainnetFork, "mainnet fork is not active");
-
-        emit log_named_string("\n \u2713 Lender Proposes Position to Line of Credit", "");
-        vm.startPrank( lenderAddress );
-        IERC20(WETH).approve(address(line), loanSizeInWETH);
-        line.addCredit(
-            dRate, // drate
-            fRate, // frate
-            loanSizeInWETH, // amount
-            WETH, // token
-            lenderAddress // lender
-        );
-        vm.stopPrank();
-
-        emit log_named_string("\n \u2713 Borrower Accepts Lender Proposal to Line of Credit", "");
-        vm.startPrank(indexCoopLiquidityOperations);
-        
-        id = line.addCredit(
-            dRate, // drate
-            fRate, // frate
-            loanSizeInWETH, // amount
-            WETH, // token
-            lenderAddress // lender
-        );
-        vm.stopPrank();
-
-        assertEq(IERC20(WETH).balanceOf(address(line)), loanSizeInWETH, "LoC balance doesn't match");
-        emit log_named_bytes32("- credit id", id);
-        return id;
-    }
-
-
-
-    ///////////////////////////////////////////////////////
-    //                      U T I L S                    //
-    ///////////////////////////////////////////////////////
-
-    // returns the function selector (first 4 bytes) of the hashed signature
-    function _getSelector(string memory _signature) internal pure returns (bytes4) {
-        return bytes4(keccak256(bytes(_signature)));
-    }
-
-    function _initSpigot(
-        uint8 split,
-        bytes4 claimFunc,
-        bytes4 newOwnerFunc
-        // bytes4[] memory _whitelist
-    ) internal {
-
-        settings = ISpigot.Setting(split, claimFunc, newOwnerFunc);
-
-        // add spigot for revenue contract
-        require(
-            spigotedLine.addSpigot(dsETHManager, settings),
-            "Failed to add spigot"
-        );
-
-        // give spigot ownership to claim revenue
-        // dsETHFeeSplitExtension.call(
-        //     abi.encodeWithSelector(newOwnerFunc, spigot)
-        // );
     }
 }
