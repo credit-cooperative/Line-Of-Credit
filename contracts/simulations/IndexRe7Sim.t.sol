@@ -202,7 +202,7 @@ contract IndexRe7Sim is Test {
         assertEq(address(securedLine.spigot()), dsETH.operatorFeeRecipient());
 
         // Index Coop changes dsETH operator revenue to spigot address via setOperator function
-        emit log_named_string("\n \u2713 dsETH Operator Sets Spigot as Operator: ", "");
+        emit log_named_string("\n \u2713 dsETH Operator Sets Spigot as Operator", "");
         manager.setOperator(address(securedLine.spigot()));
         vm.stopPrank();
 
@@ -221,7 +221,7 @@ contract IndexRe7Sim is Test {
         vm.stopPrank();
 
         // fast forward 3 months
-        emit log_named_string("\n<---------- Fast Forward 89 Days ----------> ", "");
+        emit log_named_string("\n<---------- Fast Forward 89 Days --------------------> ", "");
         vm.warp(block.timestamp + (ttl - 1 days));
 
         // TODO: Arbiter or Lender should call accrueFeesAndDistribute, not the Index Coop multsig
@@ -257,17 +257,14 @@ contract IndexRe7Sim is Test {
 
 
         // index repaysAndCloses line
-
         uint256 amountOwed = line.interestAccrued(positionId);
-
         emit log_named_uint("- Interest ", amountOwed);
 
         vm.startPrank(indexCoopLiquidityOperations);
-        emit log_named_string("\n \u2713 Borrower Calls depositDndClose to Fully Repay and Close Line of Credit", "");
+        emit log_named_string("\n \u2713 Borrower Calls depositAndClose to Fully Repay and Close Line of Credit", "");
         IERC20(WETH).approve(securedLineAddress, MAX_INT);
         line.depositAndClose();
         vm.stopPrank();
-
 
         // Lender withdraws principal + interest owed
         vm.startPrank(lenderAddress);
@@ -285,20 +282,21 @@ contract IndexRe7Sim is Test {
         address whoIsOperator = manager.operator();
         emit log_named_address("- The Operator of dsETH is ", whoIsOperator);
         emit log_named_address("- Spigot address is ", address(securedLine.spigot()));
-        emit log_named_string("                ", "           ");
 
-        emit log_named_string("\n \u2713 (unconfirmed) Borrower Releases Spigot", "");
+        emit log_named_string("\n \u2713 Borrower Removes Spigot", "");
         spigot.removeSpigot(dsETHManager);
         whoIsOperator = manager.operator();
 
         emit log_named_address("- The Operator of dsETH is ", whoIsOperator);
         emit log_named_address("- Spigot address is ", indexCoopOperations);
 
-        emit log_named_string("\n \u2713 (unconfirmed) OperatorFeeRecipient is set to the original dsETH OperatorFeeRecipient", "");
+        emit log_named_string("\n \u2713 OperatorFeeRecipient is set to the original dsETH OperatorFeeRecipient", "");
         dsETH.updateOperatorFeeRecipient(indexCoopOperations);
         assertEq(indexCoopOperations, dsETH.operatorFeeRecipient());
+        emit log_named_address("- Index Coop Operations: ", indexCoopOperations);
+        emit log_named_address("- dsETH operatorFeeRecipient: ", dsETH.operatorFeeRecipient());
 
-        emit log_named_string("\n \u2713 (unconfirmed) dsETH Operator is set to Original dsETH Operator", "");
+        emit log_named_string("\n \u2713 dsETH Operator is set to Original dsETH Operator", "");
         manager.setOperator(dsETHOperator);
         whoIsOperator = manager.operator();
         emit log_named_address("- The Operator of dsETH is ", whoIsOperator);
@@ -357,21 +355,27 @@ contract IndexRe7Sim is Test {
         vm.stopPrank();
     }
 
+    // TODO: finish this test
     function test_borrower_deposits_collateral() public {
         test_arbiter_enables_stablecoin_collateral();
         vm.startPrank(indexCoopLiquidityOperations);
         IERC20(DAI).approve(address(securedLine.escrow()), MAX_INT);
         escrow.addCollateral(collateralAmtDAI, DAI);
-        // escrow.Deposit.amount
+        // TODO: read collateral amount from escrow and assert collateral value
+        // mapping(address => IEscrow.Deposit) deposited = escrow.
         // assertEq(collateralAmtDAI, escrow.Deposit.amount);
         vm.stopPrank();
     }
 
+    // TODO: fix this test
     function test_borrower_can_draw_on_credit() public {
         // index draws down full amount
-        // vm.startPrank(indexCoopLiquidityOperations);
-        // emit log_named_string("\n \u2713 Borrower Borrows Full Amount from Line of Credit", "");
-        // line.borrow(positionId, 200 ether);
+        bytes32 positionId =  _lenderFundLoan();
+        vm.startPrank(indexCoopLiquidityOperations);
+        emit log_named_bytes32("PositionId: ", positionId);
+        line.borrow(positionId, 200 ether);
+        // TODO: read borrowed amount from line and assert equals 200 ether
+        vm.stopPrank();
     }
 
     function test_borrower_can_deposit_and_repay_debt() public {
@@ -471,7 +475,7 @@ contract IndexRe7Sim is Test {
         emit log_named_bytes4("stored value", _claim);
         uint256 claimed = spigot.claimRevenue(dsETHManager, dsETHToken, data);
         // assertEq(_expectedRevenue, IERC20(dsETHToken).balanceOf((address(spigot))), "balance of spigot should match expected revenue");
-        emit log_named_uint("amount claimed from FeeSplitExtension ", claimed);
+        emit log_named_uint("- amount claimed from FeeSplitExtension ", claimed);
     }
 
 
@@ -503,7 +507,7 @@ contract IndexRe7Sim is Test {
         vm.stopPrank();
 
         assertEq(IERC20(WETH).balanceOf(address(line)), loanSizeInWETH, "LoC balance doesn't match");
-        emit log_named_bytes32("credit id", id);
+        emit log_named_bytes32("- credit id", id);
         return id;
     }
 
