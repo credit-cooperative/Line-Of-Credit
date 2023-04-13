@@ -237,25 +237,24 @@ contract IndexRe7Sim is Test {
         emit log_named_string("\n \u2713 [Borrower/Lender/Arbiter] Calls the Spigot Claim Function", "");
         _claimRevenueOnBehalfOfSpigot(claimFunc);
 
+        /**
+         * In the actual scenario, the borrower, Index Coop Liquidity Operations, will call the claimAndRepay function. We are not doing this in the simulations test because we either cannot or do not currently know, how to get an actual quote from 0x on a mainnet fork.
+         * 
+         */ 
         // claim and repay
-
-    // TODO: Figure out why 0x trade is failing
-
         // emit log_named_string("\n \u2713 Borrower Calls ClaimAndRepay to Repay Line of Credit with Spigot Revenue", "");
-    //     vm.startPrank(arbiterAddress);
-    //     uint claimable = spigot.getOwnerTokens(dsETHToken);
-    //     emit log_named_uint("Owner Tokens in Spigot: ", claimable);
-
-    //     bytes memory tradeData = abi.encodeWithSignature(
-    //     'trade(address,address,uint256,uint256)',
-    //     address(dsETHToken),
-    //     address(WETH),
-    //     claimable,
-    //     1
-    //   );
-    //     spigotedLine.claimAndRepay(address(dsETHToken), tradeData);
-
-    //     vm.stopPrank();
+        //     vm.startPrank(arbiterAddress);
+        //     uint claimable = spigot.getOwnerTokens(dsETHToken);
+        //     emit log_named_uint("Owner Tokens in Spigot: ", claimable);
+        //     bytes memory tradeData = abi.encodeWithSignature(
+        //     'trade(address,address,uint256,uint256)',
+        //     address(dsETHToken),
+        //     address(WETH),
+        //     claimable,
+        //     1
+        //   );
+        //     spigotedLine.claimAndRepay(address(dsETHToken), tradeData);
+        //     vm.stopPrank();
 
 
         // index repaysAndCloses line
@@ -303,7 +302,10 @@ contract IndexRe7Sim is Test {
         spigotedLine.releaseSpigot(indexCoopLiquidityOperations);
 
 
-        
+        /**
+         * In the actual scenario, the borrower, Index Coop Liquidity Operations, will call the claimAndRepay function. For the simulations test, the borrower instead calls depositAndClose to fully repay the lender and close the position. The borrower then calls the claimOwnerTokens function to claim the revenue from the spigot since they have already fully repaid the lender.
+         * 
+         */ 
         spigot.claimOwnerTokens(dsETHToken);
 
         uint256 ownerTokensAfterRelease = spigot.getOwnerTokens(dsETHToken);
