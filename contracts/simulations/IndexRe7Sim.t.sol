@@ -274,7 +274,7 @@ contract IndexRe7Sim is Test {
         // Borrower Releases Collateral
         vm.startPrank(indexCoopLiquidityOperations);
         emit log_named_string("\n \u2713 Borrower Releases Collateral", "");
-        escrow.releaseCollateral(collateralAmtDAI, DAI, indexCoopOperations);
+        escrow.releaseCollateral(collateralAmtDAI, DAI, indexCoopLiquidityOperations);
 
         emit log_named_string("\n \u2713 Borrower Releases Spigot", "");
         spigotedLine.releaseSpigot(indexCoopLiquidityOperations);
