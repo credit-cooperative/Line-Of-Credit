@@ -150,13 +150,10 @@ contract IndexRe7Sim is Test {
         escrow = IEscrow(address(securedLine.escrow()));
         spigot = ISpigot(address(securedLine.spigot()));
 
-        // Check status after creation
+        // Check status == ACTIVE after LOC is deployed
         uint256 status = uint256(line.status());
-        assertEq(1, uint256(line.status()));
-        console.log("- status: ", status);
-
-        // Check LOC parameters
-
+        assertEq(1, status);
+        emit log_named_uint("- status (1 == ACTIVE) ", status);
 
         vm.stopPrank();
 
@@ -204,6 +201,7 @@ contract IndexRe7Sim is Test {
         // Index Coop changes dsETH operator revenue to spigot address via setOperator function
         emit log_named_string("\n \u2713 dsETH Operator Sets Spigot as Operator", "");
         manager.setOperator(address(securedLine.spigot()));
+        assertEq(address(securedLine.spigot()), manager.operator());
         vm.stopPrank();
 
         // re7 proposes position
@@ -212,7 +210,8 @@ contract IndexRe7Sim is Test {
 
         // check that the line position has the credit funds
         uint256 balance = IERC20(WETH).balanceOf(securedLineAddress);
-        console.log("- balance (WETH): ", balance);
+        emit log_named_uint("- balance of Line of Credit (WETH): ", balance);
+        assertEq(balance, loanSizeInWETH);
 
         // index draws down full amount
         vm.startPrank(indexCoopLiquidityOperations);
@@ -224,8 +223,8 @@ contract IndexRe7Sim is Test {
         emit log_named_string("\n<---------- Fast Forward 89 Days --------------------> ", "");
         vm.warp(block.timestamp + (ttl - 1 days));
 
-        // TODO: Arbiter or Lender should call accrueFeesAndDistribute, not the Index Coop multsig
-        vm.startPrank(indexCoopOperations);
+        // Lender address calls accrueFeesAndDistribute function on dsETH Fee Split Extension contract
+        vm.startPrank(lenderAddress);
         emit log_named_string("\n \u2713 [Borrower/Lender/Arbiter] Calls dsETH accrueFeesAndDistrubtion Function", "");
         dsETH.accrueFeesAndDistribute();
 
@@ -257,8 +256,8 @@ contract IndexRe7Sim is Test {
 
 
         // index repaysAndCloses line
-        uint256 amountOwed = line.interestAccrued(positionId);
-        emit log_named_uint("- Interest ", amountOwed);
+        uint256 interestOwed = line.interestAccrued(positionId);
+        emit log_named_uint("- Interest Owed on Line of Credit ", interestOwed);
 
         vm.startPrank(indexCoopLiquidityOperations);
         emit log_named_string("\n \u2713 Borrower Calls depositAndClose to Fully Repay and Close Line of Credit", "");
@@ -269,7 +268,7 @@ contract IndexRe7Sim is Test {
         // Lender withdraws principal + interest owed
         vm.startPrank(lenderAddress);
         emit log_named_string("\n \u2713 Lender Withdraws All Repaid Principal and Interest", "");
-        line.withdraw(positionId, amountOwed);
+        line.withdraw(positionId, interestOwed);
         vm.stopPrank();
 
         // Borrower Releases Collateral
@@ -295,12 +294,14 @@ contract IndexRe7Sim is Test {
         assertEq(indexCoopOperations, dsETH.operatorFeeRecipient());
         emit log_named_address("- Index Coop Operations: ", indexCoopOperations);
         emit log_named_address("- dsETH operatorFeeRecipient: ", dsETH.operatorFeeRecipient());
+        assertEq(indexCoopOperations, dsETH.operatorFeeRecipient());
 
         emit log_named_string("\n \u2713 dsETH Operator is set to Original dsETH Operator", "");
         manager.setOperator(dsETHOperator);
         whoIsOperator = manager.operator();
         emit log_named_address("- The Operator of dsETH is ", whoIsOperator);
         emit log_named_address("- Spigot address is ", dsETHOperator);
+        assertEq(dsETHOperator, manager.operator());
         vm.stopPrank();
 
     }
