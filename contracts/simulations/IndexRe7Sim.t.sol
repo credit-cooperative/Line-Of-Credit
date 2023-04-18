@@ -237,10 +237,13 @@ contract IndexRe7Sim is Test {
         emit log_named_string("\n \u2713 [Borrower/Lender/Arbiter] Calls the Spigot Claim Function", "");
         _claimRevenueOnBehalfOfSpigot(claimFunc);
 
-        /**
-         * In the actual scenario, the borrower, Index Coop Liquidity Operations, will call the claimAndRepay function. We are not doing this in the simulations test because we either cannot or do not currently know, how to get an actual quote from 0x on a mainnet fork.
-         * 
+
+        /*
+            In the actual scenario, the borrower, Index Coop Liquidity Operations, will call the claimAndRepay function. 
+            We are not doing this in the simulations test because we either cannot or do not currently know, how to get an actual quote from 0x on a mainnet fork.
          */ 
+
+        
         // claim and repay
         // emit log_named_string("\n \u2713 Borrower Calls ClaimAndRepay to Repay Line of Credit with Spigot Revenue", "");
         //     vm.startPrank(arbiterAddress);
@@ -302,10 +305,12 @@ contract IndexRe7Sim is Test {
         spigotedLine.releaseSpigot(indexCoopLiquidityOperations);
 
 
-        /**
-         * In the actual scenario, the borrower, Index Coop Liquidity Operations, will call the claimAndRepay function. For the simulations test, the borrower instead calls depositAndClose to fully repay the lender and close the position. The borrower then calls the claimOwnerTokens function to claim the revenue from the spigot since they have already fully repaid the lender.
-         * 
-         */ 
+        /*
+            In the actual scenario, the borrower, Index Coop Liquidity Operations, will call the claimAndRepay function. 
+            For the simulations test, the borrower instead calls depositAndClose to fully repay the lender and close the position. 
+            The borrower then calls the claimOwnerTokens function to claim the revenue from the spigot since they have already fully repaid the lender.
+        */ 
+        
         spigot.claimOwnerTokens(dsETHToken);
 
         uint256 ownerTokensAfterRelease = spigot.getOwnerTokens(dsETHToken);
