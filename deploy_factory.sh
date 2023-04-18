@@ -16,7 +16,7 @@ echo $ModuleFactoryAddress
 # Constructor Arguments: ModuleFactory Address, Arbiter Address, Oracle Address, Swap Target Address
 
 LineFactory=$(forge create --rpc-url $GOERLI_RPC_URL \
---constructor-args $ModuleFactoryAddress 0x895A8900437ba52A7C1450b09CD05C2Ba8A0EBE5 0x93E01461b2B02Fe872C1C5CceAd3E334BFA3C0De 0x47B005bC1AD130D6a61c2d21047Ee84e03e5Aa8f \
+--constructor-args $ModuleFactoryAddress 0x075d140e6ca3eA982D156e43790247493FD8Ca40 0x93E01461b2B02Fe872C1C5CceAd3E334BFA3C0De 0x47B005bC1AD130D6a61c2d21047Ee84e03e5Aa8f \
 --private-key $GOERLI_PRIVATE_KEY --etherscan-api-key $MAINNET_ETHERSCAN_API_KEY \
 contracts/modules/factories/LineFactory.sol:LineFactory --verify --json)]
 LineFactoryAddress=$(echo "$LineFactory" | jq -r '.deployedTo')
