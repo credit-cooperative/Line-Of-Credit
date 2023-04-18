@@ -41,6 +41,10 @@ contract SimpleRevenueContract {
         else return false;
     }
 
+    function getOwner() external view returns (address) {
+        return owner;
+    }
+
     function transferOwnership(address newOwner) external returns (bool) {
         require(msg.sender == owner, "Revenue: Only owner can transfer");
         owner = newOwner;
