@@ -23,19 +23,25 @@ interface IWeth {
 
 interface IdsETH {
     function setManager(address _manager) external;
+
 } //  TODO - define this
 
 interface IdsETHFeeSplitExtension {
     function owner() external view returns (address);
+    function operatorFeeSplit() external view returns (uint256);
     function operatorFeeRecipient() external view returns (address);
     function transferOwnership(address newOwner) external;
     function updateOperatorFeeRecipient(address _newFeeRecipient) external;
     function accrueFeesAndDistribute() external;
+    function updateFeeSplit(uint256 _newFeeSplit) external;
 }
 
 interface IManager {
+    function methodologist() external view returns (address);
     function operator() external view returns (address);
     function setOperator(address _newOperator) external;
+    function setMethodologist(address _newMethodologist) external;
+
 }
 
 contract IndexRe7Sim is Test {
@@ -185,12 +191,15 @@ contract IndexRe7Sim is Test {
 
         // Credit Coop Arbiter adds revenue contract (dsETH) to spigot as push payment
         vm.startPrank(arbiterAddress);
-        uint8 split = 100;
-        bytes4 claimFunc = 0x000000;
-        bytes4 newOwnerFunc = _getSelector("setOperator(address)");
+        // uint8 split = 100;
+        // bytes4 claimFunc = 0x000000;
+        // use setMethodologist to transfer fees to spigot so that Index Coop retains control of
+        // operatorOnly functions without needing to use the Credit Coop contracts
+        bytes4 newOwnerFunc = _getSelector("setMethodologist(address)");
+        // bytes4 newOwnerFunc = _getSelector("setOperator(address)");
 
         emit log_named_string("\n \u2713 Arbiter Adds dsETH Revenue Contract to Spigot", "");
-        _initSpigot(split, claimFunc, newOwnerFunc);
+        _initSpigot(100, 0x000000, newOwnerFunc);
 
         vm.stopPrank();
 
@@ -198,13 +207,29 @@ contract IndexRe7Sim is Test {
         // Index Coop changes updateOperatorFeeRecipient to Spigot address in Fee Split Extension
         vm.startPrank(dsETHOperator);
         emit log_named_string("\n \u2713 dsETH Operator Sets Spigot as OperatorFeeRecipient", "");
-        dsETH.updateOperatorFeeRecipient(address(securedLine.spigot()));
-        assertEq(address(securedLine.spigot()), dsETH.operatorFeeRecipient());
+
+
+        emit log_named_string("\n \u2713 dsETH Operator Sets Methodologist Fee Split to 100%", "");
+        dsETH.updateFeeSplit(0); // Setting operator fee split to 0% with automatically makes methodologist 100%
+        dsETH.updateFeeSplit(0); // call twice because requires mutual upgrade of both methodologist and operator
+
+        emit log_named_uint("\n - Operator Fee Split: ", dsETH.operatorFeeSplit());
+        assertEq(0, dsETH.operatorFeeSplit());
+
+        emit log_named_string("\n \u2713 dsETH Operator Sets Spigot as Methodologist", "");
+        manager.setMethodologist(address(securedLine.spigot()));
+
+        // dsETH.updateOperatorFeeRecipient(address(securedLine.spigot()));
+
+        assertEq(address(securedLine.spigot()), manager.methodologist());
+        //assertEq(address(securedLine.spigot()), dsETH.operatorFeeRecipient());
 
         // Index Coop changes dsETH operator revenue to spigot address via setOperator function
-        emit log_named_string("\n \u2713 dsETH Operator Sets Spigot as Operator", "");
-        manager.setOperator(address(securedLine.spigot()));
-        assertEq(address(securedLine.spigot()), manager.operator());
+        
+        // emit log_named_string("\n \u2713 dsETH Operator Sets Spigot as Operator", "");
+        // manager.setOperator(address(securedLine.spigot()));
+        // assertEq(address(securedLine.spigot()), manager.operator());
+
         vm.stopPrank();
 
         // re7 proposes position
@@ -230,12 +255,14 @@ contract IndexRe7Sim is Test {
         vm.startPrank(lenderAddress);
         emit log_named_string("\n \u2713 [Borrower/Lender/Arbiter] Calls dsETH accrueFeesAndDistrubtion Function", "");
         dsETH.accrueFeesAndDistribute();
+        uint256 balanceOfSpigotAfterClaim = IERC20(dsETHToken).balanceOf(address(securedLine.spigot()));
+        emit log_named_uint("Balacne of Spigot after Fee Distribution", balanceOfSpigotAfterClaim);
 
         vm.stopPrank();
 
         // claim revenue
         emit log_named_string("\n \u2713 [Borrower/Lender/Arbiter] Calls the Spigot Claim Function", "");
-        _claimRevenueOnBehalfOfSpigot(claimFunc);
+        _claimRevenueOnBehalfOfSpigot(0x000000);
 
 
         /*
@@ -323,30 +350,70 @@ contract IndexRe7Sim is Test {
         
         assertEq(borrowerClaimedTokens, ownerTokensAfterClose, "Borrower has not claimed correct amount of tokens");
 
-        address whoIsOperator = manager.operator();
-        emit log_named_address("- The Operator of dsETH is ", whoIsOperator);
+        // address whoIsOperator = manager.operator();
+        // emit log_named_address("- The Operator of dsETH is ", whoIsOperator);
+        // emit log_named_address("- Spigot address is ", address(securedLine.spigot()));
+
+        // emit log_named_string("\n \u2713 Borrower Removes Spigot", "");
+        // spigot.removeSpigot(dsETHManager);
+        // whoIsOperator = manager.operator();
+
+        // emit log_named_address("- The Operator of dsETH is ", whoIsOperator);
+        // emit log_named_address("- Spigot address is ", indexCoopOperations);
+
+        // emit log_named_string("\n \u2713 OperatorFeeRecipient is set to the original dsETH OperatorFeeRecipient", "");
+        // dsETH.updateOperatorFeeRecipient(indexCoopOperations);
+        // assertEq(indexCoopOperations, dsETH.operatorFeeRecipient());
+        // emit log_named_address("- Index Coop Operations: ", indexCoopOperations);
+        // emit log_named_address("- dsETH operatorFeeRecipient: ", dsETH.operatorFeeRecipient());
+        // assertEq(indexCoopOperations, dsETH.operatorFeeRecipient());
+
+        // emit log_named_string("\n \u2713 dsETH Operator is set to Original dsETH Operator", "");
+        // manager.setOperator(dsETHOperator);
+        // whoIsOperator = manager.operator();
+        // emit log_named_address("- The Operator of dsETH is ", whoIsOperator);
+        // emit log_named_address("- Spigot address is ", dsETHOperator);
+        // assertEq(dsETHOperator, manager.operator());
+
+        address whoIsMethodologist = manager.methodologist();
+        emit log_named_address("- The Methodologist of dsETH is ", whoIsMethodologist);
         emit log_named_address("- Spigot address is ", address(securedLine.spigot()));
 
         emit log_named_string("\n \u2713 Borrower Removes Spigot", "");
         spigot.removeSpigot(dsETHManager);
-        whoIsOperator = manager.operator();
+        whoIsMethodologist = manager.methodologist();
 
+        emit log_named_address("- The Methodologist of dsETH is ", whoIsMethodologist);
+        emit log_named_address("- Spigot Owner address is ", indexCoopLiquidityOperations);
+
+        emit log_named_string("\n \u2713 OperatorFeeSplit is set to 100% to the Operator", "");
+        dsETH.updateFeeSplit(10 ** 18);
+        vm.stopPrank();
+        vm.startPrank(dsETHOperator);
+        dsETH.updateFeeSplit(10 ** 18);
+        vm.stopPrank();
+
+        assertEq(10 ** 18, dsETH.operatorFeeSplit());
+        emit log_named_address("- Index Coop Operations: ", indexCoopLiquidityOperations);
+        emit log_named_uint("- dsETH operatorFeeSplit: ", dsETH.operatorFeeSplit());
+        // assertEq(indexCoopOperations, dsETH.operatorFeeRecipient());
+        vm.startPrank(indexCoopLiquidityOperations);
+        emit log_named_string("\n \u2713 dsETH Methodologist is set to Original dsETH Operator", "");
+        manager.setMethodologist(dsETHOperator);
+        vm.stopPrank();
+
+        vm.startPrank(dsETHOperator);
+        manager.setMethodologist(dsETHOperator);
+        vm.stopPrank();
+
+        address whoIsOperator = manager.operator();
+        whoIsMethodologist = manager.methodologist();
         emit log_named_address("- The Operator of dsETH is ", whoIsOperator);
-        emit log_named_address("- Spigot address is ", indexCoopOperations);
-
-        emit log_named_string("\n \u2713 OperatorFeeRecipient is set to the original dsETH OperatorFeeRecipient", "");
-        dsETH.updateOperatorFeeRecipient(indexCoopOperations);
-        assertEq(indexCoopOperations, dsETH.operatorFeeRecipient());
-        emit log_named_address("- Index Coop Operations: ", indexCoopOperations);
-        emit log_named_address("- dsETH operatorFeeRecipient: ", dsETH.operatorFeeRecipient());
-        assertEq(indexCoopOperations, dsETH.operatorFeeRecipient());
-
-        emit log_named_string("\n \u2713 dsETH Operator is set to Original dsETH Operator", "");
-        manager.setOperator(dsETHOperator);
-        whoIsOperator = manager.operator();
-        emit log_named_address("- The Operator of dsETH is ", whoIsOperator);
-        emit log_named_address("- Spigot address is ", dsETHOperator);
-        assertEq(dsETHOperator, manager.operator());
+        emit log_named_address("- The Methodologist of dsETH is ", whoIsMethodologist);
+        // emit log_named_address("- Spigot Oaddress is ", dsETHOperator);
+        assertEq(dsETHOperator, manager.methodologist());
+        
+        
         vm.stopPrank();
 
     }
