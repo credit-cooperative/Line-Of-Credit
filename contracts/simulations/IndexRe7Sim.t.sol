@@ -140,7 +140,7 @@ contract IndexRe7Sim is Test {
         deal(WETH, indexCoopOperations, 10 ether);
         deal(WETH, indexCoopLiquidityOperations, 10 ether);
 
-        
+
 
         // Define Interfaces for Index Coop Modules
         dsETH = IdsETHFeeSplitExtension(dsETHFeeSplitExtension);
@@ -225,7 +225,7 @@ contract IndexRe7Sim is Test {
         //assertEq(address(securedLine.spigot()), dsETH.operatorFeeRecipient());
 
         // Index Coop changes dsETH operator revenue to spigot address via setOperator function
-        
+
         // emit log_named_string("\n \u2713 dsETH Operator Sets Spigot as Operator", "");
         // manager.setOperator(address(securedLine.spigot()));
         // assertEq(address(securedLine.spigot()), manager.operator());
@@ -256,7 +256,7 @@ contract IndexRe7Sim is Test {
         emit log_named_string("\n \u2713 [Borrower/Lender/Arbiter] Calls dsETH accrueFeesAndDistrubtion Function", "");
         dsETH.accrueFeesAndDistribute();
         uint256 balanceOfSpigotAfterClaim = IERC20(dsETHToken).balanceOf(address(securedLine.spigot()));
-        emit log_named_uint("Balacne of Spigot after Fee Distribution", balanceOfSpigotAfterClaim);
+        emit log_named_uint("- Balance of Spigot after Fee Distribution", balanceOfSpigotAfterClaim);
 
         vm.stopPrank();
 
@@ -266,11 +266,11 @@ contract IndexRe7Sim is Test {
 
 
         /*
-            In the actual scenario, the borrower, Index Coop Liquidity Operations, will call the claimAndRepay function. 
+            In the actual scenario, the borrower, Index Coop Liquidity Operations, will call the claimAndRepay function.
             We are not doing this in the simulations test because we either cannot or do not currently know, how to get an actual quote from 0x on a mainnet fork.
-         */ 
+         */
 
-        
+
         // claim and repay
         // emit log_named_string("\n \u2713 Borrower Calls ClaimAndRepay to Repay Line of Credit with Spigot Revenue", "");
         //     vm.startPrank(arbiterAddress);
@@ -308,9 +308,9 @@ contract IndexRe7Sim is Test {
         uint256 ownerTokensAfterClose = spigot.getOwnerTokens(dsETHToken);
         uint256 operatorTokensAfterClose = spigot.getOperatorTokens(dsETHToken);
 
-        emit log_named_uint("Unused Tokens after Position is closed and line is repaid", unusedTokensAfterClose);
-        emit log_named_uint("Owner Tokens after Position is closed and line is repaid", ownerTokensAfterClose);
-        emit log_named_uint("Operator Tokens after Position is closed and line is repaid", operatorTokensAfterClose);
+        emit log_named_uint("- Unused Tokens after Position is closed and line is repaid", unusedTokensAfterClose);
+        emit log_named_uint("- Owner Tokens after Position is closed and line is repaid", ownerTokensAfterClose);
+        emit log_named_uint("- Operator Tokens after Position is closed and line is repaid", operatorTokensAfterClose);
 
         // Lender withdraws principal + interest owed
         vm.startPrank(lenderAddress);
@@ -333,21 +333,21 @@ contract IndexRe7Sim is Test {
 
 
         /*
-            In the actual scenario, the borrower, Index Coop Liquidity Operations, will call the claimAndRepay function. 
-            For the simulations test, the borrower instead calls depositAndClose to fully repay the lender and close the position. 
+            In the actual scenario, the borrower, Index Coop Liquidity Operations, will call the claimAndRepay function.
+            For the simulations test, the borrower instead calls depositAndClose to fully repay the lender and close the position.
             The borrower then calls the claimOwnerTokens function to claim the revenue from the spigot since they have already fully repaid the lender.
-        */ 
-        
+        */
+
         spigot.claimOwnerTokens(dsETHToken);
 
         uint256 ownerTokensAfterRelease = spigot.getOwnerTokens(dsETHToken);
         emit log_named_uint("- Owner Tokens after Position is closed and line is repaid", ownerTokensAfterRelease);
-        
+
         assertEq(ownerTokensAfterRelease, 0, "Spigot should not have any owner tokens");
 
         uint256 borrowerClaimedTokens = IERC20(dsETHToken).balanceOf(indexCoopLiquidityOperations);
         emit log_named_uint("- Borrower has tokens after Position is closed and line is repaid", borrowerClaimedTokens);
-        
+
         assertEq(borrowerClaimedTokens, ownerTokensAfterClose, "Borrower has not claimed correct amount of tokens");
 
         // address whoIsOperator = manager.operator();
@@ -412,8 +412,8 @@ contract IndexRe7Sim is Test {
         emit log_named_address("- The Methodologist of dsETH is ", whoIsMethodologist);
         // emit log_named_address("- Spigot Oaddress is ", dsETHOperator);
         assertEq(dsETHOperator, manager.methodologist());
-        
-        
+
+
         vm.stopPrank();
 
     }
@@ -486,7 +486,7 @@ contract IndexRe7Sim is Test {
 
         emit log_named_string("\n \u2713 Borrower Accepts Lender Proposal to Line of Credit", "");
         vm.startPrank(indexCoopLiquidityOperations);
-        
+
         id = line.addCredit(
             dRate, // drate
             fRate, // frate
