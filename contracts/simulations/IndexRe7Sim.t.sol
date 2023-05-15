@@ -114,7 +114,7 @@ contract IndexRe7Sim is Test {
     event log_named_bytes4(string key, bytes4 value);
 
     constructor() {
-      
+
     }
 
     function setUp() public {
@@ -282,7 +282,7 @@ contract IndexRe7Sim is Test {
         //     spigotedLine.claimAndRepay(address(dsETHToken), tradeData);
         //     vm.stopPrank();
 
-        
+
         // index repaysAndCloses line
         uint256 interestOwed = line.interestAccrued(positionId);
         emit log_named_uint("- Interest Owed on Line of Credit ", interestOwed);
@@ -304,9 +304,9 @@ contract IndexRe7Sim is Test {
         // uint256 ownerTokensAfterClose = spigot.getOwnerTokens(dsETHToken);
         // uint256 operatorTokensAfterClose = spigot.getOperatorTokens(dsETHToken);
 
-        emit log_named_uint("- Unused Tokens after Position is closed and line is repaid", unusedTokensAfterClose);
-        emit log_named_uint("- Owner Tokens after Position is closed and line is repaid", ownerTokensAfterClose);
-        emit log_named_uint("- Operator Tokens after Position is closed and line is repaid", operatorTokensAfterClose);
+        // emit log_named_uint("- Unused Tokens after Position is closed and line is repaid", unusedTokensAfterClose);
+        // emit log_named_uint("- Owner Tokens after Position is closed and line is repaid", ownerTokensAfterClose);
+        // emit log_named_uint("- Operator Tokens after Position is closed and line is repaid", operatorTokensAfterClose);
 
         // Lender withdraws principal + interest owed
         vm.startPrank(lenderAddress);
@@ -338,12 +338,12 @@ contract IndexRe7Sim is Test {
 
         // uint256 ownerTokensAfterRelease = spigot.getOwnerTokens(dsETHToken);
         emit log_named_uint("- Owner Tokens after Position is closed and line is repaid", spigot.getOwnerTokens(dsETHToken));
-        
+
         assertEq(spigot.getOwnerTokens(dsETHToken), 0, "Spigot should not have any owner tokens");
 
         uint256 borrowerClaimedTokens = IERC20(dsETHToken).balanceOf(indexCoopLiquidityOperations);
         emit log_named_uint("- Borrower has tokens after Position is closed and line is repaid", borrowerClaimedTokens);
-        
+
         assertEq(borrowerClaimedTokens, spigot.getOwnerTokens(dsETHToken), "Borrower has not claimed correct amount of tokens");
 
         // address whoIsOperator = manager.operator();
