@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0
+// Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
+
 pragma solidity 0.8.16;
 
 import {ReentrancyGuard} from "openzeppelin/security/ReentrancyGuard.sol";
@@ -195,7 +198,7 @@ contract Spigot is ISpigot, ReentrancyGuard {
     /**
      * @notice - Returns if the function is whitelisted for an Operator to call
                - on the spigoted revenue generating smart contracts.
-     * @param func - Function signature to check on whitelist 
+     * @param func - Function signature to check on whitelist
     */
     function isWhitelisted(bytes4 func) external view returns (bool) {
         return state.isWhitelisted(func);
