@@ -118,6 +118,23 @@ contract LineFactory is ILineFactory {
         emit DeployedSecuredLine(address(line), mEscrow, mSpigot, swapTarget, coreParams.revenueSplit);
     }
 
+    function registerSecuredLine(
+        address line, 
+        address spigot, 
+        address escrow, 
+        address borrower,
+        uint8 revenueSplit, 
+        uint32 minCRatio
+    ) external {
+        if (msg.sender != arbiter){
+            revert InvalidArbiterAddress();
+        } 
+        factory.registerEscrow(minCRatio, oracle, line, borrower);
+        factory.registerSpigot(spigot, line, borrower);
+        emit RegisterSecuredLine(line, escrow, spigot, swapTarget, revenueSplit);
+        
+    }
+
     /**
       @notice sets up new line based of config of old line. Old line does not need to have REPAID status for this call to succeed.
       @dev borrower must call rollover() on `oldLine` with newly created line address

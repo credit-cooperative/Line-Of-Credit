@@ -8,4 +8,8 @@ interface IModuleFactory {
     function deploySpigot(address owner, address operator) external returns (address);
 
     function deployEscrow(uint32 minCRatio, address oracle, address owner, address borrower) external returns (address);
+
+    function registerEscrow(uint32 minCRatio, address oracle, address owner, address escrow) external;
+
+    function registerSpigot(address spigot, address owner, address operator) external;
 }
