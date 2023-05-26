@@ -131,7 +131,7 @@ contract LineFactory is ILineFactory {
         } 
         factory.registerEscrow(minCRatio, oracle, line, borrower);
         factory.registerSpigot(spigot, line, borrower);
-        emit RegisterSecuredLine(line, escrow, spigot, swapTarget, revenueSplit);
+        emit DeployedSecuredLine(line, escrow, spigot, swapTarget, revenueSplit);
         
     }
 

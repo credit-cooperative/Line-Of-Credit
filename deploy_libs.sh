@@ -10,7 +10,7 @@ brew install jq
 
 source .env
 
-LineLib=$(forge create --rpc-url $GOERLI_RPC_URL --private-key $GOERLI_PRIVATE_KEY --etherscan-api-key $MAINNET_ETHERSCAN_API_KEY  contracts/utils/LineLib.sol:LineLib --json --verify)
+LineLib=$(forge create --rpc-url $GOERLI_RPC_URL --private-key $GOERLI_PRIVATE_KEY --etherscan-api-key $MAINNET_ETHERSCAN_API_KEY  --optimzer-runs 20000 contracts/utils/LineLib.sol:LineLib --json --verify)
 LineLibAddress=$(echo "$LineLib" | jq -r '.deployedTo')
 LineLibEntry="contracts\/utils\/LineLib.sol:LineLib:$LineLibAddress"
 
@@ -18,7 +18,7 @@ sed -i '' '/\[profile\.goerli\]/,/^\[/s/^libraries = \[.*\]/libraries = \["'$Lin
 
 source .env
 
-CreditLib=$(forge create --rpc-url $GOERLI_RPC_URL --private-key $GOERLI_PRIVATE_KEY --etherscan-api-key $MAINNET_ETHERSCAN_API_KEY contracts/utils/CreditLib.sol:CreditLib --verify --json)
+CreditLib=$(forge create --rpc-url $GOERLI_RPC_URL --private-key $GOERLI_PRIVATE_KEY --etherscan-api-key $MAINNET_ETHERSCAN_API_KEY --optimzer-runs 20000 contracts/utils/CreditLib.sol:CreditLib --verify --json)
 CreditLibAddress=$(echo "$CreditLib" | jq -r '.deployedTo')
 CreditLibEntry="contracts\/utils\/CreditLib.sol:CreditLib:$CreditLibAddress"
 
@@ -26,7 +26,7 @@ sed -i '' '/\[profile\.goerli\]/,/^\[/s/^libraries = \["'$LineLibEntry'"\]/libra
 
 source .env
 
-CreditListLib=$(forge create --rpc-url $GOERLI_RPC_URL --private-key $GOERLI_PRIVATE_KEY --etherscan-api-key $MAINNET_ETHERSCAN_API_KEY contracts/utils/CreditListLib.sol:CreditListLib --verify --json)
+CreditListLib=$(forge create --rpc-url $GOERLI_RPC_URL --private-key $GOERLI_PRIVATE_KEY --etherscan-api-key $MAINNET_ETHERSCAN_API_KEY --optimzer-runs 20000 contracts/utils/CreditListLib.sol:CreditListLib --verify --json)
 CreditListLibAddress=$(echo "$CreditListLib" | jq -r '.deployedTo')
 CreditListLibEntry="contracts\/utils\/CreditListLib.sol:CreditListLib:$CreditListLibAddress"
 
@@ -34,7 +34,7 @@ sed -i '' '/\[profile\.goerli\]/,/^\[/s/^libraries = \["'$LineLibEntry'","'$Cred
 
 source .env
 
-SpigotLib=$(forge create --rpc-url $GOERLI_RPC_URL --private-key $GOERLI_PRIVATE_KEY --etherscan-api-key $MAINNET_ETHERSCAN_API_KEY contracts/utils/SpigotLib.sol:SpigotLib --verify --json)
+SpigotLib=$(forge create --rpc-url $GOERLI_RPC_URL --private-key $GOERLI_PRIVATE_KEY --etherscan-api-key $MAINNET_ETHERSCAN_API_KEY --optimzer-runs 20000 contracts/utils/SpigotLib.sol:SpigotLib --verify --json)
 SpigotLibAddress=$(echo "$SpigotLib" | jq -r '.deployedTo')
 SpigotLibEntry="contracts\/utils\/SpigotLib.sol:SpigotLib:$SpigotLibAddress"
 
@@ -42,7 +42,7 @@ sed -i '' '/\[profile\.goerli\]/,/^\[/s/^libraries = \["'$LineLibEntry'","'$Cred
 
 source .env
 
-EscrowLib=$(forge create --rpc-url $GOERLI_RPC_URL --private-key $GOERLI_PRIVATE_KEY --etherscan-api-key $MAINNET_ETHERSCAN_API_KEY contracts/utils/EscrowLib.sol:EscrowLib --verify --json)
+EscrowLib=$(forge create --rpc-url $GOERLI_RPC_URL --private-key $GOERLI_PRIVATE_KEY --etherscan-api-key $MAINNET_ETHERSCAN_API_KEY --optimzer-runs 20000 contracts/utils/EscrowLib.sol:EscrowLib --verify --json)
 EscrowLibAddress=$(echo "$EscrowLib" | jq -r '.deployedTo')
 EscrowLibEntry="contracts\/utils\/EscrowLib.sol:EscrowLib:$EscrowLibAddress"
 
@@ -50,7 +50,7 @@ sed -i '' '/\[profile\.goerli\]/,/^\[/s/^libraries = \["'$LineLibEntry'","'$Cred
 
 source .env
 
-SpigotedLineLib=$(forge create --rpc-url $GOERLI_RPC_URL --private-key $GOERLI_PRIVATE_KEY --etherscan-api-key $MAINNET_ETHERSCAN_API_KEY contracts/utils/SpigotedLineLib.sol:SpigotedLineLib --verify --json)
+SpigotedLineLib=$(forge create --rpc-url $GOERLI_RPC_URL --private-key $GOERLI_PRIVATE_KEY --etherscan-api-key $MAINNET_ETHERSCAN_API_KEY --optimzer-runs 20000 contracts/utils/SpigotedLineLib.sol:SpigotedLineLib --verify --json)
 SpigotedLineLibAddress=$(echo "$SpigotedLineLib" | jq -r '.deployedTo')
 SpigotedLineLibEntry="contracts\/utils\/SpigotedLineLib.sol:SpigotedLineLib:$SpigotedLineLibAddress"
 
@@ -58,7 +58,7 @@ sed -i '' '/\[profile\.goerli\]/,/^\[/s/^libraries = \["'$LineLibEntry'","'$Cred
 
 source .env
 
-LineFactoryLib=$(forge create --rpc-url $GOERLI_RPC_URL --private-key $GOERLI_PRIVATE_KEY --etherscan-api-key $MAINNET_ETHERSCAN_API_KEY contracts/utils/LineFactoryLib.sol:LineFactoryLib --verify --json)
+LineFactoryLib=$(forge create --rpc-url $GOERLI_RPC_URL --private-key $GOERLI_PRIVATE_KEY --etherscan-api-key $MAINNET_ETHERSCAN_API_KEY --optimzer-runs 100 contracts/utils/LineFactoryLib.sol:LineFactoryLib --verify --json)
 LineFactoryLibAddress=$(echo "$LineFactoryLib" | jq -r '.deployedTo')
 LineFactoryLibEntry="contracts\/utils\/LineFactoryLib.sol:LineFactoryLib:$LineFactoryLibAddress"
 

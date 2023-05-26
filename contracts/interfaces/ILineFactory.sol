@@ -16,13 +16,6 @@ interface ILineFactory {
         uint8 revenueSplit
     );
 
-    event RegisterSecuredLine(
-        address indexed deployedAt,
-        address indexed escrow,
-        address indexed spigot,
-        address swapTarget,
-        uint8 revenueSplit
-    );
 
     error ModuleTransferFailed(address line, address spigot, address escrow);
     error InvalidRevenueSplit();
