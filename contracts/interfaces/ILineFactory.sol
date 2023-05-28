@@ -16,6 +16,10 @@ interface ILineFactory {
         uint8 revenueSplit
     );
 
+    event UpdateStatus(uint256 indexed status); // store as normal uint so it can be indexed in subgraph
+
+    event DeployLine(address indexed oracle, address indexed arbiter, address indexed borrower);
+
 
     error ModuleTransferFailed(address line, address spigot, address escrow);
     error InvalidRevenueSplit();
