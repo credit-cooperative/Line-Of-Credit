@@ -15,7 +15,10 @@ contract ModuleFactory is IModuleFactory {
      * see Spigot.constructor
      * @notice - Deploys a Spigot module that can be used in a LineOfCredit
      */
-    function deploySpigot(address owner, address operator) external returns (address module) {
+    function deploySpigot(
+        address owner, 
+        address operator
+    ) external returns (address module) {
         module = address(new Spigot(owner, operator));
         emit DeployedSpigot(module, owner, operator);
     }
@@ -41,7 +44,7 @@ contract ModuleFactory is IModuleFactory {
         address escrow
     ) external {
 
-        emit DeployedEscrow(escrow, minCRatio, oracle, owner);
+        emit RegisteredEscrow(escrow, minCRatio, oracle, owner);
     }
 
     function registerSpigot(
@@ -50,6 +53,6 @@ contract ModuleFactory is IModuleFactory {
         address operator
     ) external {
        
-        emit DeployedSpigot(spigot, owner, operator);
+        emit RegisteredSpigot(spigot, owner, operator);
     }
 }

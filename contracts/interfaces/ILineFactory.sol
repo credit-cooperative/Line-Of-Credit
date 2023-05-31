@@ -16,9 +16,17 @@ interface ILineFactory {
         uint8 revenueSplit
     );
 
-    event UpdateStatus(uint256 indexed status); // store as normal uint so it can be indexed in subgraph
+    event RegisteredSecuredLine(
+        address indexed deployedAt,
+        address indexed escrow,
+        address indexed spigot,
+        address swapTarget,
+        uint8 revenueSplit
+    );
 
-    event DeployLine(address indexed oracle, address indexed arbiter, address indexed borrower);
+    event RegisteredUpdatedStatus(address indexed line, uint256 indexed status); // store as normal uint so it can be indexed in subgraph
+
+    event RegisteredLine(address indexed line, address indexed oracle, address indexed arbiter, address borrower);
 
 
     error ModuleTransferFailed(address line, address spigot, address escrow);

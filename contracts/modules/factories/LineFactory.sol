@@ -132,14 +132,12 @@ contract LineFactory is ILineFactory {
         if (msg.sender != arbiter){
             revert InvalidArbiterAddress();
         } 
-        factory.registerEscrow(minCRatio, oracle, line, borrower);
+        factory.registerEscrow(minCRatio, oracle, line, escrow);
         factory.registerSpigot(spigot, line, borrower);
         
-
-        emit DeployedSecuredLine(line, escrow, spigot, swapTarget, revenueSplit);
-        emit DeployLine(oracle, arbiter, borrower);
-        emit UpdateStatus(uint256(ILineOfCredit(line).status()));
-        
+        emit RegisteredLine(line, oracle, arbiter, borrower);
+        emit RegisteredUpdatedStatus(line, uint256(ILineOfCredit(line).status()));
+        emit RegisteredSecuredLine(line, escrow, spigot, swapTarget, revenueSplit);
     }
 
     /**
