@@ -105,10 +105,10 @@ contract EscrowedLineTest is Test {
 
     function _addCredit(address token, uint256 amount) public {
         hoax(borrower);
-        line.addCredit(dRate, fRate, amount, token, lender);
+        line.addCredit(dRate, fRate, amount, token, lender, false);
         vm.stopPrank();
         hoax(lender);
-        line.addCredit(dRate, fRate, amount, token, lender);
+        line.addCredit(dRate, fRate, amount, token, lender, false);
         vm.stopPrank();
     }
 
@@ -116,9 +116,9 @@ contract EscrowedLineTest is Test {
 
    function test_cannot_liquidate_escrow_if_cratio_above_min() public {
         hoax(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
         hoax(lender);
-        bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
         hoax(borrower);
         line.borrow(id, 1 ether);
 

@@ -14,6 +14,11 @@ import {InterestRateCredit} from "../interest-rate/InterestRateCredit.sol";
 import {IOracle} from "../../interfaces/IOracle.sol";
 import {ILineOfCredit} from "../../interfaces/ILineOfCredit.sol";
 
+interface ICCVault {
+    function incrementDeployedCredit(uint256 amount, address lender) external;
+
+}
+
 /**
  * @title  - Debt DAO Unsecured Line of Credit
  * @author - Kiba Gateaux
@@ -224,13 +229,22 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         uint128 frate,
         uint256 amount,
         address token,
-        address lender
+        address lender,
+        bool isVault
     ) external payable override nonReentrant whileActive mutualConsent(lender, borrower) returns (bytes32) {
         bytes32 id = _createCredit(lender, token, amount);
 
         _setRates(id, drate, frate);
 
         LineLib.receiveTokenOrETH(token, lender, amount);
+
+        if (isVault) {
+            try ICCVault(lender).incrementDeployedCredit(amount, lender) {
+                
+            } catch {
+                revert("Vault: given address is not a vault");
+            }
+        }
 
         return id;
     }

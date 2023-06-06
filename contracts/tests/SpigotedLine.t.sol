@@ -108,13 +108,13 @@ contract SpigotedLineTest is Test, Events {
       oracle.changePrice(creditT, int(1 ether)); // whitelist token
 
       startHoax(borrower);
-      line.addCredit(dRate, fRate, lentAmount, creditT, lender);
+      line.addCredit(dRate, fRate, lentAmount, creditT, lender, false);
       vm.stopPrank();
       
       startHoax(lender);
       deal(creditT, lender, MAX_REVENUE);
       RevenueToken(creditT).approve(address(line), MAX_INT);
-      id = line.addCredit(dRate, fRate, lentAmount, creditT, lender);
+      id = line.addCredit(dRate, fRate, lentAmount, creditT, lender, false);
       vm.stopPrank();
 
       // as arbiter

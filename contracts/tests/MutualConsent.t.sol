@@ -92,7 +92,7 @@ contract MutualConsentTest is Test, Events {
     function setUp() public {
         // add consent as borrower
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, amount, token, lender);
+        line.addCredit(dRate, fRate, amount, token, lender, false);
         vm.stopPrank();
 
         _mintAndApprove();
@@ -106,7 +106,7 @@ contract MutualConsentTest is Test, Events {
         vm.startPrank(lender);
         vm.expectEmit(false,false,false,false, address(line)); 
         emit MutualConsentAccepted(keccak256(abi.encode("none")));
-        line.addCredit(dRate, fRate, amount, token, lender);
+        line.addCredit(dRate, fRate, amount, token, lender, false);
         vm.stopPrank();
     }
     function test_addCredit_revoking_invalid_consent_fails() public {
@@ -118,7 +118,8 @@ contract MutualConsentTest is Test, Events {
                 fRate,
                 amount,
                 token,
-                makeAddr("randomLender")
+                makeAddr("randomLender"),
+                false
             );
         emit log_named_bytes("invalid msg data:", invalidMsgData);
         emit log_named_uint("bytes length", invalidMsgData.length);
@@ -146,7 +147,8 @@ contract MutualConsentTest is Test, Events {
             fRate,
             amount,
             token,
-            lender
+            lender,
+            false
         );
 
         bytes32 expectedHash = _simulateMutualConstentHash(msgData, borrower);
@@ -165,7 +167,8 @@ contract MutualConsentTest is Test, Events {
             fRate,
             amount,
             token,
-            lender
+            lender,
+            false
         );
         bytes32 expectedHash = _simulateMutualConstentHash(msgData, borrower);
 
@@ -184,7 +187,8 @@ contract MutualConsentTest is Test, Events {
             fRate,
             amount,
             token,
-            lender
+            lender,
+            false
         );
 
 
@@ -196,7 +200,7 @@ contract MutualConsentTest is Test, Events {
         vm.expectEmit(true,true,false,true, address(line));
         bytes32 expectedHash = _simulateMutualConstentHash(msgData, lender);
         emit MutualConsentRegistered(expectedHash, borrower);
-        line.addCredit(dRate, fRate, amount, token, lender);
+        line.addCredit(dRate, fRate, amount, token, lender, false);
         vm.stopPrank();
 
     }
@@ -212,7 +216,8 @@ contract MutualConsentTest is Test, Events {
             fRate,
             amount,
             token,
-            lender
+            lender,
+            false
         );
 
         bytes memory invalidMsgData = abi.encodePacked(msgData, uint256(5));
@@ -231,7 +236,7 @@ contract MutualConsentTest is Test, Events {
     function test_setRates_can_revoke_consent() public {
         // first complete adding credit
         vm.startPrank(lender);
-        line.addCredit(dRate, fRate, amount, token, lender);
+        line.addCredit(dRate, fRate, amount, token, lender, false);
         vm.stopPrank();
 
         bytes32 id = line.ids(0);
@@ -276,7 +281,7 @@ contract MutualConsentTest is Test, Events {
     function test_setRates_fail_to_revoke_consent_as_other_signer() public {
         // first complete adding credit
         vm.startPrank(lender);
-        line.addCredit(dRate, fRate, amount, token, lender);
+        line.addCredit(dRate, fRate, amount, token, lender, false);
         vm.stopPrank();
 
         bytes32 id = line.ids(0);
@@ -306,7 +311,7 @@ contract MutualConsentTest is Test, Events {
 
     function test_setRates_revoke_consent_with_zero_bytes_fails() public {
         vm.startPrank(lender);
-        line.addCredit(dRate, fRate, amount, token, lender);
+        line.addCredit(dRate, fRate, amount, token, lender, false);
         vm.stopPrank();
 
         bytes32 id = line.ids(0);
@@ -330,7 +335,7 @@ contract MutualConsentTest is Test, Events {
 
     function test_setRates_revoke_consent_as_malicious_user() public {
         vm.startPrank(lender);
-        line.addCredit(dRate, fRate, amount, token, lender);
+        line.addCredit(dRate, fRate, amount, token, lender, false);
         vm.stopPrank();
 
         bytes32 id = line.ids(0);
@@ -364,7 +369,7 @@ contract MutualConsentTest is Test, Events {
 
     function test_increaseCredit_can_revoke_consent_as_caller() public {
         vm.startPrank(lender);
-        line.addCredit(dRate, fRate, amount, token, lender);
+        line.addCredit(dRate, fRate, amount, token, lender, false);
         vm.stopPrank();
         bytes32 id = line.ids(0);
         emit log_named_bytes32("line id: ", id);
@@ -390,7 +395,7 @@ contract MutualConsentTest is Test, Events {
         public
     {
         vm.startPrank(lender);
-        line.addCredit(dRate, fRate, amount, token, lender);
+        line.addCredit(dRate, fRate, amount, token, lender, false);
         vm.stopPrank();
 
         bytes32 id = line.ids(0);
@@ -438,14 +443,16 @@ contract MutualConsentTest is Test, Events {
         uint128 frate,
         uint256 amount,
         address token,
-        address lender
+        address lender,
+        bool  isVault
     ) internal returns (bytes memory msgData) {
         bytes memory reconstructedArgs = abi.encode(
             drate,
             frate,
             amount,
             token,
-            lender
+            lender,
+            false
         );
         msgData = abi.encodePacked(fnSelector, reconstructedArgs);
     }

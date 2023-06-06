@@ -148,7 +148,8 @@ contract HotfixForkClaimRevenueTest is Test {
             fRate,
             loanAmount,
             DAI,
-            lender
+            lender,
+            false
         );
         vm.stopPrank();
 
@@ -160,7 +161,8 @@ contract HotfixForkClaimRevenueTest is Test {
             fRate,
             loanAmount,
             DAI,
-            lender
+            lender,
+            false
         );
         vm.stopPrank();
 

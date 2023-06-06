@@ -114,7 +114,8 @@ interface ILineOfCredit {
         uint128 frate,
         uint256 amount,
         address token,
-        address lender
+        address lender,
+        bool isVault
     ) external payable returns (bytes32);
 
     /**

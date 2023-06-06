@@ -107,10 +107,10 @@ contract SecuredLineTest is Test {
 
     function _addCredit(address token, uint256 amount) public {
         hoax(borrower);
-        line.addCredit(dRate, fRate, amount, token, lender);
+        line.addCredit(dRate, fRate, amount, token, lender, false);
         vm.stopPrank();
         hoax(lender);
-        line.addCredit(dRate, fRate, amount, token, lender);
+        line.addCredit(dRate, fRate, amount, token, lender, false);
         vm.stopPrank();
     }
 
@@ -285,9 +285,9 @@ contract SecuredLineTest is Test {
     
     function test_can_liquidate_if_debt_when_deadline_passes() public {
         hoax(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
         hoax(lender);
-        bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
         hoax(borrower);
         line.borrow(id, 1 ether);
 
@@ -298,9 +298,9 @@ contract SecuredLineTest is Test {
     // test should succeed to liquidate when no debt (but positions exist) and passed deadline
     function test_can_liquidate_if_no_debt_but_positions_exist_when_deadline_passes() public {
         hoax(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
         hoax(lender);
-        bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
 
         vm.warp(ttl + 1);
         line.liquidate(1 ether, address(supportedToken2));
@@ -345,9 +345,9 @@ contract SecuredLineTest is Test {
     // test should fail to liquidate if above cratio before deadline
     function test_cannot_liquidate_escrow_if_cratio_above_min() public {
         hoax(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
         hoax(lender);
-        bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
         hoax(borrower);
         line.borrow(id, 1 ether);
 
@@ -387,9 +387,9 @@ contract SecuredLineTest is Test {
 
     function test_cannot_liquidate_as_anon() public {
         hoax(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
         hoax(lender);
-        bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
         hoax(borrower);
         line.borrow(id, 1 ether);
 
