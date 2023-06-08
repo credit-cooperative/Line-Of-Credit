@@ -510,7 +510,8 @@ contract IndexRe7Sim is Test {
             fRate, // frate
             loanSizeInWETH, // amount
             WETH, // token
-            lenderAddress // lender
+            lenderAddress, // lender
+            false  // lender is not a CCVault
         );
         vm.stopPrank();
 
@@ -522,7 +523,8 @@ contract IndexRe7Sim is Test {
             fRate, // frate
             loanSizeInWETH, // amount
             WETH, // token
-            lenderAddress // lender
+            lenderAddress, // lender
+            false // lender is not a CCVault
         );
         vm.stopPrank();
 

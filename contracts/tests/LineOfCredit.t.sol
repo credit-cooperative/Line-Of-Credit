@@ -96,12 +96,12 @@ contract LineTest is Test, Events {
 
     function _addCredit(address token, uint256 amount) public {
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, amount, token, lender);
+        line.addCredit(dRate, fRate, amount, token, lender, false);
         vm.stopPrank();
         vm.startPrank(lender);
         vm.expectEmit(false, true, true, false);
         emit Events.SetRates(bytes32(0), dRate, fRate);
-        line.addCredit(dRate, fRate, amount, token, lender);
+        line.addCredit(dRate, fRate, amount, token, lender, false);
         vm.stopPrank();
     }
 
@@ -141,24 +141,26 @@ contract LineTest is Test, Events {
 
     function test_positions_move_in_queue_of_2() public {
         hoax(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
         hoax(lender);
         bytes32 id = line.addCredit(
             dRate,
             fRate,
             1 ether,
             address(supportedToken1),
-            lender
+            lender,
+            false
         );
         hoax(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken2), lender);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken2), lender, false);
         hoax(lender);
         bytes32 id2 = line.addCredit(
             dRate,
             fRate,
             1 ether,
             address(supportedToken2),
-            lender
+            lender,
+            false
         );
 
         assertEq(line.ids(0), id);
@@ -238,7 +240,7 @@ contract LineTest is Test, Events {
         console.log(lender.balance);
 
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, 1 ether, Denominations.ETH, lender);
+        line.addCredit(dRate, fRate, 1 ether, Denominations.ETH, lender, false);
         vm.stopPrank();
 
         // should fail as we cant send Eth and msg.value won't match "amount"
@@ -250,7 +252,8 @@ contract LineTest is Test, Events {
             fRate,
             1 ether,
             Denominations.ETH,
-            lender
+            lender,
+            false
         );
         vm.stopPrank();
 
@@ -787,7 +790,8 @@ contract LineTest is Test, Events {
             fRate,
             1 ether,
             address(supportedToken1),
-            lender
+            lender,
+            false
         );
 
         hoax(borrower);
@@ -797,7 +801,8 @@ contract LineTest is Test, Events {
             fRate,
             1 ether,
             address(supportedToken1),
-            lender
+            lender,
+            false
         );
     }
 
@@ -816,7 +821,8 @@ contract LineTest is Test, Events {
             fRate,
             1 ether,
             address(supportedToken1),
-            lender
+            lender,
+            false
         );
 
         hoax(borrower);
@@ -826,7 +832,8 @@ contract LineTest is Test, Events {
             fRate,
             1 ether,
             address(supportedToken1),
-            lender
+            lender,
+            false
         );
     }
 
@@ -941,7 +948,7 @@ contract LineTest is Test, Events {
 
     function test_cannot_open_credit_position_without_consent() public {
         hoax(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
         assertEq(
             supportedToken1.balanceOf(address(line)),
             0,
@@ -956,7 +963,7 @@ contract LineTest is Test, Events {
 
     function test_cannot_borrow_from_nonexistant_position() public {
         hoax(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
         vm.expectRevert(ILineOfCredit.PositionIsClosed.selector);
         hoax(borrower);
         line.borrow(bytes32(uint256(12743134)), 1 ether);
@@ -979,7 +986,8 @@ contract LineTest is Test, Events {
             fRate,
             1 ether,
             address(unsupportedToken),
-            lender
+            lender,
+            false
         );
         vm.expectRevert("SimpleOracle: unsupported token");
         hoax(lender);
@@ -988,7 +996,8 @@ contract LineTest is Test, Events {
             fRate,
             1 ether,
             address(unsupportedToken),
-            lender
+            lender,
+            false
         );
     }
 
@@ -1178,11 +1187,11 @@ contract LineTest is Test, Events {
     function test_revert_no_token_price() public {
         oracle.changePrice(address(supportedToken1), -1);
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
         vm.stopPrank();
         vm.startPrank(lender);
         vm.expectRevert(CreditLib.NoTokenPrice.selector);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
         vm.stopPrank();
     }
 
