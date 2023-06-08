@@ -15,7 +15,7 @@ abstract contract MutualConsent {
     /* ============ State Variables ============ */
 
     // equivalent to longest msg.data bytes, ie addCredit
-    uint256 constant MAX_DATA_LENGTH_BYTES = 164;
+    uint256 constant MAX_DATA_LENGTH_BYTES = 200;
 
     // equivalent to any fn with no args, ie just a fn selector
     uint256 constant MIN_DATA_LENGTH_BYTES = 4;
