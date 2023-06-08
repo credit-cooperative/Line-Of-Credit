@@ -8,6 +8,7 @@ import {IModuleFactory} from "../../interfaces/IModuleFactory.sol";
 import {LineLib} from "../../utils/LineLib.sol";
 import {LineFactoryLib} from "../../utils/LineFactoryLib.sol";
 import {ISecuredLine} from "../../interfaces/ISecuredLine.sol";
+import {ILineOfCredit} from "../../interfaces/ILineOfCredit.sol";
 
 /**
  * @title   - Debt DAO Line Factory
@@ -119,6 +120,27 @@ contract LineFactory is ILineFactory {
         );
 
         emit DeployedSecuredLine(address(line), mEscrow, mSpigot, swapTarget, coreParams.revenueSplit);
+        
+
+    }
+
+    function registerSecuredLine(
+        address line, 
+        address spigot, 
+        address escrow, 
+        address borrower,
+        uint8 revenueSplit, 
+        uint32 minCRatio
+    ) external {
+        if (msg.sender != arbiter){
+            revert InvalidArbiterAddress();
+        } 
+        factory.registerEscrow(minCRatio, oracle, line, escrow);
+        factory.registerSpigot(spigot, line, borrower);
+        
+        emit RegisteredLine(line, oracle, arbiter, borrower);
+        emit RegisteredUpdatedStatus(line, uint256(ILineOfCredit(line).status()));
+        emit RegisteredSecuredLine(line, escrow, spigot, swapTarget, revenueSplit);
     }
 
     /**
