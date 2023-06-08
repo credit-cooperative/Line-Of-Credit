@@ -1180,7 +1180,7 @@ contract LineTest is Test, Events {
         vm.startPrank(borrower);
         line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
         vm.stopPrank();
-        vm.prank(lender);
+        vm.startPrank(lender);
         vm.expectRevert(CreditLib.NoTokenPrice.selector);
         line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
         vm.stopPrank();

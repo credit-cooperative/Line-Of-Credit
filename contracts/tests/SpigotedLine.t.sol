@@ -109,18 +109,18 @@ contract SpigotedLineTest is Test, Events {
 
       oracle.changePrice(creditT, int(1 ether)); // whitelist token
 
-      startHoax(borrower);
+      vm.startPrank(borrower);
       line.addCredit(dRate, fRate, lentAmount, creditT, lender);
       vm.stopPrank();
 
-      startHoax(lender);
+      vm.startPrank(lender);
       deal(creditT, lender, MAX_REVENUE);
       RevenueToken(creditT).approve(address(line), MAX_INT);
       id = line.addCredit(dRate, fRate, lentAmount, creditT, lender);
       vm.stopPrank();
 
       // as arbiter
-      hoax(arbiter);
+      vm.startPrank(arbiter);
       line.addSpigot(revenueC, setting);
       vm.stopPrank();
     }
@@ -301,14 +301,15 @@ contract SpigotedLineTest is Test, Events {
       );
 
       // No unused tokens so can't get approved
-      hoax(arbiter);
+      vm.startPrank(arbiter);
       vm.expectRevert(SpigotedLineLib.TradeFailed.selector);
       line.claimAndTrade(address(revenueToken), tradeData);
       (,uint p,,,,,,) = line.credits(line.ids(0));
 
       assertEq(p, lentAmount); // nothing repaid
+      vm.stopPrank();
 
-      hoax(borrower);
+      vm.startPrank(borrower);
       vm.expectRevert(
         abi.encodeWithSelector(
          ISpigotedLine.ReservesOverdrawn.selector,
@@ -610,9 +611,9 @@ contract SpigotedLineTest is Test, Events {
 
       uint claimable = spigot.getOwnerTokens(Denominations.ETH);
 
-      hoax(arbiter);
+      vm.startPrank(arbiter);
       line.claimAndTrade(Denominations.ETH, tradeData);
-
+      vm.stopPrank();
       assertEq(line.unused(creditT), lentAmount);
     }
 
@@ -1088,7 +1089,7 @@ contract SpigotedLineTest is Test, Events {
         claimed - 1,
         lentAmount
       );
-      hoax(arbiter);
+      vm.startPrank(arbiter);
       line.claimAndTrade(address(revenueToken), tradeData);
       vm.stopPrank();
 
@@ -1297,7 +1298,7 @@ contract SpigotedLineTest is Test, Events {
 
       uint claimed = (MAX_REVENUE * ownerSplit) / 100; // expected claim amount
 
-      hoax(arbiter);
+      vm.startPrank(arbiter);
       bytes memory tradeData = abi.encodeWithSignature(
         'trade(address,address,uint256,uint256)',
         address(revenueToken),

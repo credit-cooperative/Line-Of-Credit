@@ -107,10 +107,10 @@ contract EscrowedLineTest is Test {
     }
 
     function _addCredit(address token, uint256 amount) public {
-        hoax(borrower);
+        vm.startPrank(borrower);
         line.addCredit(dRate, fRate, amount, token, lender);
         vm.stopPrank();
-        hoax(lender);
+        vm.startPrank(lender);
         line.addCredit(dRate, fRate, amount, token, lender);
         vm.stopPrank();
     }
@@ -118,13 +118,15 @@ contract EscrowedLineTest is Test {
 
 
    function test_cannot_liquidate_escrow_if_cratio_above_min() public {
-        hoax(borrower);
+        vm.startPrank(borrower);
         line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
-        hoax(lender);
+        vm.stopPrank();
+        vm.startPrank(lender);
         bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
-        hoax(borrower);
+        vm.stopPrank();
+        vm.startPrank(borrower);
         line.borrow(id, 1 ether);
-
+        vm.stopPrank();
         vm.expectRevert(ILineOfCredit.NotLiquidatable.selector);
         line.liquidate(1 ether, address(supportedToken2));
     }
@@ -135,8 +137,9 @@ contract EscrowedLineTest is Test {
         uint balanceOfArbiter = supportedToken2.balanceOf(arbiter);
 
         bytes32 id = line.ids(0);
-        hoax(borrower);
+        vm.startPrank(borrower);
         line.borrow(id, 1 ether);
+        vm.stopPrank();
         (uint p,) = line.updateOutstandingDebt();
         assertGt(p, 0);
         console.log('checkpoint');
@@ -174,8 +177,9 @@ contract EscrowedLineTest is Test {
         uint balanceOfEscrow = supportedToken2.balanceOf(address(escrow));
         uint balanceOfArbiter = supportedToken2.balanceOf(arbiter);
         bytes32 id = line.ids(0);
-        hoax(borrower);
+        vm.startPrank(borrower);
         line.borrow(id, 1 ether);
+        vm.stopPrank();
         (uint p, uint i) = line.updateOutstandingDebt();
         assertGt(p, 0);
         oracle.changePrice(address(supportedToken2), 1);

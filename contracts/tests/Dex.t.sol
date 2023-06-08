@@ -136,7 +136,7 @@ contract EthRevenue is Test {
             transferOwnerFunction: SimpleRevenueContract.transferOwnership.selector
         });
 
-        hoax(arbiter);
+        vm.startPrank(arbiter);
         line.addSpigot(address(revenueContract), settings);
         vm.stopPrank();
 

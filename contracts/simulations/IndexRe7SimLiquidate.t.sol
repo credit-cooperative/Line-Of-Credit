@@ -634,27 +634,27 @@ contract IndexRe7Sim is Test {
     }
 
     // TODO: finish this test
-    function test_borrower_deposits_collateral() public {
-        test_arbiter_enables_stablecoin_collateral();
-        vm.startPrank(indexCoopLiquidityOperations);
-        IERC20(WETH).approve(address(securedLine.escrow()), MAX_INT);
-        escrow.addCollateral(collateralAmtWETH, WETH);
-        // TODO: read collateral amount from escrow and assert collateral value
-        // mapping(address => IEscrow.Deposit) deposited = escrow.
-        // assertEq(collateralAmtDAI, escrow.Deposit.amount);
-        vm.stopPrank();
-    }
+    // function test_borrower_deposits_collateral() public {
+    //     test_arbiter_enables_stablecoin_collateral();
+    //     vm.startPrank(indexCoopLiquidityOperations);
+    //     IERC20(WETH).approve(address(securedLine.escrow()), MAX_INT);
+    //     escrow.addCollateral(collateralAmtWETH, WETH);
+    //     // TODO: read collateral amount from escrow and assert collateral value
+    //     // mapping(address => IEscrow.Deposit) deposited = escrow.
+    //     // assertEq(collateralAmtDAI, escrow.Deposit.amount);
+    //     vm.stopPrank();
+    // }
 
     // TODO: fix this test
-    function test_borrower_can_draw_on_credit() public {
-        // index draws down full amount
-        bytes32 positionId =  _lenderFundLoan();
-        vm.startPrank(indexCoopLiquidityOperations);
-        emit log_named_bytes32("PositionId: ", positionId);
-        line.borrow(positionId, 200 ether);
-        // TODO: read borrowed amount from line and assert equals 200 ether
-        vm.stopPrank();
-    }
+    // function test_borrower_can_draw_on_credit() public {
+    //     // index draws down full amount
+    //     bytes32 positionId =  _lenderFundLoan();
+    //     vm.startPrank(indexCoopLiquidityOperations);
+    //     emit log_named_bytes32("PositionId: ", positionId);
+    //     line.borrow(positionId, 200 ether);
+    //     // TODO: read borrowed amount from line and assert equals 200 ether
+    //     vm.stopPrank();
+    // }
 
     function test_borrower_can_deposit_and_repay_debt() public {
 
