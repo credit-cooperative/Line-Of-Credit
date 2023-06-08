@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0
+// Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
+
 pragma solidity 0.8.16;
 
 import {Denominations} from "chainlink/Denominations.sol";
@@ -49,7 +52,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
      * @param spigot_ - Spigot smart contract that is owned by this Line
      * @param swapTarget_ - 0x protocol exchange address to send calldata for trades to exchange revenue tokens for credit tokens
      * @param ttl_ - time to live for line of credit contract across all lenders set at deployment in order to set the term/expiry date
-     * @param defaultRevenueSplit_ - The % of Revenue Tokens that the Spigot escrows for debt repayment if the Line is healthy. 
+     * @param defaultRevenueSplit_ - The % of Revenue Tokens that the Spigot escrows for debt repayment if the Line is healthy.
      */
     constructor(
         address oracle_,
