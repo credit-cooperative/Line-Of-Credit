@@ -1,4 +1,4 @@
-pragma solidity 0.8.16;
+ pragma solidity ^0.8.16;
 
 import {ISpigot} from "../interfaces/ISpigot.sol";
 import {ISpigotedLine} from "../interfaces/ISpigotedLine.sol";

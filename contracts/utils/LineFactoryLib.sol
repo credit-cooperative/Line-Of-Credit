@@ -1,4 +1,4 @@
-pragma solidity 0.8.16;
+ pragma solidity ^0.8.16;
 
 import {SecuredLine} from "../modules/credit/SecuredLine.sol";
 import {LineLib} from "./LineLib.sol";

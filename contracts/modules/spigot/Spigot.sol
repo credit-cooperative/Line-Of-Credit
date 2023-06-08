@@ -1,4 +1,4 @@
-pragma solidity 0.8.16;
+ pragma solidity ^0.8.16;
 
 import {ReentrancyGuard} from "openzeppelin/security/ReentrancyGuard.sol";
 import {LineLib} from "../../utils/LineLib.sol";

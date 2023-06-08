@@ -1,5 +1,6 @@
 [profile.default]
 src = 'contracts'
+solc-version = "0.8.19"
 test = 'test'
 script = 'scripts'
 out = 'out'

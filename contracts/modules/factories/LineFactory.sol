@@ -1,4 +1,4 @@
-pragma solidity 0.8.16;
+ pragma solidity ^0.8.16;
 
 import {ILineFactory} from "../../interfaces/ILineFactory.sol";
 import {IModuleFactory} from "../../interfaces/IModuleFactory.sol";

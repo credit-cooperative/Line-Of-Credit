@@ -1,4 +1,4 @@
-pragma solidity 0.8.9;
+ pragma solidity ^0.8.9;
 
 import {RevToken} from "../../contracts/mock/RevToken.sol";
 import {Script} from "../../lib/forge-std/src/Script.sol";
