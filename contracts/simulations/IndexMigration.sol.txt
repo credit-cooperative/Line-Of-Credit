@@ -1,0 +1,169 @@
+pragma solidity ^0.8.9;
+
+import {ISpigot} from "../interfaces/ISpigot.sol";
+import {ILineOfCredit} from "../interfaces/ILineOfCredit.sol";
+import {ISpigot} from "../interfaces/ISpigot.sol";
+import {LineLib} from "../utils/LineLib.sol";
+import {IEscrow} from "../interfaces/IEscrow.sol";
+import {ISpigotedLine} from "../interfaces/ISpigotedLine.sol";
+import {IModuleFactory} from "../interfaces/IModuleFactory.sol";
+import {ILineFactory} from "../interfaces/ILineFactory.sol";
+
+interface IFeeModule {}
+
+interface ISetToken {}
+
+/// @title  Idle Migration Contract
+/// @author DebtDAO
+/// @notice Deploys the Line of Credit and assosciated contracts, and
+///         facilitates the transfer of admin privileges to the Spigot
+/// @dev    A Secured Line Of Credit is deployed during contract creation.
+/// @dev    In order to successfully facilitate the migration, this contract
+///         requires admin privileges on the Idle Fee Collector.  This privilige
+///         escalation takes place in the first step of the governance proposal
+///         executed by the Idle Timelock.
+contract IndexMigration {
+    // interfaces
+    IFeeModule iFeeModlue;
+    ISetToken iSetToken;
+    ISpigot iSpigot;
+
+    // DEX
+    address private constant zeroExSwapTarget = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
+
+    // Index Contracts
+
+    address private constant indexFeeModule = 0x000; // PLACEHOLDER
+
+    address private constant indexMultSig = 0x0001; // PLACEHOLDER
+
+    // migration
+
+    bool migrationSucceeded;
+
+    uint256 immutable deployedAt;
+
+    address public immutable securedLine;
+
+    address public immutable spigot;
+
+    address public immutable escrow;
+
+    /*//////////////////////////////////////////////////////////////
+                            E V E N T S
+    //////////////////////////////////////////////////////////////*/
+
+    event MigrationDeployed(address indexed spigot, address indexed escrow, address indexed line);
+
+    event ReplacedManager(uint256 index, address contractAddress, uint256 allocation);
+
+    event MigrationSucceeded();
+
+    /*//////////////////////////////////////////////////////////////
+                            E R R O R S
+    //////////////////////////////////////////////////////////////*/
+
+    error NoRecoverAfterSuccessfulMigration();
+
+    error SpigotOwnershipTransferFailed();
+
+    error EscrowOwnershipTransferFailed();
+
+    error CooldownPeriodStillActive();
+
+    error MigrationAlreadyComplete();
+
+    error NotFeeCollectorAdmin();
+
+    error ReplaceManagerFailed();
+
+    error MigrationFailed();
+
+    error NotIndexMultisig();
+
+    error SpigotNotAdmin();
+
+    error LineNotActive();
+
+    error TimelockOnly();
+
+    /*//////////////////////////////////////////////////////////////
+                        C O N S T R U C T O R
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Initializes the migration contract
+    /// @dev Sets the LineFactory address, Time-to-live (ttl) and `deployedAt` time
+    /// @dev Deploys the Spigot and Escrow contracts via the LineFactory
+    /// @dev Deploys a Secured Line of Credit for the FeeCollector
+    /// @param lineFactory_ The deployed LineFactory address
+    /// @param ttl_ Time-to-live for the loan
+
+    constructor(address lineFactory_, uint256 ttl_) {
+        deployedAt = block.timestamp;
+
+        iFeeModule = IFeeModule(indexFeeModule);
+
+        // deploy spigot
+        spigot = ILineFactory(lineFactory_).deploySpigot(
+            address(this), // owner
+            indexMultSig // operator - Treasury Multisig
+        );
+        iSpigot = ISpigot(spigot);
+
+        // deploy escrow
+        escrow = ILineFactory(lineFactory_).deployEscrow(
+            0, // min credit ratio
+            address(this), // owner
+            indexMultSig // borrower
+        );
+
+        // note:    The Fee Collector distributes revenue to multiple beneficiaries, we want 100% of the
+        //          revenue sent to the spigot to go to paying back the loan, therefore revenueSplit = 100%
+        ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
+            borrower: indexMultSig,
+            ttl: ttl_, // time to live
+            cratio: 0, // uint32(creditRatio),
+            revenueSplit: 100 // uint8(revenueSplit) - 100% to spigot
+        });
+
+        // deploy the line of credit
+        securedLine = ILineFactory(lineFactory_).deploySecuredLineWithModules(coreParams, spigot, escrow);
+
+        emit MigrationDeployed(spigot, escrow, securedLine);
+    }
+
+    /*//////////////////////////////////////////////////////
+                        M O D I F I E R S                  
+    //////////////////////////////////////////////////////*/
+
+    /// @dev    For functions that can only be called by the Index Multisig
+    modifier onlyIndex() {
+        if (msg.sender != indexMultSig) revert NotIndexMultisig();
+        _;
+    }
+
+    /*//////////////////////////////////////////////////////
+                    M I G R A T I O N   L O G I C                  
+    //////////////////////////////////////////////////////*/
+
+    /// @notice Performs the migration
+    /// @dev    Can only be called my an authorized user, ie the governance Timelock
+    /// @dev    Adds a revenue stream to the Spigot, and makes the Line of Credit the owner
+    ///         of the Spigot and Escrow contracts
+    /// @dev    Adds the Spigot as a whitelisted address on the FeeCollector and sets the `deposit()` fn
+    ///         as a whitelist function on the Spigot.
+    /// @dev    Transfers ownership of the Spigot and Escrow to the SecuredLine, then initializes the Line
+    /// @dev    Sets the list of beneficiaries and their allocations, and sets the Spigot as the FeeCollector's admin
+
+    /*//////////////////////////////////////////////////////
+                            U T I L S                    
+    //////////////////////////////////////////////////////*/
+
+    /// @notice Generates and returns the function selector from the signature provided
+    /// @dev    The signature includes only the argument types, and omits the names
+    /// @param  signature The function's signature
+    /// @return The 4-byte function selector of the signature provided in `signature`
+    function _getSelector(string memory signature) internal pure returns (bytes4) {
+        return bytes4(keccak256(bytes(signature)));
+    }
+}
