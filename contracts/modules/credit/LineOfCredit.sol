@@ -15,7 +15,7 @@ import {IOracle} from "../../interfaces/IOracle.sol";
 import {ILineOfCredit} from "../../interfaces/ILineOfCredit.sol";
 
 interface ICCVault {
-    function incrementDeployedCredit(uint256 amount, address lender) external;
+    function incrementDeployedCredit(uint256 amount, address lender, bytes32 positionId) external;
 
 }
 
@@ -239,7 +239,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         LineLib.receiveTokenOrETH(token, lender, amount);
 
         if (isVault) {
-            try ICCVault(lender).incrementDeployedCredit(amount, lender) {
+            try ICCVault(lender).incrementDeployedCredit(amount, lender, id) {
                 
             } catch {
                 revert("Vault: given address is not a vault");
