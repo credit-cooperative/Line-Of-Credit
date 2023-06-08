@@ -1,4 +1,4 @@
-pragma solidity 0.8.16;
+ pragma solidity ^0.8.16;
 
 // OpenZeppelin Contracts (last updated v4.6.0) (token/ERC20/IERC20.sol)
 

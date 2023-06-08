@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 // Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
 
-pragma solidity 0.8.16;
+ pragma solidity ^0.8.16;
 import {ILineOfCredit} from "../interfaces/ILineOfCredit.sol";
 import {IOracle} from "../interfaces/IOracle.sol";
 import {CreditLib} from "./CreditLib.sol";
