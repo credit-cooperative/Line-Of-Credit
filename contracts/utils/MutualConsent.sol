@@ -3,7 +3,7 @@
 
 // forked from https://github.com/IndexCoop/index-coop-smart-contracts/blob/master/contracts/lib/MutualConsent.sol
 
-pragma solidity 0.8.16;
+ pragma solidity ^0.8.16;
 
 /**
  * @title MutualConsent

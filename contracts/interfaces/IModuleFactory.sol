@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 // Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
 
-pragma solidity 0.8.16;
+ pragma solidity ^0.8.16;
 
 interface IModuleFactory {
     event DeployedSpigot(address indexed deployedAt, address indexed owner, address operator);
