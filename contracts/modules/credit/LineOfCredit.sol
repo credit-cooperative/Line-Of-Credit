@@ -498,7 +498,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         }
     }
 
-    function _vaultCallback(bool isVault, address lender, uint256 amount, bytes32 id) internal returns (bool) {
+    function _vaultCallback(address lender, uint256 amount, bytes32 id) internal returns (bool) {
         try ICCVault(lender).incrementDeployedCredit(amount, lender, id) {
             return true;
         } catch {
