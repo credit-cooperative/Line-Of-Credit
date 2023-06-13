@@ -238,14 +238,11 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         LineLib.receiveTokenOrETH(token, lender, amount);
 
-        if (isVault) {
-            try ICCVault(lender).incrementDeployedCredit(amount, lender, id) {
-                
-            } catch {
-                revert("Vault: given address is not a vault");
-            }
+        if (isVault){
+            _vaultCallback(lender, amount, id);
         }
-
+        
+        
         return id;
     }
 
@@ -498,6 +495,15 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
                 emit SortedIntoQ(p, nextQSpot, i, oldPositionId);
             }
+        }
+    }
+
+    function _vaultCallback(bool isVault, address lender, uint256 amount, bytes32 id) internal returns (bool) {
+        try ICCVault(lender).incrementDeployedCredit(amount, lender, id) {
+            return true;
+        } catch {
+            revert("Vault: given address is not a vault");
+            return false;
         }
     }
 
