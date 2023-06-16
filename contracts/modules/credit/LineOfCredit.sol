@@ -498,6 +498,9 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         }
     }
 
+
+    // TODO: write a test to see if func call fails if lender is a bad address
+    // https://github.com/dragonfly-xyz/useful-solidity-patterns/tree/main/patterns/error-handling
     function _vaultCallback(address lender, uint256 amount, bytes32 id) internal returns (bool) {
         try ICCVault(lender).incrementDeployedCredit(amount, lender, id) {
             return true;
