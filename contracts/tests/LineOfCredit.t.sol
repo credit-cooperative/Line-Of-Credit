@@ -105,6 +105,7 @@ contract LineTest is Test, Events {
         vm.stopPrank();
     }
 
+
     function setupQueueTest(uint256 amount)
         internal
         returns (address[] memory)
@@ -228,7 +229,14 @@ contract LineTest is Test, Events {
         );
     }
 
-
+    function test_addCredit_reverts_when_lender_is_not_vault_but_isVault_is_true() public {
+        vm.startPrank(borrower);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, true);
+        vm.stopPrank();
+        vm.startPrank(lender);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, true);
+        vm.stopPrank();
+    }
 
     function test_cannot_add_credit_position_ETH() public {
         assertEq(address(line).balance, 0, "Line balance should be 0");
