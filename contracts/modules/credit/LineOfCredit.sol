@@ -242,10 +242,10 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         LineLib.receiveTokenOrETH(token, lender, amount);
 
         if (isVault){
-            _vaultCallback(lender, id);
+            _vaultCallback(lender, id, amount);
         }
-        
-        
+
+
         return id;
     }
 
@@ -264,7 +264,8 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     /// see ILineOfCredit.increaseCredit
     function increaseCredit(
         bytes32 id,
-        uint256 amount
+        uint256 amount,
+        bool isVault
     ) external payable override nonReentrant whileActive mutualConsentById(id) {
         Credit memory credit = _accrue(credits[id], id);
 
@@ -275,6 +276,10 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         LineLib.receiveTokenOrETH(credit.token, credit.lender, amount);
 
         emit IncreaseCredit(id, amount);
+
+        if (isVault){
+            _vaultCallback(credit.lender, id, amount);
+        }
     }
 
     ///////////////
@@ -516,9 +521,9 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     //     return true;
     // }
 
-    function _vaultCallback(address lender, bytes32 id) internal returns (bool) {
+    function _vaultCallback(address lender, bytes32 id, uint256 amount) internal returns (bool) {
         console.log("Vault: incrementing credit");
-        (bool success, ) = address(lender).call(abi.encodeWithSignature("incrementDeployedCredit(bytes32)", id));
+        (bool success, ) = address(lender).call(abi.encodeWithSignature("incrementDeployedCredit(bytes32,uint256)", id, amount));
         if (success) {
             console.log("Vault: successfully incremented credit");
             return true;
