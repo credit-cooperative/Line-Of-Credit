@@ -386,7 +386,7 @@ contract MutualConsentTest is Test, Events {
         );
 
         vm.startPrank(borrower);
-        line.increaseCredit(id, amount);
+        line.increaseCredit(id, amount, false);
         bytes32 expectedHash = _simulateMutualConstentHash(msgData, borrower);
         vm.expectEmit(true, false, false, true, address(line));
         emit MutualConsentRevoked(expectedHash);
@@ -412,7 +412,7 @@ contract MutualConsentTest is Test, Events {
         );
 
         vm.startPrank(borrower);
-        line.increaseCredit(id, amount);
+        line.increaseCredit(id, amount, false);
         vm.stopPrank();
 
         vm.startPrank(makeAddr("maliciousUser"));
