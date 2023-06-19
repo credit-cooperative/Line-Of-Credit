@@ -1,7 +1,7 @@
- pragma solidity ^0.8.16;
+pragma solidity ^0.8.16;
 
- //TODO rm for deployement
- import "forge-std/console.sol";
+//TODO rm for deployement
+import "forge-std/console.sol";
 
 import {Denominations} from "chainlink/Denominations.sol";
 import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
@@ -19,7 +19,6 @@ import {ILineOfCredit} from "../../interfaces/ILineOfCredit.sol";
 
 interface ICCVault {
     function incrementDeployedCredit(bytes32 positionId) external returns (bytes32);
-
 }
 
 /**
@@ -241,10 +240,9 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         LineLib.receiveTokenOrETH(token, lender, amount);
 
-        if (isVault){
+        if (isVault) {
             _vaultCallback(lender, id, amount);
         }
-
 
         return id;
     }
@@ -277,7 +275,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         emit IncreaseCredit(id, amount);
 
-        if (isVault){
+        if (isVault) {
             _vaultCallback(credit.lender, id, amount);
         }
     }
@@ -506,7 +504,6 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         }
     }
 
-
     // TODO: write a test to see if func call fails if lender is a bad address
     // https://github.com/dragonfly-xyz/useful-solidity-patterns/tree/main/patterns/error-handling
 
@@ -522,17 +519,17 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     // }
 
     function _vaultCallback(address lender, bytes32 id, uint256 amount) internal returns (bool) {
-        console.log("Vault: incrementing credit");
-        (bool success, ) = address(lender).call(abi.encodeWithSignature("incrementDeployedCredit(bytes32,uint256)", id, amount));
+        (bool success, ) = address(lender).call(
+            abi.encodeWithSignature("incrementDeployedCredit(bytes32,uint256)", id, amount)
+        );
+
         if (success) {
-            console.log("Vault: successfully incremented credit");
+            // Vault: successfully incremented credit
             return true;
         } else {
             revert("Vault: given address is not a vault");
         }
     }
-
-
 
     /* GETTERS */
 
