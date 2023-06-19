@@ -3,7 +3,8 @@
 
 // forked from https://github.com/IndexCoop/index-coop-smart-contracts/blob/master/contracts/lib/MutualConsent.sol
 
- pragma solidity ^0.8.16;
+pragma solidity ^0.8.16;
+import "../../../forge-std/console.sol";
 
 /**
  * @title MutualConsent
@@ -94,17 +95,21 @@ abstract contract MutualConsent {
 
         // The consent hash is defined by the hash of the transaction call data and sender of msg,
         // which uniquely identifies the function, arguments, and sender.
+        console.log("Msg Data Value: ", msg.data);
         bytes32 expectedProposalId = keccak256(abi.encodePacked(msg.data, nonCaller));
 
         if (mutualConsentProposals[expectedProposalId] == address(0)) {
             bytes32 newProposalId = keccak256(abi.encodePacked(msg.data, msg.sender));
-
             mutualConsentProposals[newProposalId] = msg.sender; // save caller's consent for nonCaller to accept
 
             emit MutualConsentRegistered(newProposalId, nonCaller);
 
             return false;
         }
+
+        // if (mutualConsentProposals[expectedProposalId] != nonCaller) {
+        //     revert InvalidConsent();
+        // }
 
         delete mutualConsentProposals[expectedProposalId];
 
