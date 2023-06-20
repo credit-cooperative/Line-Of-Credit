@@ -103,7 +103,7 @@ interface ILineOfCredit {
     * @dev           - Fully executes function after a Borrower and a Lender have agreed terms, both Lender and borrower have agreed through mutualConsent
     * @dev           - callable by `lender` and `borrower`
     * @param drate   - The interest rate charged to a Borrower on borrowed / drawn down funds. In bps, 4 decimals.
-    * @param frate   - The interest rate charged to a Borrower on the remaining funds available, but not yet drawn down 
+    * @param frate   - The interest rate charged to a Borrower on the remaining funds available, but not yet drawn down
                         (rate charged on the available headroom). In bps, 4 decimals.
     * @param amount  - The amount of Credit Token to initially deposit by the Lender
     * @param token   - The Credit Token, i.e. the token to be lent out
@@ -138,7 +138,7 @@ interface ILineOfCredit {
      * @param id         - position id that we are updating
      * @param amount     - amount to deposit by the Lender
      */
-    function increaseCredit(bytes32 id, uint256 amount) external payable;
+    function increaseCredit(bytes32 id, uint256 amount, bool isVault) external payable;
 
     // Borrower functions
 
