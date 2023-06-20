@@ -661,9 +661,9 @@ contract LineTest is Test, Events {
 
         // cant create new position, need to increaseCredit
         hoax(lender);
-        line.increaseCredit(id, 1 ether);
+        line.increaseCredit(id, 1 ether, false);
         hoax(borrower);
-        line.increaseCredit(id, 1 ether);
+        line.increaseCredit(id, 1 ether, false);
 
         // should be no interest after adding credit again
         (,,uint256 interestAccrued4,,,,,bool isOpen) = line.credits(id);
@@ -703,9 +703,9 @@ contract LineTest is Test, Events {
 
         // cant create new position, need to increaseCredit
         hoax(lender);
-        line.increaseCredit(id, 1 ether);
+        line.increaseCredit(id, 1 ether, false);
         hoax(borrower);
-        line.increaseCredit(id, 1 ether);
+        line.increaseCredit(id, 1 ether, false);
 
         vm.warp(block.timestamp + ttl);
 
@@ -1071,9 +1071,9 @@ contract LineTest is Test, Events {
         (uint d,,,,,,,) = line.credits(id);
 
         hoax(borrower);
-        line.increaseCredit(id, 1 ether);
+        line.increaseCredit(id, 1 ether, false);
         hoax(lender);
-        line.increaseCredit(id, 1 ether);
+        line.increaseCredit(id, 1 ether, false);
         (uint d2,,,,,,,) = line.credits(id);
         assertEq(d2 - d, 1 ether);
     }
@@ -1109,9 +1109,9 @@ contract LineTest is Test, Events {
 
         // cant create new position, need to increaseCredit
         hoax(lender);
-        line.increaseCredit(id, 1 ether);
+        line.increaseCredit(id, 1 ether, false);
         hoax(borrower);
-        line.increaseCredit(id, 1 ether);
+        line.increaseCredit(id, 1 ether, false);
 
         (uint256 deposit3,,uint256 interestAccrued4,,,,,) = line.credits(id);
         assertEq(deposit3, 1 ether);
@@ -1126,10 +1126,10 @@ contract LineTest is Test, Events {
         (uint d,,,,,,,) = line.credits(id);
 
         hoax(borrower);
-        line.increaseCredit(id, 1 ether);
+        line.increaseCredit(id, 1 ether, false);
         hoax(address(0xdebf));
         vm.expectRevert(MutualConsent.Unauthorized.selector);
-        line.increaseCredit(id, 1 ether);
+        line.increaseCredit(id, 1 ether, false);
     }
 
     function test_can_update_rates_with_consent() public {
