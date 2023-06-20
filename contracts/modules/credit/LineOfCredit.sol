@@ -517,14 +517,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     // }
 
     function _vaultCallback(address lender, bytes32 id) internal returns (bool) {
-        console.log("Vault: incrementing credit");
-        (bool success, ) = address(lender).call(abi.encodeWithSignature("incrementDeployedCredit(bytes32)", id));
-        if (success) {
-            console.log("Vault: successfully incremented credit");
-            return true;
-        } else {
-            revert("Vault: given address is not a vault");
-        }
+        address(lender).call(abi.encodeWithSignature("incrementDeployedCredit(bytes32)", id));
     }
 
 
