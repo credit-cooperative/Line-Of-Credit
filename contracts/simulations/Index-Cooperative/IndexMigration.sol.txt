@@ -1,4 +1,4 @@
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.19;
 
 import {ISpigot} from "../interfaces/ISpigot.sol";
 import {ILineOfCredit} from "../interfaces/ILineOfCredit.sol";
@@ -133,7 +133,7 @@ contract IndexMigration {
     }
 
     /*//////////////////////////////////////////////////////
-                        M O D I F I E R S                  
+                        M O D I F I E R S
     //////////////////////////////////////////////////////*/
 
     /// @dev    For functions that can only be called by the Index Multisig
@@ -143,7 +143,7 @@ contract IndexMigration {
     }
 
     /*//////////////////////////////////////////////////////
-                    M I G R A T I O N   L O G I C                  
+                    M I G R A T I O N   L O G I C
     //////////////////////////////////////////////////////*/
 
     /// @notice Performs the migration
@@ -156,7 +156,7 @@ contract IndexMigration {
     /// @dev    Sets the list of beneficiaries and their allocations, and sets the Spigot as the FeeCollector's admin
 
     /*//////////////////////////////////////////////////////
-                            U T I L S                    
+                            U T I L S
     //////////////////////////////////////////////////////*/
 
     /// @notice Generates and returns the function selector from the signature provided
