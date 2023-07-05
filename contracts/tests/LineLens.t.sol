@@ -1,4 +1,4 @@
-pragma solidity 0.8.16;
+pragma solidity ^0.8.16;
 
 import "forge-std/Test.sol";
 import {Denominations} from "chainlink/Denominations.sol";
@@ -124,7 +124,7 @@ contract LineLendsTest is Test {
         assertGt(interestAccrued, 0);
 
         uint256 getInterest = line.interestAccrued(id);
-        
+
         assertEq(getInterest, interestAccrued);
     }
 

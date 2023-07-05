@@ -1,4 +1,4 @@
-pragma solidity 0.8.16;
+pragma solidity ^0.8.16;
 
 import "forge-std/Test.sol";
 import { IEscrow } from "../interfaces/IEscrow.sol";
@@ -17,7 +17,7 @@ import { MockLine } from "../mock/MockLine.sol";
 contract EscrowedLineTest is Test {
     MockEscrowedLine line;
     Escrow escrow;
-    
+
     RevenueToken supportedToken1;
     RevenueToken supportedToken2;
     RevenueToken unsupportedToken;
@@ -25,7 +25,7 @@ contract EscrowedLineTest is Test {
     // Named vars for common inputs
     address constant revenueContract = address(0xdebf);
     uint lentAmount = 1 ether;
-    
+
     uint128 constant dRate = 100;
     uint128 constant fRate = 1;
     uint constant ttl = 10 days; // allows us t
@@ -112,7 +112,7 @@ contract EscrowedLineTest is Test {
         vm.stopPrank();
     }
 
-    
+
 
    function test_cannot_liquidate_escrow_if_cratio_above_min() public {
         hoax(borrower);
@@ -122,7 +122,7 @@ contract EscrowedLineTest is Test {
         hoax(borrower);
         line.borrow(id, 1 ether);
 
-        vm.expectRevert(ILineOfCredit.NotLiquidatable.selector); 
+        vm.expectRevert(ILineOfCredit.NotLiquidatable.selector);
         line.liquidate(1 ether, address(supportedToken2));
     }
 
@@ -130,7 +130,7 @@ contract EscrowedLineTest is Test {
         _addCredit(address(supportedToken1), 1 ether);
         uint balanceOfEscrow = supportedToken2.balanceOf(address(escrow));
         uint balanceOfArbiter = supportedToken2.balanceOf(arbiter);
-        
+
         bytes32 id = line.ids(0);
         hoax(borrower);
         line.borrow(id, 1 ether);
@@ -146,10 +146,10 @@ contract EscrowedLineTest is Test {
 
     function test_line_is_uninitilized_if_escrow_not_owned() public {
         address mock = address(new MockLine(0, address(3)));
-        
+
         Escrow e = new Escrow(minCollateralRatio, address(oracle), mock, borrower);
         MockEscrowedLine l = new MockEscrowedLine(
-       
+
             address(escrow),
             address(oracle),
             arbiter,
@@ -158,8 +158,8 @@ contract EscrowedLineTest is Test {
         );
 
         // configure other modules
-       
-        
+
+
         // assertEq(uint(l.init()), uint(LineLib.STATUS.UNINITIALIZED));
 
         vm.expectRevert(abi.encodeWithSelector(ILineOfCredit.BadModule.selector, address(escrow)));
@@ -180,7 +180,7 @@ contract EscrowedLineTest is Test {
         assertEq(balanceOfEscrow, supportedToken1.balanceOf(address(escrow)) + 1 ether, "Escrow balance should have increased by 1e18");
         assertEq(balanceOfArbiter, supportedToken2.balanceOf(arbiter) - 1 ether, "Arbiter balance should have decreased by 1e18");
     }
-    
+
     function test_cannot_be_liquidatable_if_debt_is_0() public {
 
         assertEq(uint256(line.healthcheck()), uint256(LineLib.STATUS.ACTIVE));

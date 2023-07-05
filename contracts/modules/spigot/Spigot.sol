@@ -1,4 +1,4 @@
-pragma solidity 0.8.16;
+pragma solidity ^0.8.16;
 
 import {ReentrancyGuard} from "openzeppelin/security/ReentrancyGuard.sol";
 import {LineLib} from "../../utils/LineLib.sol";
@@ -195,7 +195,7 @@ contract Spigot is ISpigot, ReentrancyGuard {
     /**
      * @notice - Returns if the function is whitelisted for an Operator to call
                - on the spigoted revenue generating smart contracts.
-     * @param func - Function signature to check on whitelist 
+     * @param func - Function signature to check on whitelist
     */
     function isWhitelisted(bytes4 func) external view returns (bool) {
         return state.isWhitelisted(func);

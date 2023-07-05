@@ -1,4 +1,4 @@
-pragma solidity 0.8.16;
+pragma solidity ^0.8.16;
 
 import { Test } from "forge-std/Test.sol";
 import { Denominations } from "chainlink/Denominations.sol";
@@ -53,9 +53,9 @@ contract EscrowTest is Test {
 
         // deploy and save escrow
         address _escrow = _createEscrow(minCollateralRatio, address(oracle), address(line), borrower);
-        
+
         badEscrow = new Escrow(minCollateralRatio, address(badOracle), address(badLine), borrower);
-        
+
         // add escrow to mock line
         line.setEscrow(_escrow);
         badLine.setEscrow(address(badEscrow));
@@ -399,7 +399,7 @@ contract EscrowTest is Test {
     }
 
 
-    
+
 
 
     receive() external payable {}

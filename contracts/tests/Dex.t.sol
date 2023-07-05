@@ -1,4 +1,4 @@
-pragma solidity 0.8.16;
+pragma solidity ^0.8.16;
 
 import "forge-std/Test.sol";
 
@@ -291,7 +291,7 @@ contract EthRevenue is Test {
 
         vm.startPrank(borrower);
         line.close(line.ids(0));
-        vm.stopPrank(); 
+        vm.stopPrank();
         (, , , , , , , isOpen) = line.credits(line.ids(0));
         assertFalse(isOpen);
 
@@ -341,7 +341,7 @@ contract EthRevenue is Test {
         vm.expectRevert(ILineOfCredit.PositionIsClosed.selector);
         line.close(id);
         vm.stopPrank();
-        
+
     }
 
     function test_cannot_claim_and_trade_with_insufficient_balance() public {

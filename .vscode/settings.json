@@ -1,7 +1,7 @@
 {
   "solidity.packageDefaultDependenciesContractsDirectory": "contracts",
   "solidity.packageDefaultDependenciesDirectory": "lib",
-  "solidity.compileUsingRemoteVersion": "v0.8.16",
+  "solidity.compileUsingRemoteVersion": "v^0.8.16",
   "solidity.formatter": "prettier",
   "[solidity]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"

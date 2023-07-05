@@ -1,4 +1,4 @@
-pragma solidity 0.8.16;
+pragma solidity ^0.8.16;
 
 import "forge-std/Test.sol";
 
@@ -104,7 +104,7 @@ contract MutualConsentTest is Test, Events {
 
     function test_addCredit_mutual_consent_accepted_event() public {
         vm.startPrank(lender);
-        vm.expectEmit(false,false,false,false, address(line)); 
+        vm.expectEmit(false,false,false,false, address(line));
         emit MutualConsentAccepted(keccak256(abi.encode("none")));
         line.addCredit(dRate, fRate, amount, token, lender);
         vm.stopPrank();

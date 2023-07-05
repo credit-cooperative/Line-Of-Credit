@@ -1,4 +1,4 @@
-pragma solidity 0.8.16;
+pragma solidity ^0.8.16;
 
 // OpenZeppelin Contracts (last updated v4.6.0) (token/ERC20/IERC20.sol)
 
@@ -229,7 +229,7 @@ interface ILineOfCredit {
     * @dev           - Fully executes function after a Borrower and a Lender have agreed terms, both Lender and borrower have agreed through mutualConsent
     * @dev           - callable by `lender` and `borrower`
     * @param drate   - The interest rate charged to a Borrower on borrowed / drawn down funds. In bps, 4 decimals.
-    * @param frate   - The interest rate charged to a Borrower on the remaining funds available, but not yet drawn down 
+    * @param frate   - The interest rate charged to a Borrower on the remaining funds available, but not yet drawn down
                         (rate charged on the available headroom). In bps, 4 decimals.
     * @param amount  - The amount of Credit Token to initially deposit by the Lender
     * @param token   - The Credit Token, i.e. the token to be lent out
@@ -2794,9 +2794,9 @@ library SpigotedLineLib {
 
     /**
      * @dev                 - priviliged internal function!
-     * @notice              - Allows revenue tokens in 'escrowed' to be traded for credit tokens that aren't yet used to repay debt. 
-                            - The newly exchanged credit tokens are held in 'unusedTokens' ready for a Lender to withdraw using useAndRepay 
-                            - This feature allows a Borrower to take advantage of an increase in the value of the revenue token compared 
+     * @notice              - Allows revenue tokens in 'escrowed' to be traded for credit tokens that aren't yet used to repay debt.
+                            - The newly exchanged credit tokens are held in 'unusedTokens' ready for a Lender to withdraw using useAndRepay
+                            - This feature allows a Borrower to take advantage of an increase in the value of the revenue token compared
                             - to the credit token and to in effect use less revenue tokens to be later used to repay the same amount of debt.
      * @dev                 - MUST trade all available claimTokens (unused + claimed) to targetTokens
      * @param claimToken    - The revenue token escrowed in the Spigot to sell in trade
@@ -2956,8 +2956,8 @@ library SpigotedLineLib {
     }
 
     /**
-   * @notice - Transfers ownership of the entire Spigot and its revenuw streams from its then Owner to either 
-             - the Borrower (if a Line of Credit has been been fully repaid) or 
+   * @notice - Transfers ownership of the entire Spigot and its revenuw streams from its then Owner to either
+             - the Borrower (if a Line of Credit has been been fully repaid) or
              - to the Arbiter (if the Line of Credit is liquidatable).
    * @dev    - callable by `borrower` or `arbiter`
    * @return - whether or not Spigot was released
@@ -3066,7 +3066,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
      * @param spigot_ - Spigot smart contract that is owned by this Line
      * @param swapTarget_ - 0x protocol exchange address to send calldata for trades to exchange revenue tokens for credit tokens
      * @param ttl_ - time to live for line of credit contract across all lenders set at deployment in order to set the term/expiry date
-     * @param defaultRevenueSplit_ - The % of Revenue Tokens that the Spigot escrows for debt repayment if the Line is healthy. 
+     * @param defaultRevenueSplit_ - The % of Revenue Tokens that the Spigot escrows for debt repayment if the Line is healthy.
      */
     constructor(
         address oracle_,

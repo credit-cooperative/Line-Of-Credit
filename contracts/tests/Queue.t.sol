@@ -1,4 +1,4 @@
-pragma solidity 0.8.16;
+pragma solidity ^0.8.16;
 
 import "forge-std/Test.sol";
 import {Denominations} from "chainlink/Denominations.sol";
@@ -95,12 +95,12 @@ contract QueueTest is Test, Events {
                 line.close(line.ids(i));
                 _formatLoggedArrOfIds("after closing");
                 continue;
-            } 
+            }
             emit log_named_string("borrowing from", idLabels[line.ids(i)]);
             _formatLoggedArrOfIds("before borrowing");
             line.borrow(line.ids(i), 1 ether);
             (uint256 deposit,,,,,,,) = line.credits(line.ids(i));
-            _formatLoggedArrOfIds("after borrowing");   
+            _formatLoggedArrOfIds("after borrowing");
         }
         vm.stopPrank();
 
@@ -121,7 +121,7 @@ contract QueueTest is Test, Events {
             (uint256 deposit, uint256 principal, uint256 interestAccrued, , , , , ) = line
                 .credits(line.ids(0));
             uint256 owed = interestAccrued + principal;
-            
+
             emit log_named_uint("repaying", owed);
             _formatLoggedArrOfIds("before repaying");
             line.depositAndRepay(owed);
@@ -184,7 +184,7 @@ contract QueueTest is Test, Events {
     }
 
 
- 
+
     function test_all_positions_in_queue_of_4_are_closed() public {
         address[] memory tokens = setupQueueTest(2);
         address token3 = tokens[0];
@@ -529,8 +529,8 @@ contract QueueTest is Test, Events {
     function test_return_null_if_no_drawn_amount() public {
         _createCreditLines(3);
         vm.expectRevert();
-        (bytes32 next, 
-        address lender, 
+        (bytes32 next,
+        address lender,
         address token,
         uint256 principal,
         uint256 deposit,
@@ -690,7 +690,7 @@ contract QueueTest is Test, Events {
                 continue;
             }
             else return i;
-        } 
+        }
         return 0;
     }
 

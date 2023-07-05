@@ -1,4 +1,4 @@
-pragma solidity 0.8.16;
+pragma solidity ^0.8.16;
 
 
 import "forge-std/Test.sol";
@@ -29,9 +29,9 @@ contract LineLibTest is Test {
     function test_get_balance_ETH() public {
       uint bal = address(this).balance;
       uint getBal = LineLib.getBalance(Denominations.ETH);
-      
+
       assertEq(bal, getBal);
-      
+
       deal(address(this), 1 ether);
 
       uint bal2 = address(this).balance;
@@ -48,9 +48,9 @@ contract LineLibTest is Test {
     function test_get_balance_token() public {
       uint bal = token.balanceOf(address(this));
       uint getBal = LineLib.getBalance(tkn);
-      
+
       assertEq(bal, getBal);
-      
+
       // deal(address(this), address(token), 1 ether);
       token.mint(address(this), 1 ether);
 
@@ -68,9 +68,9 @@ contract LineLibTest is Test {
       // make sure getBalance returns 4626 tokens not total amount of underlying tokens
       uint bal = token.balanceOf(address(this));
       uint getBal = LineLib.getBalance(address(token4626));
-      
+
       assertEq(bal, getBal);
-      
+
       // deal(address(this), address(token4626), 1 ether);
       token4626.mint(address(this), 1 ether);
 
@@ -97,9 +97,9 @@ contract LineLibTest is Test {
     function test_sending_eth_fails_if_sending_to_contract_without_receivable_function() external {
       MockStatefulReceivables statefulReceivables = new MockStatefulReceivables();
       statefulReceivables.setReceiveableState(false);
-  
-      vm.deal(address(receivables), 1 ether); 
-      
+
+      vm.deal(address(receivables), 1 ether);
+
       vm.expectRevert(LineLib.SendingEthFailed.selector);
       receivables.send(Denominations.ETH, address(statefulReceivables), 0.5 ether);
 
@@ -152,7 +152,7 @@ contract LineLibTest is Test {
     function test_send_out_token() public {
       uint thisBal = LineLib.getBalance(tkn);
       uint thatBal = receivables.balance(tkn);
-      
+
       token.mint(address(receivables), 1 ether);
       receivables.send(tkn, address(this), 1 ether);
       // +1 from send()
@@ -170,7 +170,7 @@ contract LineLibTest is Test {
       uint thisBal = LineLib.getBalance(address(token4626));
       uint thatBal = receivables.balance(address(token4626));
 
-      
+
       token4626.mint(address(receivables), 1 ether);
       receivables.send(address(token4626), address(this), 1 ether);
       // +1 from send()
@@ -201,7 +201,7 @@ contract LineLibTest is Test {
         bytes32 id2 = CreditLib.computeId(line, address(this), tkn);
         ids.push(id);
         ids.push(id2);
-        
+
         assert(ids.length == 2);
         ids.removePosition(id2);
         assert(ids.length == 2); // not deleted, only null
@@ -220,7 +220,7 @@ contract LineLibTest is Test {
     }
 
 
-    
+
 
     receive() external payable {} // can receive ETH from tests
 }
