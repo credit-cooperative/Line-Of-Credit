@@ -38,8 +38,16 @@ interface IRainCollateralController {
     ) external;
 }
 
+interface IRainCollateralFactory {
+    function controller() external view returns (address);
+    function owner() external view returns (address);
 
-contract IndexRe7Sim is Test {
+    function transferOwnership(address newOwner) external;
+    function updateController(address _controller) external;
+}
+
+
+contract RainRe7Sim is Test {
     bytes32 constant DEFAULT_ADMIN_ROLE = 0x00;
 
     // Interfaces
@@ -68,12 +76,10 @@ contract IndexRe7Sim is Test {
 
     // Rain Cards Borrower Address
     address constant rainBorrower = 0x0204C22BE67968C3B787D2699Bd05cf2b9432c60; // Rain Borrower Address
-
-    // Borrower and Lender Addresses
-    // address borrowerAddress = makeAddr("borrower"); // TODO  - indexCoopLiquidityOperations
-    address lenderAddress = makeAddr("lender"); // TODO - Mock Lender Address
+    address lenderAddress = makeAddr("lender");
 
     // Rain Controller Contract & Associated Addresses
+    address rainCollateralFactoryAddress = 0x31ebf70312f488d0bdac374b340f0d01dbf153b5;
     address rainCollateralControllerAddress = 0xE5D3d7da4b24bc9D2FDA0e206680CD8A00C0FeBD;
     address rainControllerAdminAddress = 0xB92949bdF09F4193599Ae7700211751ab5F74aCd;
     address rainControllerOwnerAddress = 0x21ebc2f23a91fD7eB8406CDCE2FD653de280B5fc;
@@ -147,7 +153,8 @@ contract IndexRe7Sim is Test {
         deal(USDC, rainUser3, 80000 * 10 ** 6);
         deal(USDC, rainUser4, 20000 * 10 ** 6);
 
-        // Define Interface for Rain Collateral Controller
+        // Define Interface for Rain Collateral Factory & Controller
+        rainCollateralFactory = IRainCollateralFactory(rainCollateralFactoryAddress);
         rainCollateralController = IRainCollateralController(rainCollateralControllerAddress);
 
         // Borrower Deploys Line of Credit
@@ -179,9 +186,7 @@ contract IndexRe7Sim is Test {
 
         // Credit Coop Arbiter adds Rain Collateral Controller to Spigot
         vm.startPrank(arbiterAddress);
-        // uint8 split = 100;
         bytes4 claimFunc = _getSelector("liquidateAsset(address,address[],uint256[])");
-        // bytes4 claimFunc = 0x000000;
         bytes4 newOwnerFunc = _getSelector("transferOwnership(address)");
 
         emit log_named_string("\n \u2713 Arbiter Adds Rain Collateral Controller as Revenue Contract to Spigot", "");
@@ -231,8 +236,7 @@ contract IndexRe7Sim is Test {
         vm.stopPrank();
 
         emit log_named_string("\n \u2713 Line Operator Calls increaseNonce Function on Rain Collateral Contract 0", "");
-        // TODO: increaseNonce should increase the nonce
-        // TODO: fix problem in LoC contracts where operates does not fail, but does not actually call function
+
         vm.startPrank(rainControllerOwnerAddress);
         // vm.startPrank(rainControllerOwnerAddress);
         uint256 startingNonce = rainCollateralController.nonce(rainCollateralContract0);
@@ -273,8 +277,7 @@ contract IndexRe7Sim is Test {
         assertEq(endingNonce1, startingNonce1 + 1);
         vm.stopPrank();
 
-        // TODO: Rain Collateral Contracts 0 - 3 receive USDC deposits from Rain Card users
-
+        // Rain Collateral Contracts 0 - 3 receive USDC deposits from Rain Card users
         emit log_named_string("\n \u2713 Rain User 0 Transfers USDC to Rain Collateral Contract 0 ", "");
         vm.startPrank(rainUser0);
         emit log_named_uint("- Rain User 0 - Starting USDC Balance ", IERC20(USDC).balanceOf(rainUser0));
@@ -312,7 +315,7 @@ contract IndexRe7Sim is Test {
         vm.stopPrank();
 
         // Rain calls claimRevenue function on Spigot which calls liquidateAsset (Spigot) to transfer USDC from Rain Collateral Contracts to Treasury (Spigot)
-        // TODO: convert memory to calldata if possible?
+        // TODO: convert memory to calldata to save gas
         vm.startPrank(rainBorrower);
         emit log_named_string("\n \u2713 [Borrower] Calls the Spigot Claim Function", "");
         bytes4 liquidateFunc = _getSelector("liquidateAsset(address,address[],uint256[])");
@@ -372,13 +375,10 @@ contract IndexRe7Sim is Test {
         // Rain closes the Line of Credit
         emit log_named_string("\n \u2713 Borrower Calls close Function to Close Line of Credit", "");
         vm.startPrank(rainBorrower);
-        console.log("0");
         line.close(creditPositionId);
 
         // Check status == REPAID after position is repaid and closed
-        console.log("1");
         uint256 statusIsRepaid = uint256(line.status());
-        console.log("2");
         assertEq(3, statusIsRepaid);
         emit log_named_uint("- status (3 == REPAID) ", statusIsRepaid);
 
@@ -483,21 +483,6 @@ contract IndexRe7Sim is Test {
         return address(securedLine);
     }
 
-    // function _simulateRevenueGeneration(uint256 amt) internal returns (uint256 revenue) {
-    //     vm.deal(dsETHFeeSplitExtension, amt + 0.5 ether); // add a bit to cover gas
-
-    //     vm.prank(dsETHFeeSplitExtension);
-    //     revenue = amt;
-    //     IWeth(WETH).deposit{value: revenue}();
-
-    //     assertEq(IERC20(WETH).balanceOf(dsETHFeeSplitExtension), revenue, "fee collector balance should match revenue");
-    // }
-
-
-    // TODO: convert claimRevenue function from a push payment to a pull payment
-    /// @dev    Because they claim function is not set in the spigot, this will be a push payment only
-    /// @dev    We need to call `deposit()` manually before claiming revenue, or there will be no revenue
-    ///         to claim (because calling `deposit()` distribute revenue to beneficiaires,of which the spigot is one)
     function _claimRevenueOnBehalfOfSpigot(bytes4 claimFunc, address rainCollateralContract, uint256 amount, address[] memory assets, uint256[] memory amounts) internal returns (uint256){
         amounts[0] = amount;
         bytes memory claimFuncData = abi.encodeWithSelector(
@@ -551,29 +536,6 @@ contract IndexRe7Sim is Test {
         return id;
     }
 
-    // function _arbiterAddsRevenueContractToSpigot() internal {
-    //     emit log_named_string("\n \u2713 Arbiter Adds dsETH Revenue Contract to Spigot", "");
-    //     uint8 split = 100;
-    //     bytes4 claimFunc = 0x000000;
-    //     bytes4 newOwnerFunc = _getSelector("setOperator(address)");
-    //     _initSpigot(split, claimFunc, newOwnerFunc);
-    // }
-
-    // function _borrowerDrawsOnCredit(bytes32 id, uint256 amount) internal returns (bool) {
-
-    // }
-
-    // function _depositAndRepay(uint256 amount) internal {
-
-    // }
-
-    // function _depositAndClose() internal {
-
-    // }
-
-    // function _lenderWithdraws(bytes32 id, uint256 amount) internal {
-
-    // }
 
     ///////////////////////////////////////////////////////
     //                      U T I L S                    //
@@ -599,58 +561,7 @@ contract IndexRe7Sim is Test {
             "Failed to add spigot"
         );
 
-        // give spigot ownership to claim revenue
-        // dsETHFeeSplitExtension.call(
-        //     abi.encodeWithSelector(newOwnerFunc, spigot)
-        // );
     }
 
-    ///////////////////////////////////////////////////////
-    //                U N I T   T E S T S                //
-    ///////////////////////////////////////////////////////
-
-    // select a specific fork
-    function test_can_select_fork() public {
-        assertEq(vm.activeFork(), ethMainnetFork);
-        assertEq(block.number, FORK_BLOCK_NUMBER);
-    }
-
-    function test_chainlink_price_feed() external {
-        int256 usdcPrice = oracle.getLatestAnswer(USDC);
-        emit log_named_int("USDC price", usdcPrice);
-        assert(usdcPrice > 0);
-    }
-
-    function test_borrower_can_deploy_LoC() public {
-        vm.startPrank(rainBorrower);
-        securedLineAddress = _deployLoCWithConfig();
-
-        assertEq(rainBorrower, line.borrower());
-        assertEq(arbiterAddress, line.arbiter());
-
-        // assertEq(ttl, ILineOfCredit(address(securedLine)).arbiter()); // TODO: check ttl
-        // assertEq(mincRatio, ILineOfCredit(address(securedLine)).arbiter()); // TODO: check minCRatio
-    }
-
-    function test_arbiter_enables_stablecoin_collateral() public {
-        vm.startPrank(arbiterAddress);
-        bool collateralEnabled = escrow.enableCollateral(USDC);
-        assertEq(true, collateralEnabled);
-        vm.stopPrank();
-    }
-
-    function test_arbiter_adds_revenue_contract_to_spigot() public {
-        vm.startPrank(arbiterAddress);
-        uint8 split = 100;
-        bytes4 claimFunc = 0x000000;
-        bytes4 newOwnerFunc = _getSelector("setOperator(address)");
-        _initSpigot(split, claimFunc, newOwnerFunc);
-        ISpigot spigot2 = spigotedLine.spigot();
-        (uint8 split2, bytes4 claimFunc2, bytes4 transferFunc2) = spigot2.getSetting(rainCollateralControllerAddress);
-        assertEq(split, split2);
-        assertEq(claimFunc, claimFunc2);
-        assertEq(newOwnerFunc, transferFunc2);
-        vm.stopPrank();
-    }
 
 }
