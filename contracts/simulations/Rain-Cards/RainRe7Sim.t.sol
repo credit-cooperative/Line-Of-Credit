@@ -6,6 +6,7 @@ import {Spigot} from "../../modules/spigot/Spigot.sol";
 import {IOracle} from "../../interfaces/IOracle.sol";
 import {MockRegistry} from "../../mock/MockRegistry.sol";
 import {ILineFactory} from "../../interfaces/ILineFactory.sol";
+import {LineFactory} from "../../modules/factories/LineFactory.sol";
 import {ModuleFactory} from "../../modules/factories/ModuleFactory.sol";
 import {LineOfCredit} from "../../modules/credit/LineOfCredit.sol";
 import {SpigotedLine} from "../../modules/credit/SpigotedLine.sol";
@@ -13,7 +14,9 @@ import {SecuredLine} from "../../modules/credit/SecuredLine.sol";
 import {ZeroEx} from "../../mock/ZeroEx.sol";
 import {ISpigotedLine} from "../../interfaces/ISpigotedLine.sol";
 import {IEscrow} from "../../interfaces/IEscrow.sol";
+import {Escrow} from "../../modules/escrow/Escrow.sol";
 import {ISpigot} from "../../interfaces/ISpigot.sol";
+import {Spigot} from "../../modules/spigot/Spigot.sol";
 import {ILineOfCredit} from "../../interfaces/ILineOfCredit.sol";
 import {ISecuredLine} from "../../interfaces/ISecuredLine.sol";
 
@@ -35,26 +38,33 @@ interface IRainCollateralController {
     ) external;
 }
 
+
 contract IndexRe7Sim is Test {
     bytes32 constant DEFAULT_ADMIN_ROLE = 0x00;
 
     // Interfaces
-    ILineFactory lineFactory;
     IOracle oracle;
 
-    ISpigot spigot;
+    // ISpigot spigot;
     ISpigot.Setting private settings;
-    ISecuredLine securedLine;
+    // ISecuredLine securedLine;
     ILineOfCredit line;
     ISpigotedLine spigotedLine;
-    IEscrow escrow;
+    // IEscrow escrow;
+
+    // LineOfCredit line;
+    SecuredLine securedLine;
+    Escrow escrow;
+    Spigot spigot;
 
     IRainCollateralController rainCollateralController;
 
     // Credit Coop Infra Addresses
-    address constant lineFactoryAddress = 0x89989dBe4CFa289dE6179e8d54EE755E471a4251;
     address constant oracleAddress = 0x5a4AAF300473eaF8A9763318e7F30FA8a3f5Dd48;
     address constant zeroExSwapTarget = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
+    ModuleFactory moduleFactory = new ModuleFactory();
+    LineFactory lineFactory = new LineFactory(address(moduleFactory), arbiterAddress, oracleAddress, payable(zeroExSwapTarget));
+    // address constant lineFactoryAddress = 0x89989dBe4CFa289dE6179e8d54EE755E471a4251;
 
     // Rain Cards Borrower Address
     address constant rainBorrower = 0x0204C22BE67968C3B787D2699Bd05cf2b9432c60; // Rain Borrower Address
@@ -74,6 +84,7 @@ contract IndexRe7Sim is Test {
     address rainCollateralContract1 = 0x9bf0fA5bBd9448190C9CBFe3adE8D7466913d861;
     address rainCollateralContract2 = 0x5C82f4928899a91752083dd8F1b6D8bf23D4eeb2;
     address rainCollateralContract3 = 0xCF3d82CD86b25c87dcf2Fc6d9Abe9580a8e0E981;
+    address rainCollateralContract4 = 0x7030f1486Cc691F8C3e0D703671B5E6f45C940e8;
 
     // Rain (Fake) User Addresses
     address rainUser0 = makeAddr("rainUser0");
@@ -101,8 +112,6 @@ contract IndexRe7Sim is Test {
     uint128 fRate = 1000; // BPS
 
     // Fork Settings
-
-    // uint256 constant FORK_BLOCK_NUMBER = 16_991_081; // Forking mainnet at block right after Line Factory was deployed
     uint256 constant FORK_BLOCK_NUMBER = 17_638_122; // Forking mainnet at block on 7/6/23 at 7 40 PM EST
     uint256 ethMainnetFork;
 
@@ -122,7 +131,7 @@ contract IndexRe7Sim is Test {
         // Create  Interfaces for CC infra
 
         oracle = IOracle(address(oracleAddress));
-        lineFactory = ILineFactory(address(lineFactoryAddress));
+        // lineFactory = ILineFactory(address(lineFactoryAddress));
 
         // Deal assets to all 3 parties (borrower, lender, arbiter) NOTE: will use actual address of parties whhen they are known
 
@@ -136,28 +145,29 @@ contract IndexRe7Sim is Test {
         deal(USDC, rainUser1, 170000 * 10 ** 6);
         deal(USDC, rainUser2, 120000 * 10 ** 6);
         deal(USDC, rainUser3, 80000 * 10 ** 6);
+        deal(USDC, rainUser4, 20000 * 10 ** 6);
 
         // Define Interface for Rain Collateral Controller
         rainCollateralController = IRainCollateralController(rainCollateralControllerAddress);
 
         // Borrower Deploys Line of Credit
-        vm.startPrank(rainBorrower);
+        // vm.startPrank(rainBorrower);
         emit log_named_string("\n \u2713 Borrower Deploys Line of Credit", "");
         securedLineAddress = _deployLoCWithConfig();
 
         // Define interfaces for all CC modules
-        securedLine = ISecuredLine(securedLineAddress);
+        // securedLine = ISecuredLine(securedLineAddress);
         line = ILineOfCredit(securedLineAddress);
         spigotedLine = ISpigotedLine(securedLineAddress);
-        escrow = IEscrow(address(securedLine.escrow()));
-        spigot = ISpigot(address(securedLine.spigot()));
+        // escrow = IEscrow(address(securedLine.escrow()));
+        // spigot = ISpigot(address(securedLine.spigot()));
 
         // Check status == ACTIVE after LOC is deployed
         uint256 status = uint256(line.status());
         assertEq(1, status);
         emit log_named_uint("- status (1 == ACTIVE) ", status);
 
-        vm.stopPrank();
+        // vm.stopPrank();
 
     }
 
@@ -182,11 +192,6 @@ contract IndexRe7Sim is Test {
         bytes4 whitelistedFunc = _getSelector("increaseNonce(address)");
         securedLine.updateWhitelist(whitelistedFunc, true);
         assertEq(true, ISpigot(securedLine.spigot()).isWhitelisted(whitelistedFunc));
-
-        // whitelist liquidateAsset function
-        bytes4 liquidateFunc = _getSelector("liquidateAsset(address,address[],uint256[])");
-        // securedLine.updateWhitelist(liquidateFunc, true);
-        // assertEq(true, ISpigot(securedLine.spigot()).isWhitelisted(liquidateFunc));
 
         vm.stopPrank();
 
@@ -220,24 +225,15 @@ contract IndexRe7Sim is Test {
         // Rain draws down full amount
         vm.startPrank(rainBorrower);
         emit log_named_string("\n \u2713 Borrower Borrows Full Amount from Line of Credit", "");
+        // emit log_named_uint("- Rain Borrower Starting Balance ", rainBorrowerStartingBalance);
         line.borrow(positionId, 200000 * 10 ** 6);
+        emit log_named_uint("- Rain Borrower Ending Balance ", IERC20(USDC).balanceOf(rainBorrower));
         vm.stopPrank();
 
-        // TODO: Original Rain Controller Address calls increaseNonce through operate() on Line of Credit
-        // vm.startPrank(rainControllerOwnerAddress);
-        // emit log_named_uint("- Rain Collateral 0 - Starting Nonce", rainCollateralController.nonce(rainCollateralContract0));
-        // bytes4 increaseNonceFunc = _getSelector("increaseNonce(address)");
-        // bytes memory increaseNonceData = abi.encodeWithSelector(increaseNonceFunc);
-        // spigot.operate(rainCollateralControllerAddress, increaseNonceData);
-        // emit log_named_uint("- Rain Collateral 0 - Ending Nonce", rainCollateralController.nonce(rainCollateralContract0));
-        // vm.stopPrank();
-
         emit log_named_string("\n \u2713 Line Operator Calls increaseNonce Function on Rain Collateral Contract 0", "");
-        // TODO: rainControllerOwnerAddress should call this, not the borrower of the Line of Credit
-        // TODO: set rainControllerOwnerAddress as the line operator?
         // TODO: increaseNonce should increase the nonce
         // TODO: fix problem in LoC contracts where operates does not fail, but does not actually call function
-        vm.startPrank(rainBorrower);
+        vm.startPrank(rainControllerOwnerAddress);
         // vm.startPrank(rainControllerOwnerAddress);
         uint256 startingNonce = rainCollateralController.nonce(rainCollateralContract0);
         emit log_named_uint("- Rain Collateral 0 - Starting Nonce", startingNonce);
@@ -261,9 +257,8 @@ contract IndexRe7Sim is Test {
         emit log_named_string("\n<---------- Fast Forward 45 Days --------------------> ", "");
         vm.warp(block.timestamp + (ttl - 1 days));
 
-        // TODO: Borrower calls increaseNonce through operate() on Line of Credit
         emit log_named_string("\n \u2713 Line Operator Calls increaseNonce Function on Rain Collateral Contract 1", "");
-        vm.startPrank(rainBorrower);
+        vm.startPrank(rainControllerOwnerAddress);
         // vm.startPrank(rainControllerOwnerAddress);
         uint256 startingNonce1 = rainCollateralController.nonce(rainCollateralContract1);
         emit log_named_uint("- Rain Collateral 1 - Starting Nonce", startingNonce1);
@@ -320,179 +315,126 @@ contract IndexRe7Sim is Test {
         // TODO: convert memory to calldata if possible?
         vm.startPrank(rainBorrower);
         emit log_named_string("\n \u2713 [Borrower] Calls the Spigot Claim Function", "");
-        bytes4 liquidateFunc0 = _getSelector("liquidateAsset(address,address[],uint256[])");
+        bytes4 liquidateFunc = _getSelector("liquidateAsset(address,address[],uint256[])");
 
         address[] memory assets = new address[](1);
         uint256[] memory amounts = new uint256[](1);
         assets[0] = address(USDC);
 
-        uint256 claimed0 = _claimRevenueOnBehalfOfSpigot(liquidateFunc0, rainCollateralContract0, 30000 * 10 ** 6, assets, amounts);
+        uint256 claimed0 = _claimRevenueOnBehalfOfSpigot(liquidateFunc, rainCollateralContract0, 30000 * 10 ** 6, assets, amounts);
         assertEq(30000 * 10 ** 6, claimed0);
 
-        uint256 claimed1 = _claimRevenueOnBehalfOfSpigot(liquidateFunc0, rainCollateralContract1, 170000 * 10 ** 6, assets, amounts);
+        uint256 claimed1 = _claimRevenueOnBehalfOfSpigot(liquidateFunc, rainCollateralContract1, 170000 * 10 ** 6, assets, amounts);
         assertEq(170000 * 10 ** 6, claimed1);
 
-        uint256 claimed2 = _claimRevenueOnBehalfOfSpigot(liquidateFunc0, rainCollateralContract2, 120000 * 10 ** 6, assets, amounts);
+        uint256 claimed2 = _claimRevenueOnBehalfOfSpigot(liquidateFunc, rainCollateralContract2, 120000 * 10 ** 6, assets, amounts);
         assertEq(120000 * 10 ** 6, claimed2);
 
-        uint256 claimed3 = _claimRevenueOnBehalfOfSpigot(liquidateFunc0, rainCollateralContract3, 80000 * 10 ** 6, assets, amounts);
+        uint256 claimed3 = _claimRevenueOnBehalfOfSpigot(liquidateFunc, rainCollateralContract3, 80000 * 10 ** 6, assets, amounts);
         assertEq(80000 * 10 ** 6, claimed3);
         assertEq(400000 * 10 ** 6, IERC20(USDC).balanceOf(address(spigot)));
+
+        uint256 claimed4 = _claimRevenueOnBehalfOfSpigot(liquidateFunc, rainCollateralContract4, 20000 * 10 ** 6, assets, amounts);
+        assertEq(20000 * 10 ** 6, claimed4);
+        assertEq(420000 * 10 ** 6, IERC20(USDC).balanceOf(address(spigot)));
 
         vm.stopPrank();
 
         // Rain claims their portion of cash flows from Spigot w/ claimOperatorTokens
-        vm.startPrank(rainBorrower);
+        vm.startPrank(rainControllerOwnerAddress);
         emit log_named_string("\n \u2713 [Borrower] Calls the Spigot Claim Operator Tokens Function", "");
         uint256 claimedOperatorTokens = spigot.claimOperatorTokens(address(USDC));
         emit log_named_uint("- Rain Borrower - Claimed Operator Tokens ", claimedOperatorTokens);
-        assertEq(claimedOperatorTokens, 200000 * 10 ** 6);
-        assertEq(200000 * 10 ** 6, IERC20(USDC).balanceOf(address(spigot)));
+        assertEq(claimedOperatorTokens, 210000 * 10 ** 6);
+        assertEq(210000 * 10 ** 6, IERC20(USDC).balanceOf(address(spigot)));
         vm.stopPrank();
 
-        // Rain claims and repay the full balance of the Line of Credit
-        emit log_named_string("\n \u2713 Borrower Calls ClaimAndRepay to Repay Line of Credit with Spigot Revenue", "");
+        // interest accrued
+        bytes32 creditPositionId = 0xaa91a43200d4f9f507d37cc534c773fae8d778cf8f94e15a093ac6f64a1524a6;
+        uint256 interestAccrued = line.interestAccrued(creditPositionId);
+        emit log_named_uint("- Interest Accrued ", interestAccrued);
+
+        // Rain claims and repay the full balance, principal plus interest, of the Line of Credit
+        emit log_named_string("\n \u2713 Arbiter Calls ClaimAndRepay to Repay Line of Credit with Spigot Revenue", "");
         vm.startPrank(arbiterAddress);
         // uint claimable = spigot.getOwnerTokens(USDC);
         emit log_named_uint("- Owner Tokens in Spigot before repayment: ", spigot.getOwnerTokens(USDC));
-        assertEq(200000 * 10 ** 6, spigot.getOwnerTokens(USDC));
+        assertEq(210000 * 10 ** 6, spigot.getOwnerTokens(USDC));
         // bytes memory tradeData = "";
+        // Starting Balances
+        uint256 rainBorrowerStartingBalance = IERC20(USDC).balanceOf(rainBorrower);
+
         spigotedLine.claimAndRepay(address(USDC), "");
         assertEq(0, spigot.getOwnerTokens(USDC));
         emit log_named_uint("- Owner Tokens in Spigot after repayment: ", spigot.getOwnerTokens(USDC));
         vm.stopPrank();
 
-
         // Rain closes the Line of Credit
-        // emit log_named_string("\n \u2713 Borrower Calls close Function to Close Line of Credit", "");
-        // uint256 interestOwed = line.interestAccrued(positionId);
-        // emit log_named_uint("- Interest Owed on Line of Credit ", interestOwed);
+        emit log_named_string("\n \u2713 Borrower Calls close Function to Close Line of Credit", "");
+        vm.startPrank(rainBorrower);
+        console.log("0");
+        line.close(creditPositionId);
 
-        // vm.startPrank(indexCoopLiquidityOperations);
-        // emit log_named_string("\n \u2713 Borrower Calls depositAndClose to Fully Repay and Close Line of Credit", "");
-        // IERC20(WETH).approve(securedLineAddress, MAX_INT);
-        // line.depositAndClose();
+        // Check status == REPAID after position is repaid and closed
+        console.log("1");
+        uint256 statusIsRepaid = uint256(line.status());
+        console.log("2");
+        assertEq(3, statusIsRepaid);
+        emit log_named_uint("- status (3 == REPAID) ", statusIsRepaid);
 
-        // // Check status == REPAID after position is repaid and closed
-        // uint256 statusIsRepaid = uint256(line.status());
-        // assertEq(3, statusIsRepaid);
-        // emit log_named_uint("- status (3 == REPAID) ", statusIsRepaid);
-        // vm.stopPrank();
+        vm.stopPrank();
 
-        // // check reserves
+        // Rain sweeps the remaining unused assets from the line of credit
+        emit log_named_string("\n \u2713 Borrower Calls sweep Function to Regain Ownership of Unused Assets From Line of Credit", "");
+        vm.startPrank(rainBorrower);
+        // check reserves
 
-        // // uint256 unusedTokensAfterClose = spigotedLine.unused(dsETHToken);
-        // // uint256 ownerTokensAfterClose = spigot.getOwnerTokens(dsETHToken);
-        // // uint256 operatorTokensAfterClose = spigot.getOperatorTokens(dsETHToken);
+        uint256 unusedTokensAfterClose0 = spigotedLine.unused(USDC);
 
-        // // emit log_named_uint("- Unused Tokens after Position is closed and line is repaid", unusedTokensAfterClose);
-        // // emit log_named_uint("- Owner Tokens after Position is closed and line is repaid", ownerTokensAfterClose);
-        // // emit log_named_uint("- Operator Tokens after Position is closed and line is repaid", operatorTokensAfterClose);
+        emit log_named_uint(" - Unused Tokens after Position is closed and line is repaid (before sweep)", unusedTokensAfterClose0);
 
-        // // Lender withdraws principal + interest owed
-        // vm.startPrank(lenderAddress);
-        // emit log_named_string("\n \u2713 Lender Withdraws All Repaid Principal and Interest", "");
-        // line.withdraw(positionId, interestOwed + loanSizeInWETH);
+        spigotedLine.sweep(rainBorrower, address(USDC), unusedTokensAfterClose0);
 
-        // // check that the lender balance is principal + interest
-        // uint256 lenderBalanceAfterClose = IERC20(WETH).balanceOf(lenderAddress);
-        // uint256 lenderBalanceAfterRepayment = lenderBalanceAtStart +  interestOwed;
-        // assertEq(lenderBalanceAfterClose, lenderBalanceAfterRepayment, "Lender has not been full repaid");
-        // vm.stopPrank();
+        uint256 unusedTokensAfterClose1 = spigotedLine.unused(USDC);
 
-        // // Borrower Releases Collateral
-        // vm.startPrank(indexCoopLiquidityOperations);
-        // emit log_named_string("\n \u2713 Borrower Releases Collateral", "");
-        // escrow.releaseCollateral(collateralAmtDAI, DAI, indexCoopLiquidityOperations);
+        emit log_named_uint(" - Unused Tokens after Position is closed and line is repaid (after sweep)", unusedTokensAfterClose1);
 
-        // emit log_named_string("\n \u2713 Borrower Releases Spigot", "");
-        // spigotedLine.releaseSpigot(indexCoopLiquidityOperations);
+        assertEq(0, unusedTokensAfterClose1);
+        emit log_named_uint(" - remaining spigot assets ", IERC20(USDC).balanceOf(address(spigot)));
+        emit log_named_uint(" - remaining line assets ", IERC20(USDC).balanceOf(address(line)));
+
+        vm.stopPrank();
 
 
-        // /*
-        //     In the actual scenario, the borrower, Index Coop Liquidity Operations, will call the claimAndRepay function.
-        //     For the simulations test, the borrower instead calls depositAndClose to fully repay the lender and close the position.
-        //     The borrower then calls the claimOwnerTokens function to claim the revenue from the spigot since they have already fully repaid the lender.
-        // */
+        // Lender withdraws principal + interest owed
+        vm.startPrank(lenderAddress);
+        emit log_named_string("\n \u2713 Lender Withdraws All Repaid Principal and Interest", "");
+        line.withdraw(creditPositionId, interestAccrued + loanSizeInUSDC);
+        uint256 lenderBalanceAfterRepayment = IERC20(USDC).balanceOf(lenderAddress);
+        uint256 borrowerBalanceAfterRepayment = IERC20(USDC).balanceOf(rainBorrower);
 
-        // spigot.claimOwnerTokens(dsETHToken);
+        // check that the lender balance is principal + interest
+        emit log_named_uint(" - Lender Balance After Repayment ", lenderBalanceAfterRepayment);
+        emit log_named_uint(" - Borrower Repayment Amount ", borrowerBalanceAfterRepayment - rainBorrowerStartingBalance);
+        emit log_named_uint(" - Line Balance After Repayment ", IERC20(USDC).balanceOf(address(line)));
+        assertEq(lenderBalanceAfterRepayment, loanSizeInUSDC + interestAccrued, "Lender has not been fully repaid");
+        assertEq(210000 * 10 ** 6, lenderBalanceAfterRepayment + borrowerBalanceAfterRepayment - rainBorrowerStartingBalance);
+        vm.stopPrank();
 
-        // // uint256 ownerTokensAfterRelease = spigot.getOwnerTokens(dsETHToken);
-        // emit log_named_uint("- Owner Tokens after Position is closed and line is repaid", spigot.getOwnerTokens(dsETHToken));
+        // Borrower Releases Spigot
+        vm.startPrank(rainBorrower);
 
-        // assertEq(spigot.getOwnerTokens(dsETHToken), 0, "Spigot should not have any owner tokens");
+        emit log_named_string("\n \u2713 Borrower Releases Spigot to Rain Collateral Controller Owner Address", "");
+        spigotedLine.releaseSpigot(rainControllerOwnerAddress);
+        vm.stopPrank();
 
-        // uint256 borrowerClaimedTokens = IERC20(dsETHToken).balanceOf(indexCoopLiquidityOperations);
-        // emit log_named_uint("- Borrower has tokens after Position is closed and line is repaid", borrowerClaimedTokens);
+        vm.startPrank(rainControllerOwnerAddress);
+        emit log_named_string("\n \u2713 Borrower Removes Rain Collateral Controller from Spigot", "");
+        spigot.removeSpigot(rainCollateralControllerAddress);
 
-        // assertEq(borrowerClaimedTokens, spigot.getOwnerTokens(dsETHToken), "Borrower has not claimed correct amount of tokens");
+        assertEq(rainControllerOwnerAddress, rainCollateralController.owner());
 
-        // // address whoIsOperator = manager.operator();
-        // // emit log_named_address("- The Operator of dsETH is ", whoIsOperator);
-        // // emit log_named_address("- Spigot address is ", address(securedLine.spigot()));
-
-        // // emit log_named_string("\n \u2713 Borrower Removes Spigot", "");
-        // // spigot.removeSpigot(dsETHManager);
-        // // whoIsOperator = manager.operator();
-
-        // // emit log_named_address("- The Operator of dsETH is ", whoIsOperator);
-        // // emit log_named_address("- Spigot address is ", indexCoopOperations);
-
-        // // emit log_named_string("\n \u2713 OperatorFeeRecipient is set to the original dsETH OperatorFeeRecipient", "");
-        // // dsETH.updateOperatorFeeRecipient(indexCoopOperations);
-        // // assertEq(indexCoopOperations, dsETH.operatorFeeRecipient());
-        // // emit log_named_address("- Index Coop Operations: ", indexCoopOperations);
-        // // emit log_named_address("- dsETH operatorFeeRecipient: ", dsETH.operatorFeeRecipient());
-        // // assertEq(indexCoopOperations, dsETH.operatorFeeRecipient());
-
-        // // emit log_named_string("\n \u2713 dsETH Operator is set to Original dsETH Operator", "");
-        // // manager.setOperator(dsETHOperator);
-        // // whoIsOperator = manager.operator();
-        // // emit log_named_address("- The Operator of dsETH is ", whoIsOperator);
-        // // emit log_named_address("- Spigot address is ", dsETHOperator);
-        // // assertEq(dsETHOperator, manager.operator());
-
-        // address whoIsMethodologist = manager.methodologist();
-        // emit log_named_address("- The Methodologist of dsETH is ", whoIsMethodologist);
-        // emit log_named_address("- Spigot address is ", address(securedLine.spigot()));
-
-        // emit log_named_string("\n \u2713 Borrower Removes Spigot", "");
-        // spigot.removeSpigot(dsETHManager);
-        // whoIsMethodologist = manager.methodologist();
-
-        // emit log_named_address("- The Methodologist of dsETH is ", whoIsMethodologist);
-        // emit log_named_address("- Spigot Owner address is ", indexCoopLiquidityOperations);
-
-        // emit log_named_string("\n \u2713 OperatorFeeSplit is set to 100% to the Operator", "");
-        // dsETH.updateFeeSplit(10 ** 18);
-        // vm.stopPrank();
-
-        // vm.startPrank(dsETHOperator);
-        // dsETH.updateFeeSplit(10 ** 18);
-        // vm.stopPrank();
-
-        // assertEq(10 ** 18, dsETH.operatorFeeSplit());
-        // emit log_named_address("- Index Coop Operations: ", indexCoopLiquidityOperations);
-        // emit log_named_uint("- dsETH operatorFeeSplit: ", dsETH.operatorFeeSplit());
-        // // assertEq(indexCoopOperations, dsETH.operatorFeeRecipient());
-        // vm.startPrank(indexCoopLiquidityOperations);
-        // emit log_named_string("\n \u2713 dsETH Methodologist is set to Original dsETH Operator", "");
-        // manager.setMethodologist(dsETHOperator);
-        // vm.stopPrank();
-
-        // vm.startPrank(dsETHOperator);
-        // manager.setMethodologist(dsETHOperator);
-        // vm.stopPrank();
-
-        // // address whoIsOperator = manager.operator();
-        // whoIsMethodologist = manager.methodologist();
-        // emit log_named_address("- The Operator of dsETH is ", address(manager.operator()));
-        // emit log_named_address("- The Methodologist of dsETH is ", whoIsMethodologist);
-        // // emit log_named_address("- Spigot Oaddress is ", dsETHOperator);
-        // assertEq(dsETHOperator, manager.methodologist());
-
-
-
+        vm.stopPrank();
 
     }
 
@@ -502,15 +444,43 @@ contract IndexRe7Sim is Test {
     ///////////////////////////////////////////////////////
 
     function _deployLoCWithConfig() internal returns (address){
-        ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
-            borrower: rainBorrower,
-            ttl: ttl, // time to live
-            cratio: minCRatio, // uint32(creditRatio),
-            revenueSplit: revenueSplit // uint8(revenueSplit) - 100% to spigot
-        });
+        // ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
+        //     borrower: rainBorrower,
+        //     ttl: ttl, // time to live
+        //     cratio: minCRatio, // uint32(creditRatio),
+        //     revenueSplit: revenueSplit // uint8(revenueSplit) - 100% to spigot
+        // });
 
-        securedLineAddress = lineFactory.deploySecuredLineWithConfig(coreParams);
-        return securedLineAddress;
+        // create Line of Credit
+        // line = new LineOfCredit(oracleAddress, arbiterAddress, rainBorrower, ttl);
+
+        // create Escrow and Spigot
+        escrow = new Escrow(minCRatio, oracleAddress, rainControllerOwnerAddress, rainBorrower);
+        spigot = new Spigot(rainControllerOwnerAddress, rainControllerOwnerAddress);
+
+        // create SecuredLine
+        securedLine = new SecuredLine(oracleAddress, arbiterAddress, rainBorrower, payable(zeroExSwapTarget), address(spigot), address(escrow), ttl, revenueSplit);
+
+        // transfer ownership of both Spigot and Escrow to SecuredLine
+        vm.startPrank(rainControllerOwnerAddress);
+        spigot.updateOwner(address(securedLine));
+        escrow.updateLine(address(securedLine));
+        vm.stopPrank();
+
+        // call init() on Line of Credit, register on Line Factory
+        securedLine.init();
+        console.log("3");
+
+        // Arbiter registers Spigot, Escrow, and SecuredLine using Factory Contracts to appear in Subgraph & Dapp
+        vm.startPrank(arbiterAddress);
+
+        console.log("6");
+        // lineFactory.registerSecuredLine(address(securedLine), address(spigot), address(escrow), rainControllerOwnerAddress, revenueSplit, minCRatio);
+
+        console.log("7");
+        vm.stopPrank();
+
+        return address(securedLine);
     }
 
     // function _simulateRevenueGeneration(uint256 amt) internal returns (uint256 revenue) {
@@ -530,7 +500,6 @@ contract IndexRe7Sim is Test {
     ///         to claim (because calling `deposit()` distribute revenue to beneficiaires,of which the spigot is one)
     function _claimRevenueOnBehalfOfSpigot(bytes4 claimFunc, address rainCollateralContract, uint256 amount, address[] memory assets, uint256[] memory amounts) internal returns (uint256){
         amounts[0] = amount;
-        // uint256[] calldata amounts = [15000 * 10 ** 6];
         bytes memory claimFuncData = abi.encodeWithSelector(
             claimFunc,
             rainCollateralContract,
