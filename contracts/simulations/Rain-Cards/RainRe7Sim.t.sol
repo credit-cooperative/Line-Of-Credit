@@ -27,6 +27,12 @@ interface IRainCollateralController {
     function updateControllerAdmin(address _controllerAdmin) external;
     function updateTreasury(address _treasury) external;
     function increaseNonce(address _collateralProxy) external;
+
+    function liquidateAsset(
+        address _collateralProxy,
+        address[] calldata _assets,
+        uint256[] calldata _amounts
+    ) external;
 }
 
 contract IndexRe7Sim is Test {
@@ -165,6 +171,7 @@ contract IndexRe7Sim is Test {
         vm.startPrank(arbiterAddress);
         // uint8 split = 100;
         bytes4 claimFunc = _getSelector("liquidateAsset(address,address[],uint256[])");
+        // bytes4 claimFunc = 0x000000;
         bytes4 newOwnerFunc = _getSelector("transferOwnership(address)");
 
         emit log_named_string("\n \u2713 Arbiter Adds Rain Collateral Controller as Revenue Contract to Spigot", "");
@@ -175,6 +182,11 @@ contract IndexRe7Sim is Test {
         bytes4 whitelistedFunc = _getSelector("increaseNonce(address)");
         securedLine.updateWhitelist(whitelistedFunc, true);
         assertEq(true, ISpigot(securedLine.spigot()).isWhitelisted(whitelistedFunc));
+
+        // whitelist liquidateAsset function
+        bytes4 liquidateFunc = _getSelector("liquidateAsset(address,address[],uint256[])");
+        // securedLine.updateWhitelist(liquidateFunc, true);
+        // assertEq(true, ISpigot(securedLine.spigot()).isWhitelisted(liquidateFunc));
 
         vm.stopPrank();
 
@@ -220,14 +232,15 @@ contract IndexRe7Sim is Test {
         // emit log_named_uint("- Rain Collateral 0 - Ending Nonce", rainCollateralController.nonce(rainCollateralContract0));
         // vm.stopPrank();
 
-        emit log_named_string("\n \u2713 Line Operator Calls increaseNonce Function on Rain Collateral Controller", "");
+        emit log_named_string("\n \u2713 Line Operator Calls increaseNonce Function on Rain Collateral Contract 0", "");
         // TODO: rainControllerOwnerAddress should call this, not the borrower of the Line of Credit
         // TODO: set rainControllerOwnerAddress as the line operator?
         // TODO: increaseNonce should increase the nonce
         // TODO: fix problem in LoC contracts where operates does not fail, but does not actually call function
         vm.startPrank(rainBorrower);
         // vm.startPrank(rainControllerOwnerAddress);
-        emit log_named_uint("- Rain Collateral 0 - Starting Nonce", rainCollateralController.nonce(rainCollateralContract0));
+        uint256 startingNonce = rainCollateralController.nonce(rainCollateralContract0);
+        emit log_named_uint("- Rain Collateral 0 - Starting Nonce", startingNonce);
         // rainCollateralController.increaseNonce(rainCollateralContract0);
         // bytes4 increaseNonceFunc = _getSelector("increaseNonce(address)");
         // bytes memory increaseNonceData = abi.encodeWithSelector(increaseNonceFunc);
@@ -238,8 +251,10 @@ contract IndexRe7Sim is Test {
             address(rainCollateralContract0)
         );
         bool isNonceIncreased = spigot.operate(rainCollateralControllerAddress, increaseNonceData);
-        emit log_named_uint("- Rain Collateral 0 - Ending Nonce", rainCollateralController.nonce(rainCollateralContract0));
+        uint256 endingNonce = rainCollateralController.nonce(rainCollateralContract0);
+        emit log_named_uint("- Rain Collateral 0 - Ending Nonce", endingNonce);
         assertEq(true, isNonceIncreased);
+        assertEq(endingNonce, startingNonce + 1);
         vm.stopPrank();
 
         // fast forward 45 days
@@ -247,8 +262,22 @@ contract IndexRe7Sim is Test {
         vm.warp(block.timestamp + (ttl - 1 days));
 
         // TODO: Borrower calls increaseNonce through operate() on Line of Credit
+        emit log_named_string("\n \u2713 Line Operator Calls increaseNonce Function on Rain Collateral Contract 1", "");
         vm.startPrank(rainBorrower);
+        // vm.startPrank(rainControllerOwnerAddress);
+        uint256 startingNonce1 = rainCollateralController.nonce(rainCollateralContract1);
+        emit log_named_uint("- Rain Collateral 1 - Starting Nonce", startingNonce1);
+        bytes memory increaseNonceData1 = abi.encodeWithSelector(
+            increaseNonceFunc,
+            address(rainCollateralContract1)
+        );
+        bool isNonceIncreased1 = spigot.operate(rainCollateralControllerAddress, increaseNonceData1);
+        uint256 endingNonce1 = rainCollateralController.nonce(rainCollateralContract1);
+        emit log_named_uint("- Rain Collateral 1 - Ending Nonce", endingNonce1);
+        assertEq(true, isNonceIncreased1);
+        assertEq(endingNonce1, startingNonce1 + 1);
         vm.stopPrank();
+
         // TODO: Rain Collateral Contracts 0 - 3 receive USDC deposits from Rain Card users
 
         emit log_named_string("\n \u2713 Rain User 0 Transfers USDC to Rain Collateral Contract 0 ", "");
@@ -287,11 +316,42 @@ contract IndexRe7Sim is Test {
         emit log_named_uint("- Rain Collateral Contract 3 - Ending USDC Balance ", IERC20(USDC).balanceOf(rainCollateralContract3));
         vm.stopPrank();
 
-        // TODO: Rain calls claimRevenue function on Spigot which calls liquidateAsset (Spigot) to transfer USDC from Rain Collateral Contracts to Treasury (Spigot)
-
-        // claim revenue
+        // Rain calls claimRevenue function on Spigot which calls liquidateAsset (Spigot) to transfer USDC from Rain Collateral Contracts to Treasury (Spigot)
+        // TODO: convert memory to calldata if possible?
+        vm.startPrank(rainBorrower);
         emit log_named_string("\n \u2713 [Borrower] Calls the Spigot Claim Function", "");
-        // _claimRevenueOnBehalfOfSpigot(0x000000);
+        address[] memory assets = new address[](1);
+        assets[0] = address(USDC);
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 15000 * 10 ** 6;
+        // uint256[] calldata amounts = [15000 * 10 ** 6];
+        bytes memory claimFuncData = abi.encodeWithSelector(
+            liquidateFunc,
+            address(rainCollateralContract0),
+            assets,
+            amounts
+        );
+        // TODO: move into _claimRevenueOnBehalfOfSpigot() function
+        console.log("Controller Admin: ", rainCollateralController.controllerAdmin());
+        console.log("Spigot Address: ", address(spigot));
+        uint256 startingSpigotBalance = IERC20(USDC).balanceOf(address(spigot));
+        uint256 claimed = spigot.claimRevenue(rainCollateralControllerAddress, USDC, claimFuncData);
+        uint256 endingSpigotBalance = IERC20(USDC).balanceOf(address(spigot));
+        emit log_named_uint("- starting Spigot balance ", startingSpigotBalance);
+        emit log_named_uint("- amount claimed from Rain Collateral Controller ", claimed);
+        emit log_named_uint("- ending Spigot balance ", endingSpigotBalance);
+        assertEq(15000 * 10 ** 6, claimed);
+        assertEq(15000 * 10 ** 6, endingSpigotBalance - startingSpigotBalance);
+        vm.stopPrank();
+
+        // Rain claims their portion of cash flows from Spigot w/ claimOperatorTokens
+        vm.startPrank(rainBorrower);
+        emit log_named_string("\n \u2713 [Borrower] Calls the Spigot Claim Operator Tokens Function", "");
+        uint256 claimedOperatorTokens = spigot.claimOperatorTokens(address(USDC));
+        emit log_named_uint("- Rain Borrower - Claimed Operator Tokens ", claimedOperatorTokens);
+        assertEq(claimedOperatorTokens, 7500 * 10 ** 6);
+        assertEq(7500 * 10 ** 6, IERC20(USDC).balanceOf(address(spigot)));
+        vm.stopPrank();
 
 
         // /*
