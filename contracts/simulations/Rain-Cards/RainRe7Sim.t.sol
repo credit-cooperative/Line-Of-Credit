@@ -65,6 +65,7 @@ contract RainRe7Sim is Test {
     Escrow escrow;
     Spigot spigot;
 
+    IRainCollateralFactory rainCollateralFactory;
     IRainCollateralController rainCollateralController;
 
     // Credit Coop Infra Addresses
@@ -79,7 +80,7 @@ contract RainRe7Sim is Test {
     address lenderAddress = makeAddr("lender");
 
     // Rain Controller Contract & Associated Addresses
-    address rainCollateralFactoryAddress = 0x31ebf70312f488d0bdac374b340f0d01dbf153b5;
+    address rainCollateralFactoryAddress = 0x31EBf70312f488D0bdAc374b340f0D01dBf153B5;
     address rainCollateralControllerAddress = 0xE5D3d7da4b24bc9D2FDA0e206680CD8A00C0FeBD;
     address rainControllerAdminAddress = 0xB92949bdF09F4193599Ae7700211751ab5F74aCd;
     address rainControllerOwnerAddress = 0x21ebc2f23a91fD7eB8406CDCE2FD653de280B5fc;
@@ -134,13 +135,11 @@ contract RainRe7Sim is Test {
         emit log_named_string("- rpc", vm.envString("MAINNET_RPC_URL"));
         emit log_named_address("- borrower", rainBorrower);
         emit log_named_address("- lender", lenderAddress);
+
         // Create  Interfaces for CC infra
-
         oracle = IOracle(address(oracleAddress));
-        // lineFactory = ILineFactory(address(lineFactoryAddress));
 
-        // Deal assets to all 3 parties (borrower, lender, arbiter) NOTE: will use actual address of parties whhen they are known
-
+        // Deal assets to all 3 parties (borrower, lender, arbiter)
         vm.deal(arbiterAddress, 100 ether);
         vm.deal(lenderAddress, 100 ether);
 
@@ -158,23 +157,18 @@ contract RainRe7Sim is Test {
         rainCollateralController = IRainCollateralController(rainCollateralControllerAddress);
 
         // Borrower Deploys Line of Credit
-        // vm.startPrank(rainBorrower);
         emit log_named_string("\n \u2713 Borrower Deploys Line of Credit", "");
         securedLineAddress = _deployLoCWithConfig();
 
         // Define interfaces for all CC modules
-        // securedLine = ISecuredLine(securedLineAddress);
         line = ILineOfCredit(securedLineAddress);
         spigotedLine = ISpigotedLine(securedLineAddress);
-        // escrow = IEscrow(address(securedLine.escrow()));
-        // spigot = ISpigot(address(securedLine.spigot()));
 
         // Check status == ACTIVE after LOC is deployed
         uint256 status = uint256(line.status());
         assertEq(1, status);
         emit log_named_uint("- status (1 == ACTIVE) ", status);
 
-        // vm.stopPrank();
 
     }
 
@@ -218,7 +212,7 @@ contract RainRe7Sim is Test {
 
         vm.stopPrank();
 
-        // re7 proposes position
+        // Re7 proposes position
         // Rain accepts position
         bytes32 positionId =  _lenderFundLoan();
 
@@ -238,13 +232,9 @@ contract RainRe7Sim is Test {
         emit log_named_string("\n \u2713 Line Operator Calls increaseNonce Function on Rain Collateral Contract 0", "");
 
         vm.startPrank(rainControllerOwnerAddress);
-        // vm.startPrank(rainControllerOwnerAddress);
         uint256 startingNonce = rainCollateralController.nonce(rainCollateralContract0);
         emit log_named_uint("- Rain Collateral 0 - Starting Nonce", startingNonce);
-        // rainCollateralController.increaseNonce(rainCollateralContract0);
-        // bytes4 increaseNonceFunc = _getSelector("increaseNonce(address)");
-        // bytes memory increaseNonceData = abi.encodeWithSelector(increaseNonceFunc);
-        // bytes memory increaseNonceData = abi.encode(increaseNonceFunc, rainCollateralContract0);
+
         bytes4 increaseNonceFunc = rainCollateralController.increaseNonce.selector;
         bytes memory increaseNonceData = abi.encodeWithSelector(
             increaseNonceFunc,
@@ -263,7 +253,6 @@ contract RainRe7Sim is Test {
 
         emit log_named_string("\n \u2713 Line Operator Calls increaseNonce Function on Rain Collateral Contract 1", "");
         vm.startPrank(rainControllerOwnerAddress);
-        // vm.startPrank(rainControllerOwnerAddress);
         uint256 startingNonce1 = rainCollateralController.nonce(rainCollateralContract1);
         emit log_named_uint("- Rain Collateral 1 - Starting Nonce", startingNonce1);
         bytes memory increaseNonceData1 = abi.encodeWithSelector(
