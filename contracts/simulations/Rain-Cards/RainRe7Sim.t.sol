@@ -71,8 +71,7 @@ contract RainRe7Sim is Test {
     // Credit Coop Infra Addresses
     address constant oracleAddress = 0x5a4AAF300473eaF8A9763318e7F30FA8a3f5Dd48;
     address constant zeroExSwapTarget = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
-    ModuleFactory moduleFactory = new ModuleFactory();
-    LineFactory lineFactory = new LineFactory(address(moduleFactory), arbiterAddress, oracleAddress, payable(zeroExSwapTarget));
+    // Old Line Factory Address
     // address constant lineFactoryAddress = 0x89989dBe4CFa289dE6179e8d54EE755E471a4251;
 
     // Rain Cards Borrower Address
@@ -83,6 +82,7 @@ contract RainRe7Sim is Test {
     address rainCollateralFactoryAddress = 0x31EBf70312f488D0bdAc374b340f0D01dBf153B5;
     address rainCollateralControllerAddress = 0xE5D3d7da4b24bc9D2FDA0e206680CD8A00C0FeBD;
     address rainControllerAdminAddress = 0xB92949bdF09F4193599Ae7700211751ab5F74aCd;
+    address rainFactoryOwnerAddress = 0x21ebc2f23a91fD7eB8406CDCE2FD653de280B5fc;
     address rainControllerOwnerAddress = 0x21ebc2f23a91fD7eB8406CDCE2FD653de280B5fc;
     address rainTreasuryContractAddress = 0x0204C22BE67968C3B787D2699Bd05cf2b9432c60;
 
@@ -156,9 +156,21 @@ contract RainRe7Sim is Test {
         rainCollateralFactory = IRainCollateralFactory(rainCollateralFactoryAddress);
         rainCollateralController = IRainCollateralController(rainCollateralControllerAddress);
 
+    }
+
+    ///////////////////////////////////////////////////////
+    //             S C E N A R I O   T E S T             //
+    ///////////////////////////////////////////////////////
+
+    function test_rain_re7_simulation() public {
+
+        // Deploy Credit Coop Factory Contracts
+        ModuleFactory moduleFactory = new ModuleFactory();
+        LineFactory lineFactory = new LineFactory(address(moduleFactory), arbiterAddress, oracleAddress, payable(zeroExSwapTarget));
+
         // Borrower Deploys Line of Credit
         emit log_named_string("\n \u2713 Borrower Deploys Line of Credit", "");
-        securedLineAddress = _deployLoCWithConfig();
+        securedLineAddress = _deployLoCWithConfig(lineFactory);
 
         // Define interfaces for all CC modules
         line = ILineOfCredit(securedLineAddress);
@@ -168,15 +180,6 @@ contract RainRe7Sim is Test {
         uint256 status = uint256(line.status());
         assertEq(1, status);
         emit log_named_uint("- status (1 == ACTIVE) ", status);
-
-
-    }
-
-    ///////////////////////////////////////////////////////
-    //             S C E N A R I O   T E S T             //
-    ///////////////////////////////////////////////////////
-
-    function test_rain_re7_simulation() public {
 
         // Credit Coop Arbiter adds Rain Collateral Controller to Spigot
         vm.startPrank(arbiterAddress);
@@ -193,6 +196,9 @@ contract RainRe7Sim is Test {
         assertEq(true, ISpigot(securedLine.spigot()).isWhitelisted(whitelistedFunc));
 
         vm.stopPrank();
+
+        // OPTIONAL - Rain transfers ownership of Rain Collateral Factory to a Joint Multisig
+        // TODO
 
         // Rain transfers ownership of Rain Collateral Controller to Spigot
         // Rain updates updateTreasury to Spigot address in Rain Collateral Controller
@@ -224,7 +230,6 @@ contract RainRe7Sim is Test {
         // Rain draws down full amount
         vm.startPrank(rainBorrower);
         emit log_named_string("\n \u2713 Borrower Borrows Full Amount from Line of Credit", "");
-        // emit log_named_uint("- Rain Borrower Starting Balance ", rainBorrowerStartingBalance);
         line.borrow(positionId, 200000 * 10 ** 6);
         emit log_named_uint("- Rain Borrower Ending Balance ", IERC20(USDC).balanceOf(rainBorrower));
         vm.stopPrank();
@@ -349,11 +354,8 @@ contract RainRe7Sim is Test {
         // Rain claims and repay the full balance, principal plus interest, of the Line of Credit
         emit log_named_string("\n \u2713 Arbiter Calls ClaimAndRepay to Repay Line of Credit with Spigot Revenue", "");
         vm.startPrank(arbiterAddress);
-        // uint claimable = spigot.getOwnerTokens(USDC);
         emit log_named_uint("- Owner Tokens in Spigot before repayment: ", spigot.getOwnerTokens(USDC));
         assertEq(210000 * 10 ** 6, spigot.getOwnerTokens(USDC));
-        // bytes memory tradeData = "";
-        // Starting Balances
         uint256 rainBorrowerStartingBalance = IERC20(USDC).balanceOf(rainBorrower);
 
         spigotedLine.claimAndRepay(address(USDC), "");
@@ -376,7 +378,6 @@ contract RainRe7Sim is Test {
         // Rain sweeps the remaining unused assets from the line of credit
         emit log_named_string("\n \u2713 Borrower Calls sweep Function to Regain Ownership of Unused Assets From Line of Credit", "");
         vm.startPrank(rainBorrower);
-        // check reserves
 
         uint256 unusedTokensAfterClose0 = spigotedLine.unused(USDC);
 
@@ -425,6 +426,9 @@ contract RainRe7Sim is Test {
 
         vm.stopPrank();
 
+        // OPTIONAL - Joint Multisig Transfers Ownership of Rain Collateral Factory Back to Rain Collateral Factory Owner Address
+        // TODO
+
     }
 
 
@@ -432,17 +436,7 @@ contract RainRe7Sim is Test {
     //          I N T E R N A L   H E L P E R S          //
     ///////////////////////////////////////////////////////
 
-    function _deployLoCWithConfig() internal returns (address){
-        // ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
-        //     borrower: rainBorrower,
-        //     ttl: ttl, // time to live
-        //     cratio: minCRatio, // uint32(creditRatio),
-        //     revenueSplit: revenueSplit // uint8(revenueSplit) - 100% to spigot
-        // });
-
-        // create Line of Credit
-        // line = new LineOfCredit(oracleAddress, arbiterAddress, rainBorrower, ttl);
-
+    function _deployLoCWithConfig(LineFactory lineFactory) internal returns (address){
         // create Escrow and Spigot
         escrow = new Escrow(minCRatio, oracleAddress, rainControllerOwnerAddress, rainBorrower);
         spigot = new Spigot(rainControllerOwnerAddress, rainControllerOwnerAddress);
@@ -463,10 +457,8 @@ contract RainRe7Sim is Test {
         // Arbiter registers Spigot, Escrow, and SecuredLine using Factory Contracts to appear in Subgraph & Dapp
         vm.startPrank(arbiterAddress);
 
-        console.log("6");
-        // lineFactory.registerSecuredLine(address(securedLine), address(spigot), address(escrow), rainControllerOwnerAddress, revenueSplit, minCRatio);
+        lineFactory.registerSecuredLine(address(securedLine), address(spigot), address(escrow), rainBorrower, revenueSplit, minCRatio);
 
-        console.log("7");
         vm.stopPrank();
 
         return address(securedLine);
