@@ -11,6 +11,7 @@ contract SimpleRevenueContract {
     address manager;
     address methodologist;
     IERC20 revenueToken;
+    uint256 count;
     mapping (address => uint256) public nonce;
 
     constructor(address _owner, address token) {
@@ -80,10 +81,17 @@ contract SimpleRevenueContract {
         return true;
     }
 
+    function incrementCount() external {
+        require(msg.sender == manager, "Only manager can call");
+        count += 1;
+    }
+
     function updateNonce(address _address, uint256 num) external {
         require(msg.sender == manager, "Only manager can call");
         nonce[_address] += num;
     }
+
+
 
     receive() external payable {}
 }
