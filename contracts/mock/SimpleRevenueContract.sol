@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0
 // Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
 
- pragma solidity ^0.8.16;
+pragma solidity ^0.8.16;
 import {Denominations} from "chainlink/Denominations.sol";
 import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
-import { MutualUpgrade } from "./MutualUpgrade.sol";
+import {MutualConsent} from "../utils/MutualConsent.sol";
 
-contract SimpleRevenueContract {
-    address owner;
-    address manager;
-    address methodologist;
+contract SimpleRevenueContract is MutualConsent {
+    address public owner;
+    address public manager;
+    address public methodologist;
     IERC20 revenueToken;
-    uint256 count;
+    uint256 public count;
     mapping (address => uint256) public nonce;
 
     constructor(address _owner, address token) {
@@ -51,19 +51,6 @@ contract SimpleRevenueContract {
         else return false;
     }
 
-    function getOwner() external view returns (address) {
-        return owner;
-    }
-
-    function getManager() external view returns (address) {
-        return manager;
-    }
-
-
-    function getMethodologist() external view returns (address) {
-        return manager;
-    }
-
     function transferOwnership(address newOwner) external returns (bool) {
         require(msg.sender == owner, "Revenue: Only owner can transfer");
         owner = newOwner;
@@ -75,10 +62,9 @@ contract SimpleRevenueContract {
         methodologist = newMethodologist;
     }
 
-    function setManager(address newManager) external mutualUpgrade(manager, methodologist) {
-        require(_newManager != address(0), "Zero address not valid");
+    function setManager(address newManager) external mutualConsent(manager, methodologist) {
+        require(newManager != address(0), "Zero address not valid");
         manager = newManager;
-        return true;
     }
 
     function incrementCount() external {
@@ -91,7 +77,9 @@ contract SimpleRevenueContract {
         nonce[_address] += num;
     }
 
-
+    function getNonce(address _address) external view returns (uint256) {
+        return nonce[_address];
+    }
 
     receive() external payable {}
 }
