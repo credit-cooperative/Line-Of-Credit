@@ -57,7 +57,7 @@ contract RainRe7Sim is Test {
     ISpigot.Setting private settings;
     // ISecuredLine securedLine;
     ILineOfCredit line;
-    ISpigotedLine spigotedLine;
+    // ISpigotedLine spigotedLine;
     // IEscrow escrow;
 
     // LineOfCredit line;
@@ -174,12 +174,12 @@ contract RainRe7Sim is Test {
 
         // Define interfaces for all CC modules
         line = ILineOfCredit(securedLineAddress);
-        spigotedLine = ISpigotedLine(securedLineAddress);
 
         // Check status == ACTIVE after LOC is deployed
         uint256 status = uint256(line.status());
         assertEq(1, status);
         emit log_named_uint("- status (1 == ACTIVE) ", status);
+        delete status;
 
         // Credit Coop Arbiter adds Rain Collateral Controller to Spigot
         vm.startPrank(arbiterAddress);
@@ -194,6 +194,7 @@ contract RainRe7Sim is Test {
         bytes4 whitelistedFunc = _getSelector("increaseNonce(address)");
         securedLine.updateWhitelist(whitelistedFunc, true);
         assertEq(true, ISpigot(securedLine.spigot()).isWhitelisted(whitelistedFunc));
+        delete whitelistedFunc;
 
         vm.stopPrank();
 
@@ -230,7 +231,7 @@ contract RainRe7Sim is Test {
         // Rain draws down full amount
         vm.startPrank(rainBorrower);
         emit log_named_string("\n \u2713 Borrower Borrows Full Amount from Line of Credit", "");
-        line.borrow(positionId, 200000 * 10 ** 6);
+        securedLine.borrow(positionId, 200000 * 10 ** 6);
         emit log_named_uint("- Rain Borrower Ending Balance ", IERC20(USDC).balanceOf(rainBorrower));
         vm.stopPrank();
 
@@ -348,7 +349,7 @@ contract RainRe7Sim is Test {
 
         // interest accrued
         bytes32 creditPositionId = 0xaa91a43200d4f9f507d37cc534c773fae8d778cf8f94e15a093ac6f64a1524a6;
-        uint256 interestAccrued = line.interestAccrued(creditPositionId);
+        uint256 interestAccrued = securedLine.interestAccrued(creditPositionId);
         emit log_named_uint("- Interest Accrued ", interestAccrued);
 
         // Rain claims and repay the full balance, principal plus interest, of the Line of Credit
@@ -358,7 +359,7 @@ contract RainRe7Sim is Test {
         assertEq(210000 * 10 ** 6, spigot.getOwnerTokens(USDC));
         uint256 rainBorrowerStartingBalance = IERC20(USDC).balanceOf(rainBorrower);
 
-        spigotedLine.claimAndRepay(address(USDC), "");
+        securedLine.claimAndRepay(address(USDC), "");
         assertEq(0, spigot.getOwnerTokens(USDC));
         emit log_named_uint("- Owner Tokens in Spigot after repayment: ", spigot.getOwnerTokens(USDC));
         vm.stopPrank();
@@ -366,10 +367,10 @@ contract RainRe7Sim is Test {
         // Rain closes the Line of Credit
         emit log_named_string("\n \u2713 Borrower Calls close Function to Close Line of Credit", "");
         vm.startPrank(rainBorrower);
-        line.close(creditPositionId);
+        securedLine.close(creditPositionId);
 
         // Check status == REPAID after position is repaid and closed
-        uint256 statusIsRepaid = uint256(line.status());
+        uint256 statusIsRepaid = uint256(securedLine.status());
         assertEq(3, statusIsRepaid);
         emit log_named_uint("- status (3 == REPAID) ", statusIsRepaid);
 
@@ -379,19 +380,19 @@ contract RainRe7Sim is Test {
         emit log_named_string("\n \u2713 Borrower Calls sweep Function to Regain Ownership of Unused Assets From Line of Credit", "");
         vm.startPrank(rainBorrower);
 
-        uint256 unusedTokensAfterClose0 = spigotedLine.unused(USDC);
+        uint256 unusedTokensAfterClose0 = securedLine.unused(USDC);
 
         emit log_named_uint(" - Unused Tokens after Position is closed and line is repaid (before sweep)", unusedTokensAfterClose0);
 
-        spigotedLine.sweep(rainBorrower, address(USDC), unusedTokensAfterClose0);
+        securedLine.sweep(rainBorrower, address(USDC), unusedTokensAfterClose0);
 
-        uint256 unusedTokensAfterClose1 = spigotedLine.unused(USDC);
+        uint256 unusedTokensAfterClose1 = securedLine.unused(USDC);
 
         emit log_named_uint(" - Unused Tokens after Position is closed and line is repaid (after sweep)", unusedTokensAfterClose1);
 
         assertEq(0, unusedTokensAfterClose1);
         emit log_named_uint(" - remaining spigot assets ", IERC20(USDC).balanceOf(address(spigot)));
-        emit log_named_uint(" - remaining line assets ", IERC20(USDC).balanceOf(address(line)));
+        emit log_named_uint(" - remaining line assets ", IERC20(USDC).balanceOf(address(securedLine)));
 
         vm.stopPrank();
 
@@ -399,14 +400,14 @@ contract RainRe7Sim is Test {
         // Lender withdraws principal + interest owed
         vm.startPrank(lenderAddress);
         emit log_named_string("\n \u2713 Lender Withdraws All Repaid Principal and Interest", "");
-        line.withdraw(creditPositionId, interestAccrued + loanSizeInUSDC);
+        securedLine.withdraw(creditPositionId, interestAccrued + loanSizeInUSDC);
         uint256 lenderBalanceAfterRepayment = IERC20(USDC).balanceOf(lenderAddress);
         uint256 borrowerBalanceAfterRepayment = IERC20(USDC).balanceOf(rainBorrower);
 
         // check that the lender balance is principal + interest
         emit log_named_uint(" - Lender Balance After Repayment ", lenderBalanceAfterRepayment);
         emit log_named_uint(" - Borrower Repayment Amount ", borrowerBalanceAfterRepayment - rainBorrowerStartingBalance);
-        emit log_named_uint(" - Line Balance After Repayment ", IERC20(USDC).balanceOf(address(line)));
+        emit log_named_uint(" - Line Balance After Repayment ", IERC20(USDC).balanceOf(address(securedLine)));
         assertEq(lenderBalanceAfterRepayment, loanSizeInUSDC + interestAccrued, "Lender has not been fully repaid");
         assertEq(210000 * 10 ** 6, lenderBalanceAfterRepayment + borrowerBalanceAfterRepayment - rainBorrowerStartingBalance);
         vm.stopPrank();
@@ -415,7 +416,7 @@ contract RainRe7Sim is Test {
         vm.startPrank(rainBorrower);
 
         emit log_named_string("\n \u2713 Borrower Releases Spigot to Rain Collateral Controller Owner Address", "");
-        spigotedLine.releaseSpigot(rainControllerOwnerAddress);
+        securedLine.releaseSpigot(rainControllerOwnerAddress);
         vm.stopPrank();
 
         vm.startPrank(rainControllerOwnerAddress);
@@ -491,7 +492,7 @@ contract RainRe7Sim is Test {
         emit log_named_string("\n \u2713 Lender Proposes Position to Line of Credit", "");
         vm.startPrank(lenderAddress);
         IERC20(USDC).approve(address(line), loanSizeInUSDC);
-        line.addCredit(
+        securedLine.addCredit(
             dRate, // drate
             fRate, // frate
             loanSizeInUSDC, // amount
@@ -503,7 +504,7 @@ contract RainRe7Sim is Test {
         emit log_named_string("\n \u2713 Borrower Accepts Lender Proposal to Line of Credit", "");
         vm.startPrank(rainBorrower);
 
-        id = line.addCredit(
+        id = securedLine.addCredit(
             dRate, // drate
             fRate, // frate
             loanSizeInUSDC, // amount
@@ -512,7 +513,7 @@ contract RainRe7Sim is Test {
         );
         vm.stopPrank();
 
-        assertEq(IERC20(USDC).balanceOf(address(line)), loanSizeInUSDC, "LoC balance doesn't match");
+        assertEq(IERC20(USDC).balanceOf(address(securedLine)), loanSizeInUSDC, "LoC balance doesn't match");
         emit log_named_bytes32("- credit id", id);
         return id;
     }
@@ -538,7 +539,7 @@ contract RainRe7Sim is Test {
 
         // add spigot for revenue contract
         require(
-            spigotedLine.addSpigot(rainCollateralControllerAddress, settings),
+            securedLine.addSpigot(rainCollateralControllerAddress, settings),
             "Failed to add spigot"
         );
 
