@@ -18,7 +18,7 @@ import {IOracle} from "../../interfaces/IOracle.sol";
 import {ILineOfCredit} from "../../interfaces/ILineOfCredit.sol";
 
 interface ICCVault {
-    function incrementDeployedCredit(bytes32 positionId) external returns (bytes32);
+    function incrementCreditDeployed(bytes32 positionId) external returns (bytes32);
 }
 
 /**
@@ -520,7 +520,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
     function _vaultCallback(address lender, bytes32 id, uint256 amount) internal returns (bool) {
         (bool success, ) = address(lender).call(
-            abi.encodeWithSignature("incrementDeployedCredit(bytes32,uint256)", id, amount)
+            abi.encodeWithSignature("incrementCreditDeployed(bytes32,uint256)", id, amount)
         );
 
         if (success) {
