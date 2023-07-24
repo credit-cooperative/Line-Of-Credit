@@ -1,4 +1,7 @@
-pragma solidity 0.8.16;
+// SPDX-License-Identifier: GPL-3.0
+// Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
+
+ pragma solidity ^0.8.16;
 
 import "forge-std/Test.sol";
 import {Spigot} from "../modules/spigot/Spigot.sol";
@@ -12,7 +15,7 @@ import {Denominations} from "chainlink/Denominations.sol";
 import {ISpigot} from "../interfaces/ISpigot.sol";
 
 contract SpigotTest is Test {
-   
+
     // spigot contracts/configurations to test against
     RevenueToken private token;
     address private revenueContract;
@@ -39,12 +42,12 @@ contract SpigotTest is Test {
     // Spigot Controller access control vars
     address private owner;
     address private operator;
-  
+
 
     function setUp() public {
         owner = address(this);
         operator = address(10);
-        
+
         token = new RevenueToken();
 
         _initSpigot(
@@ -417,29 +420,29 @@ contract SpigotTest is Test {
     function test_claimOperatorTokens_AsOperator(uint256 totalRevenue, uint8 _split) public {
         if(totalRevenue <= 50|| totalRevenue > MAX_REVENUE) return;
         if (_split > 99 || _split < 0) return;
-        
-        uint256 ownerTokens = totalRevenue * settings.ownerSplit / 100;
-  
 
-        
+        uint256 ownerTokens = totalRevenue * settings.ownerSplit / 100;
+
+
+
 
         _initSpigot(address(token), _split, claimPushPaymentFunc, transferOwnerFunc, whitelist);
 
         // console.log(settings.ownerSplit);
         // console.log(totalRevenue);
-        
-        
+
+
         // send revenue and claim it
         token.mint(address(spigot), totalRevenue);
         bytes memory claimData;
         spigot.claimRevenue(revenueContract, address(token), claimData);
 
         uint256 operatorTokens = spigot.getOperatorTokens(address(token));
-        
-        
-        
+
+
+
         assertSpigotSplits(address(token), totalRevenue);
-        
+
 
         vm.prank(operator);
         uint256 claimed = spigot.claimOperatorTokens(address(token));
@@ -782,7 +785,7 @@ contract SpigotTest is Test {
         vm.prank(owner);
         spigot.updateOperator(address(20));
     }
-    
+
     function test_updateOwner_AsNonOwner() public {
         hoax(address(0xdebf));
         vm.expectRevert(ISpigot.CallerAccessDenied.selector);
@@ -827,7 +830,7 @@ contract SpigotTest is Test {
         spigot.addSpigot(address(revenueContract), settings);
 
         ISpigot.Setting memory altSettings = ISpigot.Setting(50, bytes4(""), bytes4("1234"));
-        
+
         vm.expectRevert(SpigotLib.SpigotSettingsExist.selector);
          spigot.addSpigot(address(revenueContract), altSettings);
     }

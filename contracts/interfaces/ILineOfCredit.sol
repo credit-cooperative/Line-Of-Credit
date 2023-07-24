@@ -1,4 +1,7 @@
-pragma solidity 0.8.16;
+// SPDX-License-Identifier: GPL-3.0
+// Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
+
+ pragma solidity ^0.8.16;
 
 import {LineLib} from "../utils/LineLib.sol";
 import {IOracle} from "../interfaces/IOracle.sol";
@@ -102,7 +105,7 @@ interface ILineOfCredit {
     * @dev           - Fully executes function after a Borrower and a Lender have agreed terms, both Lender and borrower have agreed through mutualConsent
     * @dev           - callable by `lender` and `borrower`
     * @param drate   - The interest rate charged to a Borrower on borrowed / drawn down funds. In bps, 4 decimals.
-    * @param frate   - The interest rate charged to a Borrower on the remaining funds available, but not yet drawn down 
+    * @param frate   - The interest rate charged to a Borrower on the remaining funds available, but not yet drawn down
                         (rate charged on the available headroom). In bps, 4 decimals.
     * @param amount  - The amount of Credit Token to initially deposit by the Lender
     * @param token   - The Credit Token, i.e. the token to be lent out

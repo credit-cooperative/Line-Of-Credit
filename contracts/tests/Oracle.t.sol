@@ -1,4 +1,7 @@
-pragma solidity 0.8.16;
+// SPDX-License-Identifier: GPL-3.0
+// Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
+
+ pragma solidity ^0.8.16;
 
 import "forge-std/Test.sol";
 
@@ -41,7 +44,7 @@ contract OracleTest is Test, Events {
     address constant btc = 0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB;
     address constant dai = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    
+
     // Mock Tokens
     RevenueToken tokenA;
     RevenueToken tokenB;
@@ -54,7 +57,7 @@ contract OracleTest is Test, Events {
     int256 constant DECIMALS_8 = 10**8;
     int256 constant DECIMALS_9 = 10**9;
     int256 constant DECIMALS_10 = 10**10;
-    
+
 
 
     // Chainlink
@@ -63,7 +66,7 @@ contract OracleTest is Test, Events {
     MockRegistry mockRegistry2;
 
     address constant feedRegistryAddress = 0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf;
-    
+
     uint256 mainnetFork;
     Oracle forkOracle;
     Oracle oracle1;
@@ -98,7 +101,7 @@ contract OracleTest is Test, Events {
         // Mocks
         mockRegistry1 = new MockRegistry();
         mockRegistry2 = new MockRegistry();
-        
+
         oracle1 = new Oracle(address(mockRegistry1));
         oracle2 = new Oracle(address(mockRegistry2));
 
@@ -119,10 +122,10 @@ contract OracleTest is Test, Events {
         line = new LineOfCredit(address(oracle1), arbiter, borrower, ttl);
         line.init();
         // assertEq(uint256(line.init()), uint256(LineLib.STATUS.ACTIVE));
-        
+
         // deploy and save escrow
         escrow = new Escrow ( minCollateralRatio, address(oracle2), address(line), borrower);
-        
+
         _mintAndApprove();
 
         _addCreditAndBorrow(address(tokenA), 1 ether);
@@ -151,7 +154,7 @@ contract OracleTest is Test, Events {
 
         uint256 altCollateralValue = escrow.getCollateralValue();
         (uint256 altPrincipal, uint256 altInterest) = line.updateOutstandingDebt();
-        
+
         assertEq(collateralValue, altCollateralValue, "collateral value should equal alt collateral value");
         assertEq(principal, altPrincipal, "principal value should equal alt principal value");
         assertEq(interest, altInterest, "interest value should equal alt interest value");
@@ -270,7 +273,7 @@ contract OracleTest is Test, Events {
 
         uint8 tokenAdecimals = mockRegistry1.decimals(address(tokenA), address(0));
         assertEq(tokenAdecimals, 8);
-        
+
         mockRegistry1.updateTokenDecimals(address(tokenA), 0);
 
         tokenAdecimals = mockRegistry1.decimals(address(tokenA), address(0));
@@ -319,8 +322,8 @@ contract OracleTest is Test, Events {
         tokenA.approve(address(line), type(uint256).max);
         tokenB.approve(address(line), type(uint256).max);
         vm.stopPrank();
-    }   
-    
+    }
+
     function _addCreditAndBorrow(address token, uint256 amount) internal {
         vm.startPrank(borrower);
         line.addCredit(dRate, fRate, amount, token, lender);

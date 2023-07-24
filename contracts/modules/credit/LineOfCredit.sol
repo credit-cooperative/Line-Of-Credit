@@ -1,4 +1,7 @@
-pragma solidity 0.8.16;
+// SPDX-License-Identifier: GPL-3.0
+// Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
+
+ pragma solidity ^0.8.16;
 
 import {Denominations} from "chainlink/Denominations.sol";
 import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
@@ -27,19 +30,19 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     using CreditListLib for bytes32[];
 
     /// @notice - the timestamp that all creditors must be repaid by
-    uint256 public deadline;
+    uint256 public immutable deadline;
 
     /// @notice - the account that can drawdown and manage debt positions
-    address public borrower;
+    address public immutable borrower;
 
     /// @notice - neutral 3rd party that mediates btw borrower and all lenders
-    address public arbiter;
+    address public immutable arbiter;
 
     /// @notice - price feed to use for valuing credit tokens
-    IOracle public oracle;
+    IOracle public immutable oracle;
 
     /// @notice - contract responsible for calculating interest owed on debt positions
-    InterestRateCredit public interestRate;
+    InterestRateCredit public immutable interestRate;
 
     /// @notice - current amount of active positions (aka non-null ids) in `ids` list
     uint256 private count;

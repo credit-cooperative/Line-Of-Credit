@@ -1,4 +1,7 @@
-pragma solidity 0.8.16;
+// SPDX-License-Identifier: GPL-3.0
+// Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
+
+ pragma solidity ^0.8.16;
 
 import "forge-std/Test.sol";
 
@@ -80,14 +83,14 @@ contract DualRevenueStreamsTest is Test {
     uint256 preClaimSpigotOperatorTokens;
     uint256 preClaimSpigotOwnerTokens;
 
-    constructor () {} 
+    constructor () {}
 
     function setUp() public {
 
         mainnetFork = vm.createFork(MAINNET_RPC_URL, 16_599_544); // 1 block before actual TXs begin
         vm.selectFork(mainnetFork);
 
-        borrower = makeAddr("borrower"); 
+        borrower = makeAddr("borrower");
         lender = address(10);
         arbiter = address(this);
 
@@ -96,7 +99,7 @@ contract DualRevenueStreamsTest is Test {
         deal(DAI, address(dex), MAX_INT / 2);
         deal(USDC, address(dex), MAX_INT / 2);
         deal(TUSD, address(dex), MAX_INT / 2);
-        
+
         pullRevenueContract = new SimpleRevenueContract(borrower, USDC);
 
         // create our own oracle as we can't simulate Ox call data for dynamic swaps
@@ -125,7 +128,7 @@ contract DualRevenueStreamsTest is Test {
                 cratio: 1000,
                 revenueSplit: 90
             });
-    
+
         vm.startPrank(borrower);
         lineAddress = lineFactory.deploySecuredLineWithConfig(coreParams);
         vm.stopPrank();
@@ -208,7 +211,7 @@ contract DualRevenueStreamsTest is Test {
 
         // generate revenue for pull
         IERC20(USDC).transfer(address(pullRevenueContract), 500e6);
-        
+
         // revenue for push
         vm.prank(PUSH_REVENUE_EOA);
         IERC20(USDC).transfer(address(spigot), 500e6);
@@ -290,14 +293,14 @@ contract DualRevenueStreamsTest is Test {
         borrowAmount = bound(borrowAmount, 10 ether, LOAN_AMT);
         advanceBlocks = bound(advanceBlocks, 100, 10_000);
         repayment = bound(repayment, 500e6, 2250e6); // USDC, ie 6 decimals
-        
+
         bytes32 lineId = line.ids(0);
 
         // _rollAndWarpToBlock(block.number + advanceBlocks); // borrow block
         vm.startPrank(borrower);
         line.borrow(lineId, borrowAmount);
         vm.stopPrank();
-        
+
 
         line.accrueInterest();
 
@@ -310,7 +313,7 @@ contract DualRevenueStreamsTest is Test {
 
             // generate revenue for pull
             IERC20(USDC).transfer(address(pullRevenueContract), repayment);
-        
+
             // revenue for push
             vm.prank(PUSH_REVENUE_EOA);
             IERC20(USDC).transfer(address(spigot), repayment / 2);

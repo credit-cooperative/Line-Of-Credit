@@ -1,4 +1,7 @@
-pragma solidity 0.8.16;
+// SPDX-License-Identifier: GPL-3.0
+// Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
+
+ pragma solidity ^0.8.16;
 
 interface ILineFactory {
     struct CoreLineParams {
@@ -15,6 +18,19 @@ interface ILineFactory {
         address swapTarget,
         uint8 revenueSplit
     );
+
+    event RegisteredSecuredLine(
+        address indexed deployedAt,
+        address indexed escrow,
+        address indexed spigot,
+        address swapTarget,
+        uint8 revenueSplit
+    );
+
+    event RegisteredUpdatedStatus(address indexed line, uint256 indexed status); // store as normal uint so it can be indexed in subgraph
+
+    event RegisteredLine(address indexed line, address indexed oracle, address indexed arbiter, address borrower);
+
 
     error ModuleTransferFailed(address line, address spigot, address escrow);
     error InvalidRevenueSplit();

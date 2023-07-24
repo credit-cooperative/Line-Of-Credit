@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: GPL-3.0
+# Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
+
 # import IERC20, SafeERC20
 # import Ownable
 # @version ^0.2.0
@@ -46,7 +49,7 @@ event UpdateOwner:
 
 event UpdateOperator:
   newOperator: indexed(address)
-  
+
 event UpdateTreasury:
   newTreasury: indexed(address)
 
@@ -73,13 +76,13 @@ def initialize(
   self.owner = owner
   self.operator = operator
   self.treasury = treasury
-  
+
   for i in range( len(contracts) ):
     # TODO replace with self._addSpigot
     assert settings[i].claimFunction != convert(0, Bytes[4]) # 0x0 works?
     revenueContracts[ contracts[i] ] = settings[i]
     log AddRevenueSpigot(contracts[i], settings[i].token, settings[i].ownerSplit)
-  
+
   for i in range( len(whitelist) / 4 ):
     func: Bytes4 = slice(whitelist, i*4, i*4 + 4)
     whitelistedFunctions[func] = True
@@ -94,7 +97,7 @@ def initialize(
 def claimRevenue(revenueContract: address, data: Bytes[1000]):
   """
   @dev
-      Calls revenueContract on preconfigured claim function 
+      Calls revenueContract on preconfigured claim function
       Only used for pull payments. If revenue is sent directly to Spigot use `updateRevenueBalance`
   @param revenueContract
       Revenue generating contract to divert funds through
@@ -111,15 +114,15 @@ def claimRevenue(revenueContract: address, data: Bytes[1000]):
       data
     )
   )
-  
+
   claimedAmount: uint256 = IERC20(revenueToken).balanceOf(self) - currentBalance
   escrowedAmount: uint256 = claimedAmount / revenueContracts[revenueContract].ownerSplit
-  
+
   # divert claimed revenue to escrow and treasury
   revenueContracts[revenueContract].totalEscrowed += escrowedAmount
   success: bool = IERC20(revenueToken).transfer(self, treasury, claimedAmount - escrowedAmount)
   assert success, "Treasury revenue payment failed"
-  
+
   log ClaimRevenue(revenueContract, revenueToken, claimedAmount, escrowedAmount)
 
 @external
@@ -140,7 +143,7 @@ def updateRevenueBalance(revenueContract: address):
   assert success, "Treasury revenue stream failed"
 
   log ClaimRevenue(revenueContract, revenueToken, claimedAmount, escrowedAmount)
-  
+
 @external
 def claimEscrow(revenueContract: address):
   """
@@ -187,7 +190,7 @@ def updateTreasury(newTreasury: address):
 
 ##########################
 #   // *ring* *ring*
-#   // OPERATOOOR 
+#   // OPERATOOOR
 #   // OPERATOOOR
 ##########################
 @external

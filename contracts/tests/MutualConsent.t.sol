@@ -1,4 +1,7 @@
-pragma solidity 0.8.16;
+// SPDX-License-Identifier: GPL-3.0
+// Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
+
+ pragma solidity ^0.8.16;
 
 import "forge-std/Test.sol";
 
@@ -104,7 +107,7 @@ contract MutualConsentTest is Test, Events {
 
     function test_addCredit_mutual_consent_accepted_event() public {
         vm.startPrank(lender);
-        vm.expectEmit(false,false,false,false, address(line)); 
+        vm.expectEmit(false,false,false,false, address(line));
         emit MutualConsentAccepted(keccak256(abi.encode("none")));
         line.addCredit(dRate, fRate, amount, token, lender);
         vm.stopPrank();

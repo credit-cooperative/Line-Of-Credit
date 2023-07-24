@@ -1,4 +1,7 @@
-pragma solidity 0.8.16;
+// SPDX-License-Identifier: GPL-3.0
+// Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
+
+ pragma solidity ^0.8.16;
 
 import "forge-std/Test.sol";
 import { Denominations } from "chainlink/Denominations.sol";
@@ -26,16 +29,16 @@ import { IERC20 } from "openzeppelin/token/ERC20/IERC20.sol";
 
     /*
     *   @note:      A bug was introduced following changes that were made based on issues discovered
-    *               in the Code4rena audit. It became necessary to have the Operator claim tokens in a 
+    *               in the Code4rena audit. It became necessary to have the Operator claim tokens in a
     *               separate tx, as opposed to being part of the claimRevenue call.  This resulted in
     *               an excess of tokens that were not accounted for in the claimRevenue function's logic.
     *               As a result, it was possible to claim more tokens as revenue than should've been available
-    *               , but only in scenarios where push payments were used, and incorrectly increasing 
+    *               , but only in scenarios where push payments were used, and incorrectly increasing
     *               state.operatorTokens by the amount that was now unaccounted for.
     *   @link:      https://debtdao.notion.site/Spigot-Claim-Revenue-Accounting-01153e95f1be47d194ec9f252304855b
     *   @dev:       This test file tests contracts under the same conditions as the ones containing the bug on mainnet,
-    *               except with a focus on testing the fixes.  New factories need to be deployed to the test's fork to 
-    *               include the bug fixes.  The same core params used for the mainnet contract were the bug was 
+    *               except with a focus on testing the fixes.  New factories need to be deployed to the test's fork to
+    *               include the bug fixes.  The same core params used for the mainnet contract were the bug was
     *               discovered are used for the test.  A fork of mainnet is used to use the same token contracts and 0x trades.
     *   @dev:       The block number of, and a link to, each transaction is included in the comments above each step
     *               in the sequence.
@@ -81,7 +84,7 @@ contract HotfixForkClaimRevenueTest is Test {
         mainnetFork = vm.createFork(MAINNET_RPC_URL, 16_599_544); // 1 block before actual TXs begin
         vm.selectFork(mainnetFork);
 
-        borrower = 0xf44B95991CaDD73ed769454A03b3820997f00873; 
+        borrower = 0xf44B95991CaDD73ed769454A03b3820997f00873;
         lender = address(10);
         arbiter = address(this);
 
@@ -100,7 +103,7 @@ contract HotfixForkClaimRevenueTest is Test {
                 cratio: 1000,
                 revenueSplit: 90
             });
-    
+
         vm.startPrank(borrower);
         lineAddress = lineFactory.deploySecuredLineWithConfig(coreParams);
         vm.stopPrank();
@@ -168,13 +171,13 @@ contract HotfixForkClaimRevenueTest is Test {
 
 
     // @note:   This test replicates an accounting bug discovered in _claimRevenue in the SpigotLib
-    //          contract that didn't take into account the operatorToken balance when claiming revenue, 
+    //          contract that didn't take into account the operatorToken balance when claiming revenue,
     // @note:   This test is testing the fix that's been implemented, not testing the bug in the original
     //          contract.
     function test_reproduce_bug_claim_revenue_multiple_push_payments_accounting() external {
-        
+
         _createAndFundLine(50 ether, 3.3 ether); // 50 dai https://etherscan.io/tx/0x9a105e5ef1242ff98e1c6bd88c2aa4f9413e943c3de9ea8edd22c80b2b0f5193
-        
+
         bytes32 lineId = line.ids(0);
 
         // borrow 10 DAI
@@ -186,7 +189,7 @@ contract HotfixForkClaimRevenueTest is Test {
 
         // 16_678_623: transfer 15 USDC to spigot
         // https://etherscan.io/tx/0xe5690b0992b6fdc38eaa5f7fafd19320d0b7b76eb17c959a300a3c49763f6b3d
-        _rollAndWarpToBlock(16_678_623); 
+        _rollAndWarpToBlock(16_678_623);
         vm.startPrank(BORROWER_REVENUE_EOA);
         emit log_string("=> Transferring revenue to spigot");
         IERC20(USDC).transfer(address(spigot), 15e6); // https://etherscan.io/tx/0xe5690b0992b6fdc38eaa5f7fafd19320d0b7b76eb17c959a300a3c49763f6b3d
@@ -201,7 +204,7 @@ contract HotfixForkClaimRevenueTest is Test {
 
         // 16_678_635: borrower calls claim revenue
         // https://etherscan.io/tx/0x13e22f6e3e98318dd43fb7f60ec9c09450aab48e094b76e78a5b2bd7da656b4d
-        _rollAndWarpToBlock(16_678_635); 
+        _rollAndWarpToBlock(16_678_635);
         vm.startPrank(arbiter);
         emit log_string("=> claimRevenue()");
         uint256 claimed = spigot.claimRevenue(BORROWER_REVENUE_EOA, USDC, bytes("")); // https://etherscan.io/tx/0x13e22f6e3e98318dd43fb7f60ec9c09450aab48e094b76e78a5b2bd7da656b4d
@@ -216,7 +219,7 @@ contract HotfixForkClaimRevenueTest is Test {
 
         // 16_685_641: arbiter calls claimAndTrade ( 13500000 in)
         // https://etherscan.io/tx/0x0e3b431826afe6dfcbefff9e50e21188abc8a84fcc14b5adcce83930540fbeed
-        _rollAndWarpToBlock(16_685_641); 
+        _rollAndWarpToBlock(16_685_641);
         vm.startPrank(arbiter);
         emit log_string("=> claimAndTrade()");
         line.claimAndTrade(USDC,hex"d9627aa400000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000cdfe60000000000000000000000000000000000000000000000000b9c4f4da1409985600000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000000000000000000000006b175474e89094c44da98b954eedeac495271d0f869584cd000000000000000000000000e9039a6968ed998139e023ed8d41c7fa77b7ff7a0000000000000000000000000000000000000000000000cb3b1dde6d63f65891");
@@ -229,11 +232,11 @@ contract HotfixForkClaimRevenueTest is Test {
 
         // 16_685_974: borrower calls useAndRepay
         // https://etherscan.io/tx/0xcbcc1d7674f053369d92dc830e9a05d08bbf51a3a76b9c153f3dffcde273e1bd
-        _rollAndWarpToBlock(16_685_974); 
+        _rollAndWarpToBlock(16_685_974);
         (, uint256 principal,uint256 interest,,,,,) = line.credits(line.ids(0));
         emit log_named_uint("principal", principal);
         emit log_named_uint("interest", interest);
-        
+
         vm.startPrank(borrower);
         emit log_string("=> useAndRepay()");
         line.useAndRepay(10 ether); // https://etherscan.io/tx/0xcbcc1d7674f053369d92dc830e9a05d08bbf51a3a76b9c153f3dffcde273e1bd
@@ -250,26 +253,26 @@ contract HotfixForkClaimRevenueTest is Test {
 
         // 16_687_230: claimRevenue (called by thomas)
         // https://etherscan.io/tx/0x41d7f72a30dc64a55b20cd255e2fdfedda625ba2fa7129bb99ab0c2305844a05
-        _rollAndWarpToBlock(16_687_230); 
+        _rollAndWarpToBlock(16_687_230);
         vm.startPrank(THOMAS);
         emit log_string("=> claimRevenue()");
         vm.expectRevert(ISpigot.NoRevenue.selector);
-        claimed = spigot.claimRevenue(BORROWER_REVENUE_EOA, USDC, bytes("")); 
+        claimed = spigot.claimRevenue(BORROWER_REVENUE_EOA, USDC, bytes(""));
         vm.stopPrank();
 
 
         // 16_687_712: arbiter calls claimAndRepay
         // https://etherscan.io/tx/0x6a16a8a0638c7ab266988a9a77befbd70e104289b8bdbdcaacd614edc1abb87c
 
-        _rollAndWarpToBlock(16_687_712); 
+        _rollAndWarpToBlock(16_687_712);
         emit log_string("=> claimAndRepay()");
         vm.expectRevert(ISpigot.ClaimFailed.selector); // this txn was successful on mainnet....
         line.claimAndRepay(USDC,hex"d9627aa400000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000149970000000000000000000000000000000000000000000000000128e269a9e9abf4100000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000000000000000000000006b175474e89094c44da98b954eedeac495271d0f869584cd000000000000000000000000e9039a6968ed998139e023ed8d41c7fa77b7ff7a0000000000000000000000000000000000000000000000b9a844386663f6ab7a");
         // https://etherscan.io/tx/0x6a16a8a0638c7ab266988a9a77befbd70e104289b8bdbdcaacd614edc1abb87c
-        
+
         // 16_692_741: transfer 15 USDC to spigot
         // https://etherscan.io/tx/0x612b73ae52df451869874341075e9a0d083b20827d140d1779268d28b0e34c49
-        _rollAndWarpToBlock(16_692_741); 
+        _rollAndWarpToBlock(16_692_741);
         vm.startPrank(BORROWER_REVENUE_EOA);
         emit log_string("=> Transferring revenue to spigot");
         IERC20(USDC).transfer(address(spigot), 15e6); // https://etherscan.io/tx/0x612b73ae52df451869874341075e9a0d083b20827d140d1779268d28b0e34c49
@@ -285,7 +288,7 @@ contract HotfixForkClaimRevenueTest is Test {
 
         // 16_693_128: claimRevenue
         // https://etherscan.io/tx/0xc3e0aa99d9d1594d1f07e40281231b4f0173d5be8b900a2b133f899fea038f1e
-        _rollAndWarpToBlock(16_693_128); 
+        _rollAndWarpToBlock(16_693_128);
         vm.startPrank(borrower);
         emit log_string("=> claimRevenue()");
         uint256 previousSpigotOperatorTokens = spigot.getOperatorTokens(USDC);
@@ -304,7 +307,7 @@ contract HotfixForkClaimRevenueTest is Test {
 
         // 16_694_077: claimRevenue
         // https://etherscan.io/tx/0xe390d3d2baf3b0701140b974aab9c4622ddc8bc43c019f15a5fb1ff3c6223a3c
-        _rollAndWarpToBlock(16_694_077); 
+        _rollAndWarpToBlock(16_694_077);
         vm.startPrank(borrower);
         emit log_string("=> claimRevenue()");
         vm.expectRevert(ISpigot.NoRevenue.selector);
@@ -313,7 +316,7 @@ contract HotfixForkClaimRevenueTest is Test {
 
         // 16_694_108: claimAndRepay
         // https://etherscan.io/tx/0x1649ec6f71437b6b88e4be620e5f1b06500363b9d6d181603dbcab024479ed51
-        _rollAndWarpToBlock(16_694_108); 
+        _rollAndWarpToBlock(16_694_108);
         emit log_string("=> claimAndRepay()");
         line.claimAndRepay(USDC,hex"d9627aa400000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000149970000000000000000000000000000000000000000000000000128e269a9e9abf4100000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000000000000000000000006b175474e89094c44da98b954eedeac495271d0f869584cd000000000000000000000000e9039a6968ed998139e023ed8d41c7fa77b7ff7a0000000000000000000000000000000000000000000000b9a844386663f6ab7a");
         // https://etherscan.io/tx/0x1649ec6f71437b6b88e4be620e5f1b06500363b9d6d181603dbcab024479ed51
@@ -326,7 +329,7 @@ contract HotfixForkClaimRevenueTest is Test {
 
         // 16_701_533: transfer 3 USDC to spigot
         // https://etherscan.io/tx/0xece405ced2199236267e8c22725c7d738316ba33dd3cb008488721c7438403c5
-        _rollAndWarpToBlock(16_701_533); 
+        _rollAndWarpToBlock(16_701_533);
         vm.startPrank(BORROWER_REVENUE_EOA);
         emit log_string("=> Transferring revenue to spigot");
         IERC20(USDC).transfer(address(spigot), 3e6); // https://etherscan.io/tx/0xece405ced2199236267e8c22725c7d738316ba33dd3cb008488721c7438403c5
@@ -338,7 +341,7 @@ contract HotfixForkClaimRevenueTest is Test {
         emit log_named_uint("spigot USDC balance", IERC20(USDC).balanceOf(address(spigot)));
         vm.stopPrank();
 
-        _rollAndWarpToBlock(16_710_000); 
+        _rollAndWarpToBlock(16_710_000);
         vm.startPrank(borrower);
         emit log_string("=> claimRevenue()");
         claimed = spigot.claimRevenue(BORROWER_REVENUE_EOA, USDC, bytes(""));
@@ -350,7 +353,7 @@ contract HotfixForkClaimRevenueTest is Test {
         emit log_named_uint("line USDC balance", IERC20(USDC).balanceOf(lineAddress));
         emit log_named_uint("spigot USDC balance", IERC20(USDC).balanceOf(address(spigot)));
         vm.stopPrank();
-        
+
     }
 
 

@@ -1,6 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0
+// Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
+
 // forked from https://github.com/IndexCoop/index-coop-smart-contracts/blob/master/contracts/lib/MutualConsent.sol
 
-pragma solidity 0.8.16;
+ pragma solidity ^0.8.16;
 
 /**
  * @title MutualConsent

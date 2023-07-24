@@ -1,4 +1,7 @@
-pragma solidity 0.8.16;
+// SPDX-License-Identifier: GPL-3.0
+// Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
+
+ pragma solidity ^0.8.16;
 
 import {Denominations} from "chainlink/Denominations.sol";
 import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
@@ -22,13 +25,13 @@ contract Escrow is IEscrow, ReentrancyGuard {
     using EscrowLib for EscrowState;
 
     /// @notice the minimum value of the collateral in relation to the outstanding debt e.g. 10% of outstanding debt
-    uint32 public minimumCollateralRatio;
+    uint32 public immutable minimumCollateralRatio;
 
     /// @notice Stakeholders and contracts used in Escrow
-    address public oracle;
+    address public immutable oracle;
 
     /// @notice borrower on line contract
-    address public borrower;
+    address public immutable borrower;
 
     /// @notice all data around terms for collateral and current deposits
     EscrowState private state;

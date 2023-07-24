@@ -1,4 +1,7 @@
-pragma solidity 0.8.16;
+// SPDX-License-Identifier: GPL-3.0
+// Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
+
+ pragma solidity ^0.8.16;
 
 import {Denominations} from "chainlink/Denominations.sol";
 import {LineOfCredit} from "./LineOfCredit.sol";
@@ -22,16 +25,16 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
     using SafeERC20 for IERC20;
 
     /// @notice see Spigot
-    ISpigot public spigot;
+    ISpigot public immutable spigot;
 
     /// @notice - maximum revenue we want to be able to take from spigots if Line is in default
     uint8 constant MAX_SPLIT = 100;
 
     /// @notice % of revenue tokens to take from Spigot if the Line of Credit is healthy. 0 decimals
-    uint8 public defaultRevenueSplit;
+    uint8 public immutable defaultRevenueSplit;
 
     /// @notice exchange aggregator (mainly 0x router) to trade revenue tokens from a Spigot for credit tokens owed to lenders
-    address payable public swapTarget;
+    address payable public immutable swapTarget;
 
     /**
      * @notice - excess unsold revenue claimed from Spigot to be sold later or excess credit tokens bought from revenue but not yet used to repay debt
@@ -49,7 +52,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
      * @param spigot_ - Spigot smart contract that is owned by this Line
      * @param swapTarget_ - 0x protocol exchange address to send calldata for trades to exchange revenue tokens for credit tokens
      * @param ttl_ - time to live for line of credit contract across all lenders set at deployment in order to set the term/expiry date
-     * @param defaultRevenueSplit_ - The % of Revenue Tokens that the Spigot escrows for debt repayment if the Line is healthy. 
+     * @param defaultRevenueSplit_ - The % of Revenue Tokens that the Spigot escrows for debt repayment if the Line is healthy.
      */
     constructor(
         address oracle_,

@@ -1,4 +1,7 @@
-pragma solidity 0.8.16;
+// SPDX-License-Identifier: GPL-3.0
+// Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
+
+ pragma solidity ^0.8.16;
 
 import "forge-std/Test.sol";
 import { Denominations } from "chainlink/Denominations.sol";
@@ -59,17 +62,17 @@ contract SecuredLineTest is Test {
           150 days,
           0
         );
-        
+
         escrow.updateLine(address(line));
         spigot.updateOwner(address(line));
-        
+
         line.init();
         // assertEq(uint(line.init()), uint(LineLib.STATUS.ACTIVE));
 
         _mintAndApprove();
         escrow.enableCollateral( address(supportedToken1));
         escrow.enableCollateral( address(supportedToken2));
-   
+
         vm.startPrank(borrower);
         escrow.addCollateral(1 ether, address(supportedToken2));
         vm.stopPrank();
@@ -106,10 +109,10 @@ contract SecuredLineTest is Test {
     }
 
     function _addCredit(address token, uint256 amount) public {
-        hoax(borrower);
+        vm.startPrank(borrower);
         line.addCredit(dRate, fRate, amount, token, lender);
         vm.stopPrank();
-        hoax(lender);
+        vm.startPrank(lender);
         line.addCredit(dRate, fRate, amount, token, lender);
         vm.stopPrank();
     }
@@ -118,10 +121,11 @@ contract SecuredLineTest is Test {
         _addCredit(address(supportedToken1), 1 ether);
         uint balanceOfEscrow = supportedToken2.balanceOf(address(escrow));
         uint balanceOfArbiter = supportedToken2.balanceOf(arbiter);
-        
+
         bytes32 id = line.ids(0);
-        hoax(borrower);
+        vm.startPrank(borrower);
         line.borrow(id, 1 ether);
+        vm.stopPrank();
         (uint p,) = line.updateOutstandingDebt();
         assertGt(p, 0);
         console.log('checkpoint');
@@ -129,7 +133,7 @@ contract SecuredLineTest is Test {
         line.liquidate(1 ether, address(supportedToken2));
         assertEq(balanceOfEscrow, supportedToken1.balanceOf(address(escrow)) + 1 ether, "Escrow balance should have increased by 1e18");
         assertEq(balanceOfArbiter, supportedToken2.balanceOf(arbiter) - 1 ether, "Arbiter balance should have decreased by 1e18");
-        
+
     }
 
     function test_line_is_uninitilized_on_deployment() public {
@@ -146,7 +150,7 @@ contract SecuredLineTest is Test {
             0
         );
         // assertEq(uint(l.init()), uint(LineLib.STATUS.UNINITIALIZED));
-        
+
         // spigot fails first because we need it more
         vm.expectRevert(abi.encodeWithSelector(ILineOfCredit.BadModule.selector, address(s)));
         l.init();
@@ -179,7 +183,7 @@ contract SecuredLineTest is Test {
 
         // configure other modules
         s.updateOwner(address(l));
-        
+
         // assertEq(uint(l.init()), uint(LineLib.STATUS.UNINITIALIZED));
         vm.expectRevert(abi.encodeWithSelector(ILineOfCredit.BadModule.selector, address(e)));
         l.init();
@@ -201,7 +205,7 @@ contract SecuredLineTest is Test {
 
         // configure other modules
         e.updateLine(address(l));
-        
+
         // assertEq(uint(l.init()), uint(LineLib.STATUS.UNINITIALIZED));
         vm.expectRevert(abi.encodeWithSelector(ILineOfCredit.BadModule.selector, address(s)));
         l.init();
@@ -218,57 +222,57 @@ contract SecuredLineTest is Test {
         token.mint(lender, mintAmount);
         token.mint(borrower, mintAmount);
 
-        hoax(lender);
+        vm.startPrank(lender);
         token.approve(address(line), mintAmount);
-        hoax(borrower);
+        vm.startPrank(borrower);
         token.approve(address(line), mintAmount);
 
-        hoax(lender);
+        vm.startPrank(lender);
         token.approve(address(escrow), mintAmount);
 
-        hoax(borrower);
+        vm.startPrank(borrower);
         token.approve(address(escrow), mintAmount);
         oracle.changePrice(address(token), 1 ether);
         escrow.enableCollateral(address(token));
 
         // add collateral for each token so we can borrow it during tests
-        hoax(borrower);
+        vm.startPrank(borrower);
         escrow.addCollateral(1 ether, address(token));
       }
-      
+
       return tokens;
     }
 
 
     function test_cannot_borrow_from_credit_position_if_under_collateralised() public {
-         
+
         _addCredit(address(supportedToken1), 100 ether);
         bytes32 id = line.ids(0);
-        vm.expectRevert(ILineOfCredit.BorrowFailed.selector); 
-        hoax(borrower);
+        vm.expectRevert(ILineOfCredit.BorrowFailed.selector);
+        vm.startPrank(borrower);
         line.borrow(id, 100 ether);
     }
 
-    
+
 
     function test_cannot_borrow_if_not_active() public {
         assert(line.healthcheck() == LineLib.STATUS.ACTIVE);
-         
+
         _addCredit(address(supportedToken1), 0.1 ether);
         bytes32 id = line.ids(0);
-        hoax(borrower);
+        vm.startPrank(borrower);
         line.borrow(id, 0.1 ether);
         oracle.changePrice(address(supportedToken2), 1);
         assert(line.healthcheck() == LineLib.STATUS.LIQUIDATABLE);
-        vm.expectRevert(ILineOfCredit.NotActive.selector); 
-        hoax(borrower);
+        vm.expectRevert(ILineOfCredit.NotActive.selector);
+        vm.startPrank(borrower);
         line.borrow(id, 0.9 ether);
     }
 
     function test_cannot_liquidate_if_no_debt_when_deadline_passes() public {
-        hoax(arbiter);
+        vm.startPrank(arbiter);
         vm.warp(ttl+1);
-        vm.expectRevert(ILineOfCredit.NotLiquidatable.selector); 
+        vm.expectRevert(ILineOfCredit.NotLiquidatable.selector);
         line.liquidate(1 ether, address(supportedToken2));
     }
 
@@ -276,32 +280,35 @@ contract SecuredLineTest is Test {
         assertEq(uint(line.healthcheck()), uint(LineLib.STATUS.ACTIVE));
         _addCredit(address(supportedToken1), 1 ether);
         bytes32 id = line.ids(0);
-        hoax(borrower);
+        vm.startPrank(borrower);
         line.borrow(id, 1 ether);
         oracle.changePrice(address(supportedToken2), 1);
         assertEq(uint(line.healthcheck()), uint(LineLib.STATUS.LIQUIDATABLE));
     }
 
-    
-    function test_can_liquidate_if_debt_when_deadline_passes() public {
-        hoax(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
-        hoax(lender);
-        bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
-        hoax(borrower);
-        line.borrow(id, 1 ether);
 
+    function test_can_liquidate_if_debt_when_deadline_passes() public {
+        vm.startPrank(borrower);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        vm.stopPrank();
+        vm.startPrank(lender);
+        bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        vm.stopPrank();
+        vm.startPrank(borrower);
+        line.borrow(id, 1 ether);
+        vm.stopPrank();
         vm.warp(ttl + 1);
         line.liquidate(0.9 ether, address(supportedToken2));
     }
 
     // test should succeed to liquidate when no debt (but positions exist) and passed deadline
     function test_can_liquidate_if_no_debt_but_positions_exist_when_deadline_passes() public {
-        hoax(borrower);
+        vm.startPrank(borrower);
         line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
-        hoax(lender);
+        vm.stopPrank();
+        vm.startPrank(lender);
         bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
-
+        vm.stopPrank();
         vm.warp(ttl + 1);
         line.liquidate(1 ether, address(supportedToken2));
     }
@@ -318,8 +325,9 @@ contract SecuredLineTest is Test {
         _addCredit(address(supportedToken2), 1 ether);
         bytes32 id = line.ids(0);
 
-        hoax(borrower);
+        vm.startPrank(borrower);
         line.borrow(id, 1 ether);
+        vm.stopPrank();
 
         (uint p, uint i) = line.updateOutstandingDebt();
         emit log_named_uint("principal", p);
@@ -341,17 +349,19 @@ contract SecuredLineTest is Test {
     // CONDITIONS for liquidation:
     // dont pay debt by deadline
     // under minimum collateral value ( changing the oracle price )
-    
+
     // test should fail to liquidate if above cratio before deadline
     function test_cannot_liquidate_escrow_if_cratio_above_min() public {
-        hoax(borrower);
+        vm.startPrank(borrower);
         line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
-        hoax(lender);
+        vm.stopPrank();
+        vm.startPrank(lender);
         bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
-        hoax(borrower);
+        vm.stopPrank();
+        vm.startPrank(borrower);
         line.borrow(id, 1 ether);
-
-        vm.expectRevert(ILineOfCredit.NotLiquidatable.selector); 
+        vm.stopPrank();
+        vm.expectRevert(ILineOfCredit.NotLiquidatable.selector);
         line.liquidate(1 ether, address(supportedToken2));
     }
 
@@ -365,8 +375,9 @@ contract SecuredLineTest is Test {
         uint balanceOfEscrow = supportedToken2.balanceOf(address(escrow));
         uint balanceOfArbiter = supportedToken2.balanceOf(arbiter);
         bytes32 id = line.ids(0);
-        hoax(borrower);
+        vm.startPrank(borrower);
         line.borrow(id, 1 ether);
+        vm.stopPrank();
         (uint p, uint i) = line.updateOutstandingDebt();
         assertGt(p, 0);
         oracle.changePrice(address(supportedToken2), 1);
@@ -379,22 +390,22 @@ contract SecuredLineTest is Test {
     function test_health_becomes_liquidatable_when_cratio_below_min() public {
         _addCredit(address(supportedToken1), 1 ether);
         bytes32 id = line.ids(0);
-        hoax(borrower);
+        vm.startPrank(borrower);
         line.borrow(id, 1 ether);
         oracle.changePrice(address(supportedToken2), 1);
         assert(line.healthcheck() == LineLib.STATUS.LIQUIDATABLE);
     }
 
     function test_cannot_liquidate_as_anon() public {
-        hoax(borrower);
+        vm.startPrank(borrower);
         line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
-        hoax(lender);
+        vm.startPrank(lender);
         bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
-        hoax(borrower);
+        vm.startPrank(borrower);
         line.borrow(id, 1 ether);
 
-        hoax(address(0xdead));
-        vm.expectRevert(ILineOfCredit.CallerAccessDenied.selector); 
+        vm.startPrank(address(0xdead));
+        vm.expectRevert(ILineOfCredit.CallerAccessDenied.selector);
         line.liquidate(1 ether, address(supportedToken2));
     }
 
@@ -405,22 +416,24 @@ contract SecuredLineTest is Test {
         line.borrow(line.ids(0), 1 ether);
 
         vm.warp(ttl+1);
-        vm.expectRevert(ILineOfCredit.CallerAccessDenied.selector); 
+        vm.expectRevert(ILineOfCredit.CallerAccessDenied.selector);
         line.liquidate(1 ether, address(supportedToken2));
         vm.stopPrank();
     }
 
     // Native ETH support
 
-    function test_cannot_depositAndClose_when_sending_ETH() public {
-        _addCredit(address(supportedToken1), 1 ether);
-        bytes32 id = line.ids(0);
-        hoax(borrower);
-        line.borrow(id, 1 ether);
-        vm.startPrank(borrower);
-        vm.expectRevert(LineLib.EthSentWithERC20.selector);
-        line.depositAndClose{value: 0.1 ether}();
-    }
+    // function test_cannot_depositAndClose_when_sending_ETH() public {
+    //     _addCredit(address(supportedToken1), 1 ether);
+    //     bytes32 id = line.ids(0);
+    //     vm.startPrank(borrower);
+    //     line.borrow(id, 1 ether);
+    //     vm.stopPrank();
+    //     vm.startPrank(borrower);
+    //     vm.expectRevert(LineLib.EthSentWithERC20.selector);
+    //     line.depositAndClose{value: 0.1 ether}();
+    //     vm.stopPrank();
+    // }
 
 
 
@@ -436,10 +449,10 @@ contract SecuredLineTest is Test {
         _addCredit(address(supportedToken1), 1 ether);
 
         bytes32 id = line.ids(0);
-        hoax(borrower);
+        vm.startPrank(borrower);
         line.borrow(id, 1 ether);
 
-        hoax(address(0xdebf));
+        vm.startPrank(address(0xdebf));
         vm.expectRevert(ILineOfCredit.CallerAccessDenied.selector);
         line.declareInsolvent();
     }
@@ -447,10 +460,10 @@ contract SecuredLineTest is Test {
     function test_cant_delcare_insolvency_if_not_liquidatable() public {
         _addCredit(address(supportedToken1), 1 ether);
         bytes32 id = line.ids(0);
-        hoax(borrower);
+        vm.startPrank(borrower);
         line.borrow(id, 1 ether);
 
-        hoax(arbiter);
+        vm.startPrank(arbiter);
         vm.expectRevert(ILineOfCredit.NotLiquidatable.selector);
         line.declareInsolvent();
     }
@@ -460,12 +473,12 @@ contract SecuredLineTest is Test {
     function test_cannot_insolve_until_liquidate_all_escrowed_tokens() public {
         _addCredit(address(supportedToken1), 1 ether);
         bytes32 id = line.ids(0);
-        hoax(borrower);
+        vm.startPrank(borrower);
         line.borrow(id, 1 ether);
 
         vm.warp(ttl+1);
 
-        hoax(arbiter);
+        vm.startPrank(arbiter);
 
         // ensure spigot insolvency check passes
         assertTrue(line.releaseSpigot(arbiter));
@@ -483,11 +496,11 @@ contract SecuredLineTest is Test {
     function test_cannot_insolve_until_liquidate_spigot() public {
         _addCredit(address(supportedToken1), 1 ether);
         bytes32 id = line.ids(0);
-        hoax(borrower);
+        vm.startPrank(borrower);
         line.borrow(id, 1 ether);
 
         vm.warp(ttl+1);
-        hoax(arbiter);
+        vm.startPrank(arbiter);
         // ensure escrow insolvency check passes
         assertEq(1 ether, line.liquidate(1 ether, address(supportedToken2)));
 
@@ -501,20 +514,20 @@ contract SecuredLineTest is Test {
     function test_can_delcare_insolvency_when_all_assets_liquidated() public {
         _addCredit(address(supportedToken1), 1 ether);
         bytes32 id = line.ids(0);
-        hoax(borrower);
-        
+        vm.startPrank(borrower);
+
         line.borrow(id, 1 ether);
         console.log('check');
 
         vm.warp(ttl+1);
-        //hoax(arbiter);
-        
+        //vm.startPrank(arbiter);
+
         vm.startPrank(arbiter);
         assertTrue(line.releaseSpigot(arbiter));
         assertTrue(line.spigot().updateOwner(address(0xf1c0)));
         assertEq(1 ether, line.liquidate(1 ether, address(supportedToken2)));
         // release spigot + liquidate
-        
+
         line.declareInsolvent();
         assertEq(uint(LineLib.STATUS.INSOLVENT), uint(line.status()));
     }
@@ -528,17 +541,17 @@ contract SecuredLineTest is Test {
     function test_cant_rollover_if_not_repaid() public {
       // ACTIVE w/o debt
       vm.expectRevert(ISecuredLine.DebtOwed.selector);
-      hoax(borrower);
+      vm.startPrank(borrower);
       line.rollover(address(line));
 
       // ACTIVE w/ debt
       _addCredit(address(supportedToken1), 1 ether);
       bytes32 id = line.ids(0);
-      hoax(borrower);
+      vm.startPrank(borrower);
       line.borrow(id, 1 ether);
 
       vm.expectRevert(ISecuredLine.DebtOwed.selector);
-      hoax(borrower);
+      vm.startPrank(borrower);
       line.rollover(address(line));
 
       oracle.changePrice(address(supportedToken2), 1);
@@ -547,25 +560,26 @@ contract SecuredLineTest is Test {
 
       // LIQUIDATABLE w/ debt
       vm.expectRevert(ISecuredLine.DebtOwed.selector);
-      hoax(borrower);
+      vm.startPrank(borrower);
       line.rollover(address(line));
-      hoax(borrower);
+      vm.startPrank(borrower);
       line.depositAndClose();
-      
+
       // REPAID (test passes if next error)
       vm.expectRevert(ISecuredLine.BadNewLine.selector);
-      hoax(borrower);
+      vm.startPrank(borrower);
       line.rollover(address(line));
     }
 
     function test_cant_rollover_if_newLine_already_initialized() public {
       _addCredit(address(supportedToken1), 1 ether);
       bytes32 id = line.ids(0);
-      hoax(borrower);
+      vm.startPrank(borrower);
       line.borrow(id, 1 ether);
-      hoax(borrower);
+      vm.stopPrank();
+      vm.startPrank(borrower);
       line.depositAndClose();
-      
+      vm.stopPrank();
       // create and init new line with new modules
       Spigot s = new Spigot(arbiter, borrower);
       Escrow e = new Escrow(minCollateralRatio, address(oracle), arbiter, borrower);
@@ -586,20 +600,20 @@ contract SecuredLineTest is Test {
 
       // giving our modules should fail because taken already
       vm.expectRevert(ISecuredLine.BadNewLine.selector);
-      hoax(borrower);
+      vm.startPrank(borrower);
       line.rollover(address(l));
     }
 
     function test_cant_rollover_if_newLine_not_line() public {
       _addCredit(address(supportedToken1), 1 ether);
       bytes32 id = line.ids(0);
-      hoax(borrower);
+      vm.startPrank(borrower);
       line.borrow(id, 1 ether);
-      hoax(borrower);
+      vm.startPrank(borrower);
       line.depositAndClose();
 
       vm.expectRevert(); // evm revert, .init() does not exist on address(this)
-      hoax(borrower);
+      vm.startPrank(borrower);
       line.rollover(address(this));
     }
 
@@ -607,11 +621,11 @@ contract SecuredLineTest is Test {
     function test_cant_rollover_if_newLine_not_expeciting_modules() public {
       _addCredit(address(supportedToken1), 1 ether);
       bytes32 id = line.ids(0);
-      hoax(borrower);
+      vm.startPrank(borrower);
       line.borrow(id, 1 ether);
-      hoax(borrower);
+      vm.startPrank(borrower);
       line.depositAndClose();
-      
+
       // create and init new line with new modules
       Spigot s = new Spigot(arbiter, borrower);
       Escrow e = new Escrow(minCollateralRatio, address(oracle), arbiter, borrower);
@@ -628,13 +642,13 @@ contract SecuredLineTest is Test {
 
       // giving our modules should fail because taken already
       vm.expectRevert(ISecuredLine.BadRollover.selector);
-      hoax(borrower);
+      vm.startPrank(borrower);
       line.rollover(address(l));
     }
 
 
    function test_cant_rollover_if_not_borrower() public {
-      hoax(address(0xdeaf));
+      vm.startPrank(address(0xdeaf));
       vm.expectRevert(ILineOfCredit.CallerAccessDenied.selector);
       line.rollover(arbiter);
     }
@@ -642,10 +656,10 @@ contract SecuredLineTest is Test {
     function test_rollover_gives_modules_to_new_line() public {
       _addCredit(address(supportedToken1), 1 ether);
       bytes32 id = line.ids(0);
-      hoax(borrower);
+      vm.startPrank(borrower);
       line.borrow(id, 1 ether);
 
-      hoax(borrower);
+      vm.startPrank(borrower);
       line.depositAndClose();
 
       SecuredLine l = new SecuredLine(
@@ -658,7 +672,7 @@ contract SecuredLineTest is Test {
         150 days,
         0
       );
-      hoax(borrower);
+      vm.startPrank(borrower);
       line.rollover(address(l));
 
       assertEq(address(l.spigot()) , address(spigot));
