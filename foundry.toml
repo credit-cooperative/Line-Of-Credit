@@ -4,15 +4,13 @@ test = 'test'
 solc-version = "0.8.19"
 script = 'scripts'
 out = 'out'
-libs = [
-    'lib'
-]
+libs = ['lib']
 
 remappings = [
     "forge-std/=lib/forge-std/src/",
     "ds-test/=lib/forge-std/lib/ds-test/src/",
     "chainlink/=lib/chainlink/contracts/src/v0.8/",
-    "openzeppelin/=lib/openzeppelin-contracts/contracts/"
+    "openzeppelin/=lib/openzeppelin-contracts/contracts/",
 ]
 
 libraries = []
@@ -31,10 +29,7 @@ offline = false
 optimizer = true
 optimizer_runs = 20000
 verbosity = 0
-ignored_error_codes = [
-    1878,
-    5574,
-]
+ignored_error_codes = [1878, 5574]
 fuzz_runs = 1024
 invariant_runs = 256
 invariant_depth = 15
@@ -71,29 +66,32 @@ libraries = []
 
 [profile.goerli]
 libraries = [
-            "contracts/utils/LineLib.sol:LineLib:0xd6EC4E0D237C72bE6e4d1d2a7d338D2C0281cf41",
-            "contracts/utils/CreditLib.sol:CreditLib:0x31C3cBE78D63a8a0729fC5DB62Ca9013538979b8",
-            "contracts/utils/CreditListLib.sol:CreditListLib:0x37C3456249016FB74F9741a2B51911f0B509539F",
-            "contracts/utils/SpigotLib.sol:SpigotLib:0xdBcEce25E03dDba43ef21C15035dC9B2c5A72d79",
-            "contracts/utils/EscrowLib.sol:EscrowLib:0x333551a0645d77d6d74B77F6DC6F87F93012c1Ad",
-            "contracts/utils/SpigotedLineLib.sol:SpigotedLineLib:0x30ba55c483f5a09592ff72e36924512B3EB8Fe2b",
-            "contracts/utils/LineFactoryLib.sol:LineFactoryLib:0x244c9A8746735C315B8eF914e4D70a017fF197D9"
-        ]
+    "contracts/utils/LineLib.sol:LineLib:0xd6EC4E0D237C72bE6e4d1d2a7d338D2C0281cf41",
+    "contracts/utils/CreditLib.sol:CreditLib:0x31C3cBE78D63a8a0729fC5DB62Ca9013538979b8",
+    "contracts/utils/CreditListLib.sol:CreditListLib:0x37C3456249016FB74F9741a2B51911f0B509539F",
+    "contracts/utils/SpigotLib.sol:SpigotLib:0xdBcEce25E03dDba43ef21C15035dC9B2c5A72d79",
+    "contracts/utils/EscrowLib.sol:EscrowLib:0x333551a0645d77d6d74B77F6DC6F87F93012c1Ad",
+    "contracts/utils/SpigotedLineLib.sol:SpigotedLineLib:0x30ba55c483f5a09592ff72e36924512B3EB8Fe2b",
+    "contracts/utils/LineFactoryLib.sol:LineFactoryLib:0x244c9A8746735C315B8eF914e4D70a017fF197D9",
+]
 
 [profile.mainnet]
 libraries = [
-            "contracts/utils/LineLib.sol:LineLib:0xe639a9c07f39ED07F04f348D06f76dc80DC3EDeb",
-            "contracts/utils/CreditLib.sol:CreditLib:0x713cCD56D4353224880Bdf4aB5BC1f9eB0947a5B",
-            "contracts/utils/CreditListLib.sol:CreditListLib:0x9f48ccF9BA57ce89bb50ba9960a6B7C320183F19",
-            "contracts/utils/SpigotLib.sol:SpigotLib:0x87fc87EC34C290963aE55CB42B4A481Ad3850E31",
-            "contracts/utils/EscrowLib.sol:EscrowLib:0xA5C5f0c572c0f843d4234C6316D75fBD5A9C5bf1",
-            "contracts/utils/SpigotedLineLib.sol:SpigotedLineLib:0x06e5E43210e76149996f344eDfC09D432FCaeBc9",
-            "contracts/utils/LineFactoryLib.sol:LineFactoryLib:0x1C75806d3C160671a7620ca236C6B0203d0fCD13"
-        ]
+    "contracts/utils/LineLib.sol:LineLib:0xe639a9c07f39ED07F04f348D06f76dc80DC3EDeb",
+    "contracts/utils/CreditLib.sol:CreditLib:0x713cCD56D4353224880Bdf4aB5BC1f9eB0947a5B",
+    "contracts/utils/CreditListLib.sol:CreditListLib:0x9f48ccF9BA57ce89bb50ba9960a6B7C320183F19",
+    "contracts/utils/SpigotLib.sol:SpigotLib:0x87fc87EC34C290963aE55CB42B4A481Ad3850E31",
+    "contracts/utils/EscrowLib.sol:EscrowLib:0xA5C5f0c572c0f843d4234C6316D75fBD5A9C5bf1",
+    "contracts/utils/SpigotedLineLib.sol:SpigotedLineLib:0x06e5E43210e76149996f344eDfC09D432FCaeBc9",
+    "contracts/utils/LineFactoryLib.sol:LineFactoryLib:0x1C75806d3C160671a7620ca236C6B0203d0fCD13",
+]
+
+[profile.polygon]
+libraries = []
+
 
 [profile.arbitrum]
-libraries = [
-]
+libraries = []
 
 [profile.default.rpc_storage_caching]
 chains = 'all'
