@@ -8,7 +8,7 @@ brew install jq
 
 source .env
 
-ModuleFactory=$(forge create --rpc-url $GOERLI_RPC_URL --private-key $GOERLI_PRIVATE_KEY --etherscan-api-key $MAINNET_ETHERSCAN_API_KEY contracts/modules/factories/ModuleFactory.sol:ModuleFactory --verify --json)
+ModuleFactory=$(forge create --rpc-url $POLYGON_RPC_URL --private-key $POLYGON_PRIVATE_KEY --etherscan-api-key $POLYGON_ETHERSCAN_API_KEY contracts/modules/factories/ModuleFactory.sol:ModuleFactory --verify --json)
 ModuleFactoryAddress=$(echo "$ModuleFactory" | jq -r '.deployedTo')
 ModuleFactoryEntry="contracts\/factory\/ModuleFactory.sol:ModuleFactory:$ModuleFactoryAddress"
 echo $ModuleFactoryAddress

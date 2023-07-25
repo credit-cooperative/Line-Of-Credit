@@ -27,7 +27,7 @@ gas_reports_ignore = []
 auto_detect_solc = true
 offline = false
 optimizer = true
-optimizer_runs = 20000
+optimizer_runs = 200
 verbosity = 0
 ignored_error_codes = [1878, 5574]
 fuzz_runs = 1024
@@ -87,7 +87,15 @@ libraries = [
 ]
 
 [profile.polygon]
-libraries = []
+libraries = [
+    "contracts/utils/LineLib.sol:LineLib:0x61Eff7CFA99aD0479850f95c2CE141A73165A28B",
+    "contracts/utils/CreditLib.sol:CreditLib:0x56f31B0BeDb4726C2f4693B811be8Edda19EA890",
+    "contracts/utils/CreditListLib.sol:CreditListLib:0xD4CeF88a8615f470B28ECC2d08300E946a4B9628",
+    "contracts/utils/SpigotLib.sol:SpigotLib:0xa1cf155B3e0D5200Af1d8039e0Ad9a32C5a5bef0",
+    "contracts/utils/EscrowLib.sol:EscrowLib:0xA69afE6f0E220D9e62D70870945DFF81e0516cdc",
+    "contracts/utils/SpigotedLineLib.sol:SpigotedLineLib:0x870B911D16eb48920cC674AFa918Fb896d79af29",
+    "contracts/utils/LineFactoryLib.sol:LineFactoryLib:0x4dae29E09cFa24D828e6F768565CE38D28E77Bb4",
+]
 
 
 [profile.arbitrum]
