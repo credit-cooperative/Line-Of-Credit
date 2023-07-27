@@ -9,8 +9,7 @@ import {Spigot} from "../spigot/Spigot.sol";
 import {Escrow} from "../escrow/Escrow.sol";
 
 /**
- * @title   - Debt DAO Module Factory
- * @author  - Mom
+ * @title   - Credit Cooperative Module Factory
  * @notice  - Facotry contract to deploy Spigot, and Escrow contracts.
  */
 contract ModuleFactory is IModuleFactory {
@@ -19,7 +18,7 @@ contract ModuleFactory is IModuleFactory {
      * @notice - Deploys a Spigot module that can be used in a LineOfCredit
      */
     function deploySpigot(
-        address owner, 
+        address owner,
         address operator
     ) external returns (address module) {
         module = address(new Spigot(owner, operator));
@@ -51,11 +50,11 @@ contract ModuleFactory is IModuleFactory {
     }
 
     function registerSpigot(
-        address spigot, 
-        address owner, 
+        address spigot,
+        address owner,
         address operator
     ) external {
-       
+
         emit RegisteredSpigot(spigot, owner, operator);
     }
 }

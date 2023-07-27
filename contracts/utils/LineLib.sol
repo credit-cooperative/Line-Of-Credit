@@ -10,9 +10,8 @@ import {SafeERC20} from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import {Denominations} from "chainlink/Denominations.sol";
 
 /**
- * @title Debt DAO Line of Credit Library
- * @author Kiba Gateaux
- * @notice Core logic and variables to be reused across all Debt DAO Marketplace Line of Credit contracts
+ * @title Credit Cooperative Line of Credit Library
+ * @notice Core logic and variables to be reused across all Credit Cooperative Marketplace Line of Credit contracts
  */
 library LineLib {
     using SafeERC20 for IERC20;

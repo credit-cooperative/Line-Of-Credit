@@ -35,7 +35,7 @@ import { IERC20 } from "openzeppelin/token/ERC20/IERC20.sol";
     *               As a result, it was possible to claim more tokens as revenue than should've been available
     *               , but only in scenarios where push payments were used, and incorrectly increasing
     *               state.operatorTokens by the amount that was now unaccounted for.
-    *   @link:      https://debtdao.notion.site/Spigot-Claim-Revenue-Accounting-01153e95f1be47d194ec9f252304855b
+    *   @link:      https://www.notion.so/creditcoop/Spigot-Claim-Revenue-Accounting-62156c0b5ad1427392a8171b4a5f4ef6?pvs=4
     *   @dev:       This test file tests contracts under the same conditions as the ones containing the bug on mainnet,
     *               except with a focus on testing the fixes.  New factories need to be deployed to the test's fork to
     *               include the bug fixes.  The same core params used for the mainnet contract were the bug was

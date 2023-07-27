@@ -12,8 +12,7 @@ import {ILineOfCredit} from "../../interfaces/ILineOfCredit.sol";
 import {ISecuredLine} from "../../interfaces/ISecuredLine.sol";
 
 /**
- * @title  - Debt DAO Secured Line of Credit
- * @author - Kiba Gateaux
+ * @title  - Credit Cooperative Secured Line of Credit
  * @notice - The SecuredLine combines both collateral modules (SpigotedLine + EscrowedLine) with core lending functionality from LineOfCredit
  *         - to create a fully secured lending facility backed by revenue via Spigot or tokens via Escrow.
  * @dev    - modifies _liquidate(), _healthcheck(), _init(), and _declareInsolvent() functionality

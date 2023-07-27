@@ -1,5 +1,5 @@
-## Features 
-- Trustlessly secure DAO revenue streams streams for lenders
+## Features
+- Trustlessly secure onchain revenue streams for lenders
 - Automatically pay back debt for borrowers
 - Easily configurable to handle any contract without writing custom code
 - Handles push and pull payments from revenue contracts
@@ -16,4 +16,4 @@ Can use operate() to claim ownership of contracts that require confirmation afte
 
 ## Potential Code Optimizations
 - Compacting `whitelistedFunctions` into an encoded uint256 var instead of a mapping to bool.
-- Use proxy pattern for SpigotController as implementation contract and proxy contracts for each borrower. Or make library 
+- Use proxy pattern for SpigotController as implementation contract and proxy contracts for each borrower. Or make library

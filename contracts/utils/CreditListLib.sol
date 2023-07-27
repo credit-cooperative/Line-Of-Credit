@@ -7,9 +7,8 @@ import {IOracle} from "../interfaces/IOracle.sol";
 import {CreditLib} from "./CreditLib.sol";
 
 /**
- * @title Debt DAO Line of Credit Library
- * @author Kiba Gateaux
- * @notice Core logic and variables to be reused across all Debt DAO Marketplace Line of Credit contracts
+ * @title Credit Cooperative Line of Credit Library
+ * @notice Core logic and variables to be reused across all Credit Cooperative Marketplace Line of Credit contracts
  */
 library CreditListLib {
     event QueueCleared();

@@ -10,8 +10,7 @@ import {SpigotState, SpigotLib} from "../../utils/SpigotLib.sol";
 import {ISpigot} from "../../interfaces/ISpigot.sol";
 
 /**
- * @title   Debt DAO Spigot
- * @author  Kiba Gateaux
+ * @title   Credit Cooperative Spigot
  * @notice  - a contract allowing the revenue stream of a smart contract to be split between two parties, Owner and Treasury
             - operational control of revenue generating contract belongs to Spigot's Owner and delegated to Operator.
  * @dev     - Should be deployed once per agreement. Multiple revenue contracts can be attached to a Spigot.
