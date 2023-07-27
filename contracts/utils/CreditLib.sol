@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-// Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
+// Copyright: https://github.com/credit-cooperative/Line-Of-Credit/blob/master/COPYRIGHT.md
 
  pragma solidity ^0.8.16;
 import {Denominations} from "chainlink/Denominations.sol";
