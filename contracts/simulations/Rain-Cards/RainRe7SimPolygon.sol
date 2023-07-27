@@ -47,7 +47,7 @@ interface IRainCollateralFactory {
 }
 
 
-contract RainRe7Sim is Test {
+contract RainRe7SimPolygon is Test {
     bytes32 constant DEFAULT_ADMIN_ROLE = 0x00;
 
     // Interfaces
@@ -69,29 +69,27 @@ contract RainRe7Sim is Test {
     IRainCollateralController rainCollateralController;
 
     // Credit Coop Infra Addresses
-    address constant oracleAddress = 0x5a4AAF300473eaF8A9763318e7F30FA8a3f5Dd48;
-    address constant zeroExSwapTarget = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
-    // Old Line Factory Address
-    // address constant lineFactoryAddress = 0x89989dBe4CFa289dE6179e8d54EE755E471a4251;
+    address constant oracleAddress = 0x22acC1a2Db2d812d5443DD26F22F4b7b029f2b08;
+    address constant zeroExSwapTarget = 0xdef1c0ded9bec7f1a1670819833240f027b25eff;
 
     // Rain Cards Borrower Address
-    address constant rainBorrower = 0x0204C22BE67968C3B787D2699Bd05cf2b9432c60; // Rain Borrower Address
+    address constant rainBorrower = 0x318ea64575feA5333c845bccEb5A6211952283AD; // Rain Borrower Address
     address lenderAddress = makeAddr("lender");
 
     // Rain Controller Contract & Associated Addresses
-    address rainCollateralFactoryAddress = 0x31EBf70312f488D0bdAc374b340f0D01dBf153B5;
-    address rainCollateralControllerAddress = 0xE5D3d7da4b24bc9D2FDA0e206680CD8A00C0FeBD;
+    address rainCollateralFactoryAddress = 0x3F95401d768F90Ab529060121499CDa7Dc8d95b1;
+    address rainCollateralControllerAddress = 0x5d5Cef756412045617415FC78D510003238EAfFd;
     address rainControllerAdminAddress = 0xB92949bdF09F4193599Ae7700211751ab5F74aCd;
-    address rainFactoryOwnerAddress = 0x21ebc2f23a91fD7eB8406CDCE2FD653de280B5fc;
+    address rainFactoryOwnerAddress = 0x21ebc2f23a91fD7eB8406CDCE2FD653de280B5fc; // double-check this is correct since factory is not verified on polygon
     address rainControllerOwnerAddress = 0x21ebc2f23a91fD7eB8406CDCE2FD653de280B5fc;
-    address rainTreasuryContractAddress = 0x0204C22BE67968C3B787D2699Bd05cf2b9432c60;
+    address rainTreasuryContractAddress = 0x318ea64575feA5333c845bccEb5A6211952283AD;
 
     // Rain Collateral Contracts 0 - 3:
-    address rainCollateralContract0 = 0xbAf9c4b4318AEfCd3a7c2ABec68eFE567c797d74;
-    address rainCollateralContract1 = 0x9bf0fA5bBd9448190C9CBFe3adE8D7466913d861;
-    address rainCollateralContract2 = 0x5C82f4928899a91752083dd8F1b6D8bf23D4eeb2;
-    address rainCollateralContract3 = 0xCF3d82CD86b25c87dcf2Fc6d9Abe9580a8e0E981;
-    address rainCollateralContract4 = 0x7030f1486Cc691F8C3e0D703671B5E6f45C940e8;
+    address rainCollateralContract0 = ;
+    address rainCollateralContract1 = ;
+    address rainCollateralContract2 = ;
+    address rainCollateralContract3 = ;
+    address rainCollateralContract4 = ;
 
     // Rain (Fake) User Addresses
     address rainUser0 = makeAddr("rainUser0");
@@ -101,11 +99,11 @@ contract RainRe7Sim is Test {
     address rainUser4 = makeAddr("rainUser4");
 
     // Credit Coop Addresses
-    address constant arbiterAddress = 0xeb0566b1EF38B95da2ed631eBB8114f3ac7b9a8a ; // Credit Coop MultiSig
+    address constant arbiterAddress = 0xFE002526dEc5B3e4b5134b75b20c065178323343 ; // Credit Coop MultiSig
     address public securedLineAddress; // Line address, to be defined in setUp()
 
     // Asset Addresses
-    address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address constant USDC = 0x2791bca1f2de4661ed88a30c99a7a9449aa84174;
 
     // Money Vars
     uint256 MAX_INT = type(uint256).max;
@@ -114,13 +112,13 @@ contract RainRe7Sim is Test {
     uint256 ttl = 45 days;
     uint32 minCRatio = 0; // BPS
     uint8 revenueSplit = 50;
-    uint256 loanSizeInUSDC = 200000 * 10 ** 6;
+    uint256 loanSizeInUSDC = 200000 * 10 ** 6; // TODO: 40000
     uint128 dRate = 1000; // BPS
     uint128 fRate = 1000; // BPS
 
     // Fork Settings
     uint256 constant FORK_BLOCK_NUMBER = 17_638_122; // Forking mainnet at block on 7/6/23 at 7 40 PM EST
-    uint256 ethMainnetFork;
+    uint256 polygonFork;
 
     event log_named_bytes4(string key, bytes4 value);
 
@@ -129,8 +127,8 @@ contract RainRe7Sim is Test {
     }
 
     function setUp() public {
-        ethMainnetFork = vm.createFork(vm.envString("MAINNET_RPC_URL"), FORK_BLOCK_NUMBER);
-        vm.selectFork(ethMainnetFork);
+        polygonFork = vm.createFork(vm.envString("POLYGON_RPC_URL"), FORK_BLOCK_NUMBER);
+        vm.selectFork(polygonFork);
 
         emit log_named_string("- rpc", vm.envString("MAINNET_RPC_URL"));
         emit log_named_address("- borrower", rainBorrower);
@@ -162,7 +160,7 @@ contract RainRe7Sim is Test {
     //             S C E N A R I O   T E S T             //
     ///////////////////////////////////////////////////////
 
-    function test_rain_re7_simulation() public {
+    function test_rain_re7_simulation_polygon() public {
 
         // Deploy Credit Coop Factory Contracts
         ModuleFactory moduleFactory = new ModuleFactory();
@@ -487,7 +485,7 @@ contract RainRe7Sim is Test {
 
     // fund a loan as a lender
     function _lenderFundLoan() internal returns (bytes32 id) {
-        assertEq(vm.activeFork(), ethMainnetFork, "mainnet fork is not active");
+        assertEq(vm.activeFork(), polygonFork, "mainnet fork is not active");
 
         emit log_named_string("\n \u2713 Lender Proposes Position to Line of Credit", "");
         vm.startPrank(lenderAddress);
