@@ -16,4 +16,4 @@ Can use operate() to claim ownership of contracts that require confirmation afte
 
 ## Potential Code Optimizations
 - Compacting `whitelistedFunctions` into an encoded uint256 var instead of a mapping to bool.
-- Use proxy pattern for SpigotController as implementation contract and proxy contracts for each borrower. Or make library
+- Use proxy pattern for SpigotController as implementation contract and proxy contracts for each borrower or make library.
