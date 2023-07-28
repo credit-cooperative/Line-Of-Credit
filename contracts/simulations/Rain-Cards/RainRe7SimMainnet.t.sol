@@ -100,6 +100,15 @@ contract RainRe7Sim is Test {
     address rainUser3 = makeAddr("rainUser3");
     address rainUser4 = makeAddr("rainUser4");
 
+    uint256 rainUser0Amount = 30000 * 10 ** 6;
+    uint256 rainUser1Amount = 170000 * 10 ** 6;
+    uint256 rainUser2Amount = 120000 * 10 ** 6;
+    uint256 rainUser3Amount = 80000 * 10 ** 6;
+    uint256 rainUser4Amount = 20000 * 10 ** 6;
+    uint256 finalSpigotBalance = rainUser0Amount + rainUser1Amount + rainUser2Amount + rainUser3Amount + rainUser4Amount;
+    uint256 finalOperatorTokensBalance = finalSpigotBalance / 2;
+    uint256 finalOwnerTokensBalance = finalSpigotBalance / 2;
+
     // Credit Coop Addresses
     address constant arbiterAddress = 0xeb0566b1EF38B95da2ed631eBB8114f3ac7b9a8a ; // Credit Coop MultiSig
     address public securedLineAddress; // Line address, to be defined in setUp()
@@ -319,22 +328,21 @@ contract RainRe7Sim is Test {
         uint256[] memory amounts = new uint256[](1);
         assets[0] = address(USDC);
 
-        uint256 claimed0 = _claimRevenueOnBehalfOfSpigot(liquidateFunc, rainCollateralContract0, 30000 * 10 ** 6, assets, amounts);
-        assertEq(30000 * 10 ** 6, claimed0);
+        uint256 claimed0 = _claimRevenueOnBehalfOfSpigot(liquidateFunc, rainCollateralContract0, rainUser0Amount, assets, amounts);
+        assertEq(rainUser0Amount, claimed0);
 
-        uint256 claimed1 = _claimRevenueOnBehalfOfSpigot(liquidateFunc, rainCollateralContract1, 170000 * 10 ** 6, assets, amounts);
-        assertEq(170000 * 10 ** 6, claimed1);
+        uint256 claimed1 = _claimRevenueOnBehalfOfSpigot(liquidateFunc, rainCollateralContract1, rainUser1Amount, assets, amounts);
+        assertEq(rainUser1Amount, claimed1);
 
-        uint256 claimed2 = _claimRevenueOnBehalfOfSpigot(liquidateFunc, rainCollateralContract2, 120000 * 10 ** 6, assets, amounts);
-        assertEq(120000 * 10 ** 6, claimed2);
+        uint256 claimed2 = _claimRevenueOnBehalfOfSpigot(liquidateFunc, rainCollateralContract2, rainUser2Amount, assets, amounts);
+        assertEq(rainUser2Amount, claimed2);
 
-        uint256 claimed3 = _claimRevenueOnBehalfOfSpigot(liquidateFunc, rainCollateralContract3, 80000 * 10 ** 6, assets, amounts);
-        assertEq(80000 * 10 ** 6, claimed3);
-        assertEq(400000 * 10 ** 6, IERC20(USDC).balanceOf(address(spigot)));
+        uint256 claimed3 = _claimRevenueOnBehalfOfSpigot(liquidateFunc, rainCollateralContract3, rainUser3Amount, assets, amounts);
+        assertEq(rainUser3Amount, claimed3);
 
-        uint256 claimed4 = _claimRevenueOnBehalfOfSpigot(liquidateFunc, rainCollateralContract4, 20000 * 10 ** 6, assets, amounts);
-        assertEq(20000 * 10 ** 6, claimed4);
-        assertEq(420000 * 10 ** 6, IERC20(USDC).balanceOf(address(spigot)));
+        uint256 claimed4 = _claimRevenueOnBehalfOfSpigot(liquidateFunc, rainCollateralContract4, rainUser4Amount, assets, amounts);
+        assertEq(rainUser4Amount, claimed4);
+        assertEq(finalSpigotBalance, IERC20(USDC).balanceOf(address(spigot)));
 
         vm.stopPrank();
 
@@ -343,8 +351,8 @@ contract RainRe7Sim is Test {
         emit log_named_string("\n \u2713 [Borrower] Calls the Spigot Claim Operator Tokens Function", "");
         uint256 claimedOperatorTokens = spigot.claimOperatorTokens(address(USDC));
         emit log_named_uint("- Rain Borrower - Claimed Operator Tokens ", claimedOperatorTokens);
-        assertEq(claimedOperatorTokens, 210000 * 10 ** 6);
-        assertEq(210000 * 10 ** 6, IERC20(USDC).balanceOf(address(spigot)));
+        assertEq(claimedOperatorTokens, finalOperatorTokensBalance);
+        assertEq(finalOperatorTokensBalance, IERC20(USDC).balanceOf(address(spigot)));
         vm.stopPrank();
 
         // interest accrued
@@ -356,7 +364,7 @@ contract RainRe7Sim is Test {
         emit log_named_string("\n \u2713 Arbiter Calls ClaimAndRepay to Repay Line of Credit with Spigot Revenue", "");
         vm.startPrank(arbiterAddress);
         emit log_named_uint("- Owner Tokens in Spigot before repayment: ", spigot.getOwnerTokens(USDC));
-        assertEq(210000 * 10 ** 6, spigot.getOwnerTokens(USDC));
+        assertEq(finalOwnerTokensBalance, spigot.getOwnerTokens(USDC));
         uint256 rainBorrowerStartingBalance = IERC20(USDC).balanceOf(rainBorrower);
 
         securedLine.claimAndRepay(address(USDC), "");
@@ -409,7 +417,7 @@ contract RainRe7Sim is Test {
         emit log_named_uint(" - Borrower Repayment Amount ", borrowerBalanceAfterRepayment - rainBorrowerStartingBalance);
         emit log_named_uint(" - Line Balance After Repayment ", IERC20(USDC).balanceOf(address(securedLine)));
         assertEq(lenderBalanceAfterRepayment, loanSizeInUSDC + interestAccrued, "Lender has not been fully repaid");
-        assertEq(210000 * 10 ** 6, lenderBalanceAfterRepayment + borrowerBalanceAfterRepayment - rainBorrowerStartingBalance);
+        assertEq(finalOperatorTokensBalance, lenderBalanceAfterRepayment + borrowerBalanceAfterRepayment - rainBorrowerStartingBalance);
         vm.stopPrank();
 
         // Borrower Releases Spigot
