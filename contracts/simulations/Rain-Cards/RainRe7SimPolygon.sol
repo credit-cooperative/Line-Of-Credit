@@ -52,7 +52,7 @@ contract RainRe7SimPolygon is Test {
     bytes32 constant DEFAULT_ADMIN_ROLE = 0x00;
 
     // Interfaces
-    PolygonOracle oracle;
+    // PolygonOracle oracle;
 
     // ISpigot spigot;
     ISpigot.Setting private settings;
@@ -70,7 +70,9 @@ contract RainRe7SimPolygon is Test {
     IRainCollateralController rainCollateralController;
 
     // Credit Coop Infra Addresses
-    address constant oracleAddress = 0x22acC1a2Db2d812d5443DD26F22F4b7b029f2b08;
+    PolygonOracle oracle = new PolygonOracle();
+    address oracleAddress = address(oracle);
+    // address constant oracleAddress = 0x22acC1a2Db2d812d5443DD26F22F4b7b029f2b08; 
     address constant zeroExSwapTarget = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
 
     // Rain Cards Borrower Address
@@ -146,8 +148,7 @@ contract RainRe7SimPolygon is Test {
         emit log_named_address("- lender", lenderAddress);
 
         // Create  Interfaces for CC infra
-        oracle = new PolygonOracle();
-        address oracleAddress = address(oracle);
+        
 
         // Deal MATIC assets to all 3 parties (borrower, lender, arbiter)
         vm.deal(arbiterAddress, 100 ether);
