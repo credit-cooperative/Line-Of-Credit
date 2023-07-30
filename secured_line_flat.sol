@@ -229,7 +229,7 @@ interface ILineOfCredit {
     * @dev           - Fully executes function after a Borrower and a Lender have agreed terms, both Lender and borrower have agreed through mutualConsent
     * @dev           - callable by `lender` and `borrower`
     * @param drate   - The interest rate charged to a Borrower on borrowed / drawn down funds. In bps, 4 decimals.
-    * @param frate   - The interest rate charged to a Borrower on the remaining funds available, but not yet drawn down 
+    * @param frate   - The interest rate charged to a Borrower on the remaining funds available, but not yet drawn down
                         (rate charged on the available headroom). In bps, 4 decimals.
     * @param amount  - The amount of Credit Token to initially deposit by the Lender
     * @param token   - The Credit Token, i.e. the token to be lent out
@@ -824,9 +824,8 @@ library Denominations {
 }
 
 /**
- * @title Debt DAO Line of Credit Library
- * @author Kiba Gateaux
- * @notice Core logic and variables to be reused across all Debt DAO Marketplace Line of Credit contracts
+ * @title Credit Cooperative Line of Credit Library
+ * @notice Core logic and variables to be reused across all Credit Cooperative Marketplace Line of Credit contracts
  */
 library LineLib {
     using SafeERC20 for IERC20;
@@ -1077,9 +1076,8 @@ abstract contract ReentrancyGuard {
 }
 
 /**
- * @title Debt DAO Line of Credit Library
- * @author Kiba Gateaux
- * @notice Core logic and variables to be reused across all Debt DAO Marketplace Line of Credit contracts
+ * @title Credit Cooperative Line of Credit Library
+ * @notice Core logic and variables to be reused across all Credit Cooperative Marketplace Line of Credit contracts
  */
 
 library CreditLib {
@@ -1344,9 +1342,8 @@ library CreditLib {
 }
 
 /**
- * @title Debt DAO Line of Credit Library
- * @author Kiba Gateaux
- * @notice Core logic and variables to be reused across all Debt DAO Marketplace Line of Credit contracts
+ * @title Credit Cooperative Line of Credit Library
+ * @notice Core logic and variables to be reused across all Credit Cooperative Marketplace Line of Credit contracts
  */
 library CreditListLib {
     event QueueCleared();
@@ -1614,8 +1611,7 @@ contract InterestRateCredit is IInterestRateCredit {
 }
 
 /**
- * @title  - Debt DAO Unsecured Line of Credit
- * @author - Kiba Gateaux
+ * @title  - Credit Cooperative Unsecured Line of Credit
  * @notice - Core credit facility logic for proposing, depositing, borrowing, and repaying debt.
  *         - Contains core financial covnenants around term length (`deadline`), collateral ratios, liquidations, etc.
  * @dev    - contains internal functions overwritten by SecuredLine, SpigotedLine, and EscrowedLine
@@ -2794,9 +2790,9 @@ library SpigotedLineLib {
 
     /**
      * @dev                 - priviliged internal function!
-     * @notice              - Allows revenue tokens in 'escrowed' to be traded for credit tokens that aren't yet used to repay debt. 
-                            - The newly exchanged credit tokens are held in 'unusedTokens' ready for a Lender to withdraw using useAndRepay 
-                            - This feature allows a Borrower to take advantage of an increase in the value of the revenue token compared 
+     * @notice              - Allows revenue tokens in 'escrowed' to be traded for credit tokens that aren't yet used to repay debt.
+                            - The newly exchanged credit tokens are held in 'unusedTokens' ready for a Lender to withdraw using useAndRepay
+                            - This feature allows a Borrower to take advantage of an increase in the value of the revenue token compared
                             - to the credit token and to in effect use less revenue tokens to be later used to repay the same amount of debt.
      * @dev                 - MUST trade all available claimTokens (unused + claimed) to targetTokens
      * @param claimToken    - The revenue token escrowed in the Spigot to sell in trade
@@ -2956,8 +2952,8 @@ library SpigotedLineLib {
     }
 
     /**
-   * @notice - Transfers ownership of the entire Spigot and its revenuw streams from its then Owner to either 
-             - the Borrower (if a Line of Credit has been been fully repaid) or 
+   * @notice - Transfers ownership of the entire Spigot and its revenuw streams from its then Owner to either
+             - the Borrower (if a Line of Credit has been been fully repaid) or
              - to the Arbiter (if the Line of Credit is liquidatable).
    * @dev    - callable by `borrower` or `arbiter`
    * @return - whether or not Spigot was released
@@ -3029,8 +3025,7 @@ library SpigotedLineLib {
 }
 
 /**
-  * @title  - Debt DAO Spigoted Line of Credit
-  * @author - Kiba Gateaux
+  * @title  - Credit Cooperative Spigoted Line of Credit
   * @notice - Line of Credit contract with additional functionality for integrating with a Spigot and revenue based collateral.
             - Allows Arbiter to repay debt using collateralized revenue streams onbehalf of Borrower and Lender(s)
   * @dev    - Inherits LineOfCredit functionality
@@ -3066,7 +3061,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
      * @param spigot_ - Spigot smart contract that is owned by this Line
      * @param swapTarget_ - 0x protocol exchange address to send calldata for trades to exchange revenue tokens for credit tokens
      * @param ttl_ - time to live for line of credit contract across all lenders set at deployment in order to set the term/expiry date
-     * @param defaultRevenueSplit_ - The % of Revenue Tokens that the Spigot escrows for debt repayment if the Line is healthy. 
+     * @param defaultRevenueSplit_ - The % of Revenue Tokens that the Spigot escrows for debt repayment if the Line is healthy.
      */
     constructor(
         address oracle_,
@@ -3314,8 +3309,7 @@ interface ISecuredLine is IEscrowedLine, ISpigotedLine {
 }
 
 /**
- * @title  - Debt DAO Secured Line of Credit
- * @author - Kiba Gateaux
+ * @title  - Credit Cooperative Secured Line of Credit
  * @notice - The SecuredLine combines both collateral modules (SpigotedLine + EscrowedLine) with core lending functionality from LineOfCredit
  *         - to create a fully secured lending facility backed by revenue via Spigot or tokens via Escrow.
  * @dev    - modifies _liquidate(), _healthcheck(), _init(), and _declareInsolvent() functionality

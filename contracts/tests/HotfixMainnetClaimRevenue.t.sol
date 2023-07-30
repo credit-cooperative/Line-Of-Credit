@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-// Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
+// Copyright: https://github.com/credit-cooperative/Line-Of-Credit/blob/master/COPYRIGHT.md
 
  pragma solidity ^0.8.16;
 
@@ -35,7 +35,7 @@ import { IERC20 } from "openzeppelin/token/ERC20/IERC20.sol";
     *               As a result, it was possible to claim more tokens as revenue than should've been available
     *               , but only in scenarios where push payments were used, and incorrectly increasing
     *               state.operatorTokens by the amount that was now unaccounted for.
-    *   @link:      https://debtdao.notion.site/Spigot-Claim-Revenue-Accounting-01153e95f1be47d194ec9f252304855b
+    *   @link:      https://www.notion.so/creditcoop/Spigot-Claim-Revenue-Accounting-62156c0b5ad1427392a8171b4a5f4ef6?pvs=4
     *   @dev:       This test file tests against a fork of mainnet and evaluates the actual function calls for correctness.
     *   @dev:       The block number of, and a link to, each transaction is included in the comments above each step
     *               in the sequence, ie. test fn.
