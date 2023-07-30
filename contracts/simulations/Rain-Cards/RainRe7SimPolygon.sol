@@ -4,6 +4,7 @@ import "forge-std/Test.sol";
 import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
 import {Spigot} from "../../modules/spigot/Spigot.sol";
 import {IOracle} from "../../interfaces/IOracle.sol";
+import {PolygonOracle} from "../../modules/oracle/PolygonOracle.sol";
 import {MockRegistry} from "../../mock/MockRegistry.sol";
 import {ILineFactory} from "../../interfaces/ILineFactory.sol";
 import {LineFactory} from "../../modules/factories/LineFactory.sol";
@@ -51,7 +52,7 @@ contract RainRe7SimPolygon is Test {
     bytes32 constant DEFAULT_ADMIN_ROLE = 0x00;
 
     // Interfaces
-    IOracle oracle;
+    PolygonOracle oracle;
 
     // ISpigot spigot;
     ISpigot.Setting private settings;
@@ -145,7 +146,8 @@ contract RainRe7SimPolygon is Test {
         emit log_named_address("- lender", lenderAddress);
 
         // Create  Interfaces for CC infra
-        oracle = IOracle(address(oracleAddress));
+        oracle = new PolygonOracle();
+        address oracleAddress = address(oracle);
 
         // Deal MATIC assets to all 3 parties (borrower, lender, arbiter)
         vm.deal(arbiterAddress, 100 ether);

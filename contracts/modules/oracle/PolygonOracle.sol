@@ -13,7 +13,7 @@ import "../../interfaces/IOracle.sol";
  * @notice  - simple contract that wraps Chainlink's Feed Registry to get asset prices for any tokens without needing to know the specific oracle address
  *          - only makes request for USD prices and returns results in standard 8 decimals for Chainlink USD feeds
  */
-contract Oracle is IOracle {
+contract PolygonOracle is IOracle {
     /// @notice Price Feeds - Chainlink Feed Registry with aggregated prices across
     mapping(address => address) public priceFeed; // token => chainlink price feed
     /// @notice NULL_PRICE - null price when asset price feed is deemed invalid
