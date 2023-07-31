@@ -9,6 +9,8 @@ import "chainlink/interfaces/FeedRegistryInterface.sol";
 
 import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
 import {Denominations} from "chainlink/Denominations.sol";
+import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
+import {IOracle} from "../interfaces/IOracle.sol";
 import { PolygonOracle } from "../modules/oracle/PolygonOracle.sol";
 import {MockRegistry} from "../mock/MockRegistry.sol";
 import {LineOfCredit} from "../modules/credit/LineOfCredit.sol";
@@ -39,9 +41,11 @@ interface Events {
 }
 contract OracleTest is Test, Events {
 
+    // IOracle forkOracle;
     // Mainnet Tokens
     // address constant linkToken = 0x514910771AF9Ca656af840dff83E8264EcF986CA;
     // address constant btc = 0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB;
+    address constant oracleAddress = 0x570ff5021d3F4bAFb8c688d73ECD13A43FaB4304;
     address constant dai = 0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063;
     address constant usdc = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
     address constant WETH = 0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619;
@@ -69,10 +73,9 @@ contract OracleTest is Test, Events {
     address constant feedRegistryAddress = 0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf;
 
     uint256 mainnetFork;
-    PolygonOracle forkOracle;
     // Oracle oracle1;
     // Oracle oracle2;
-
+    PolygonOracle forkOracle;
     // Fork Settings
     uint256 constant FORK_BLOCK_NUMBER = 45_626_437; //17_638_122; // Forking mainnet at block on 7/6/23 at 7 40 PM EST
     uint256 polygonFork;
@@ -103,6 +106,7 @@ contract OracleTest is Test, Events {
         // mainnetFork = vm.createFork(MAINNET_RPC_URL);
         vm.selectFork(polygonFork);
         forkOracle = new PolygonOracle();
+        // forkOracle = IOracle(oracleAddress);
         registry = FeedRegistryInterface(feedRegistryAddress);
 
         // Mocks
@@ -173,7 +177,7 @@ contract OracleTest is Test, Events {
     /////////////////////////////////////////////////////////*/
     function test_fetching_known_token_returns_valid_price() external {
         vm.selectFork(polygonFork);
-        int256 linkPrice = forkOracle.getLatestAnswer(WETH);
+        int256 linkPrice = forkOracle.getLatestAnswer(usdc);
         emit log_named_int("link", linkPrice);
         //assertGt(linkPrice, 0);
     }

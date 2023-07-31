@@ -145,7 +145,7 @@ contract RainRe7SimPolygon is Test {
         vm.selectFork(polygonFork);
         oracle = new PolygonOracle();
         oracleAddress = address(oracle);
-        int256 price = oracle.getLatestAnswer(MATIC);
+        int256 price = oracle.getLatestAnswer(USDC);
         emit log_named_int("price", price);
 
         emit log_named_string("- rpc", vm.envString("MAINNET_RPC_URL"));
@@ -526,7 +526,7 @@ contract RainRe7SimPolygon is Test {
 
         emit log_named_string("\n \u2713 Borrower Accepts Lender Proposal to Line of Credit", "");
         vm.startPrank(rainBorrower);
-        int256 price = oracle.getLatestAnswer(MATIC);
+        int256 price = oracle.getLatestAnswer(USDC);
         emit log_named_int("- price", price);
         id = securedLine.addCredit(
             dRate, // drate
