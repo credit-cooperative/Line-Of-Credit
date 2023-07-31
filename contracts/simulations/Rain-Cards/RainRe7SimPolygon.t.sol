@@ -143,7 +143,7 @@ contract RainRe7SimPolygon is Test {
         polygonFork = vm.createFork(vm.envString("POLYGON_RPC_URL"), FORK_BLOCK_NUMBER);
         vm.selectFork(polygonFork);
         oracle = new PolygonOracle();
-        address oracleAddress = address(oracle);
+        address  oracleAddress = address(oracle);
         int256 price = oracle.getLatestAnswer(MATIC);
         emit log_named_int("price", price);
 
