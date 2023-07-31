@@ -70,9 +70,9 @@ contract RainRe7SimPolygon is Test {
     IRainCollateralController rainCollateralController;
 
     // Credit Coop Infra Addresses
-    PolygonOracle oracle = new PolygonOracle();
-    address oracleAddress = address(oracle);
-    // address constant oracleAddress = 0x22acC1a2Db2d812d5443DD26F22F4b7b029f2b08; 
+    PolygonOracle oracle;
+    
+    // address constant oracleAddress = 0x570ff5021d3F4bAFb8c688d73ECD13A43FaB4304; 
     address constant zeroExSwapTarget = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
 
     // Rain Cards Borrower Address
@@ -142,6 +142,10 @@ contract RainRe7SimPolygon is Test {
     function setUp() public {
         polygonFork = vm.createFork(vm.envString("POLYGON_RPC_URL"), FORK_BLOCK_NUMBER);
         vm.selectFork(polygonFork);
+        oracle = new PolygonOracle();
+        address oracleAddress = address(oracle);
+        int256 price = oracle.getLatestAnswer(MATIC);
+        emit log_named_int("price", price);
 
         emit log_named_string("- rpc", vm.envString("MAINNET_RPC_URL"));
         emit log_named_address("- borrower", rainBorrower);
@@ -521,7 +525,8 @@ contract RainRe7SimPolygon is Test {
 
         emit log_named_string("\n \u2713 Borrower Accepts Lender Proposal to Line of Credit", "");
         vm.startPrank(rainBorrower);
-
+        int256 price = oracle.getLatestAnswer(MATIC);
+        emit log_named_int("- price", price);
         id = securedLine.addCredit(
             dRate, // drate
             fRate, // frate

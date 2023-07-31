@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
  pragma solidity ^0.8.16;
 
+import  'forge-std/console.sol';
 import "chainlink/interfaces/FeedRegistryInterface.sol";
 import "chainlink/interfaces/AggregatorV3Interface.sol";
 import {Denominations} from "chainlink/Denominations.sol";
@@ -55,6 +56,7 @@ contract PolygonOracle is IOracle {
             uint80
         ) {
             // no price for asset if price is stale. Asset is toxic
+            console.log("answerTimestamp: %s", answerTimestamp);
             if (answerTimestamp == 0 || block.timestamp - answerTimestamp > MAX_PRICE_LATENCY) {
                 emit StalePrice(token, answerTimestamp);
                 return NULL_PRICE;
