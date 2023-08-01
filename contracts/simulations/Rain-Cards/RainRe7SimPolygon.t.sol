@@ -576,11 +576,8 @@ contract RainRe7SimPolygon is Test {
         amounts[0] = amount;
         uint256 startingSpigotBalance = IERC20(USDC).balanceOf(address(spigot));
         emit log_named_uint("- starting Spigot balance ", startingSpigotBalance);
-        emit log_named_uint("- amount to liquidate ", amount);
-        emit log_named_uint("- liquidatable amount ", IERC20(USDC).balanceOf(rainCollateralContract));
         rainCollateralController.liquidateAsset(rainCollateralContract, assets, amounts);
         uint256 endingSpigotBalance = IERC20(USDC).balanceOf(address(spigot));
-        emit log_named_uint("- amount claimed from Rain Collateral Controller ", endingSpigotBalance - startingSpigotBalance);
         emit log_named_uint("- ending Spigot balance ", endingSpigotBalance);
         return (startingSpigotBalance, endingSpigotBalance);
     }
