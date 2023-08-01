@@ -226,11 +226,6 @@ contract RainRe7SimPolygon is Test {
         // OPTIONAL - Rain transfers ownership of Rain Collateral Factory to a Joint Multisig
         // TODO
 
-        emit log_named_address("- spigot address", address(securedLine.spigot()));
-        emit log_named_address("- rain controller", address(rainCollateralController));
-        //TODO: why is this not working?
-        emit log_named_address("- rain treasury", rainCollateralController.treasury());
-
         // Rain transfers ownership of Rain Collateral Controller to Spigot
         // Rain updates updateTreasury to Spigot address in Rain Collateral Controller
         // Rain updates updateControllerAdmin to Spigot address in Rain Collateral Controller
@@ -239,7 +234,7 @@ contract RainRe7SimPolygon is Test {
         rainCollateralController.updateTreasury(address(securedLine.spigot()));
         assertEq(address(securedLine.spigot()), rainCollateralController.treasury());
 
-        // TODO: do not do this!
+        // TODO: Skip this step because Rain will call liquidateAsset directly from the Controller contract
         // emit log_named_string("\n \u2713 Rain Collateral Controller Owner Sets Controller Admin as Spigot", "");
         // rainCollateralController.updateControllerAdmin(address(securedLine.spigot()));
         // assertEq(address(securedLine.spigot()), rainCollateralController.controllerAdmin());
@@ -373,6 +368,7 @@ contract RainRe7SimPolygon is Test {
         vm.stopPrank();
 
         // Rain calls liquidateAsset function on each Rain Collateral Contract to transfer USDC to Treasury (Spigot)
+        emit log_named_string("\n \u2713 Rain Calls liquidateAsset on Rain Collateral Contracts", "");
         vm.startPrank(rainControllerAdminAddress);
         address admin = rainCollateralController.controllerAdmin();
         emit log_named_address("- Rain Collateral Controller Admin", admin);

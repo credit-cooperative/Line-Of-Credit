@@ -192,7 +192,9 @@ contract RainRe7Sim is Test {
 
         // Credit Coop Arbiter adds Rain Collateral Controller to Spigot
         vm.startPrank(arbiterAddress);
-        bytes4 claimFunc = _getSelector("liquidateAsset(address,address[],uint256[])");
+        // bytes4 claimFunc = _getSelector("liquidateAsset(address,address[],uint256[])");
+        // push payment
+        bytes4 claimFunc = bytes4(0);
         bytes4 newOwnerFunc = _getSelector("transferOwnership(address)");
 
         emit log_named_string("\n \u2713 Arbiter Adds Rain Collateral Controller as Revenue Contract to Spigot", "");
@@ -218,9 +220,10 @@ contract RainRe7Sim is Test {
         rainCollateralController.updateTreasury(address(securedLine.spigot()));
         assertEq(address(securedLine.spigot()), rainCollateralController.treasury());
 
-        emit log_named_string("\n \u2713 Rain Collateral Controller Owner Sets Controller Admin as Spigot", "");
-        rainCollateralController.updateControllerAdmin(address(securedLine.spigot()));
-        assertEq(address(securedLine.spigot()), rainCollateralController.controllerAdmin());
+        // TODO: Skip this step because Rain will call liquidateAsset directly from the Controller contract
+        // emit log_named_string("\n \u2713 Rain Collateral Controller Owner Sets Controller Admin as Spigot", "");
+        // rainCollateralController.updateControllerAdmin(address(securedLine.spigot()));
+        // assertEq(address(securedLine.spigot()), rainCollateralController.controllerAdmin());
 
         emit log_named_string("\n \u2713 Rain Collateral Controller Owner Transfers Ownership to Spigot", "");
         rainCollateralController.transferOwnership(address(securedLine.spigot()));
@@ -286,7 +289,7 @@ contract RainRe7Sim is Test {
         vm.startPrank(rainUser0);
         emit log_named_uint("- Rain User 0 - Starting USDC Balance ", IERC20(USDC).balanceOf(rainUser0));
         emit log_named_uint("- Rain Collateral Contract 0 - Starting USDC Balance ", IERC20(USDC).balanceOf(rainCollateralContract0));
-        IERC20(USDC).transfer(address(rainCollateralContract0), 30000 * 10 ** 6);
+        IERC20(USDC).transfer(address(rainCollateralContract0), rainUser0Amount);
         emit log_named_uint("- Rain User 0 - Ending USDC Balance ", IERC20(USDC).balanceOf(rainUser0));
         emit log_named_uint("- Rain Collateral Contract 0 - Ending USDC Balance ", IERC20(USDC).balanceOf(rainCollateralContract0));
         vm.stopPrank();
@@ -295,7 +298,7 @@ contract RainRe7Sim is Test {
         vm.startPrank(rainUser1);
         emit log_named_uint("- Rain User 1 - Starting USDC Balance ", IERC20(USDC).balanceOf(rainUser1));
         emit log_named_uint("- Rain Collateral Contract 1 - Starting USDC Balance ", IERC20(USDC).balanceOf(rainCollateralContract1));
-        IERC20(USDC).transfer(address(rainCollateralContract1), 170000 * 10 ** 6);
+        IERC20(USDC).transfer(address(rainCollateralContract1), rainUser1Amount);
         emit log_named_uint("- Rain User 1 - Ending USDC Balance ", IERC20(USDC).balanceOf(rainUser1));
         emit log_named_uint("- Rain Collateral Contract 1 - Ending USDC Balance ", IERC20(USDC).balanceOf(rainCollateralContract1));
         vm.stopPrank();
@@ -304,7 +307,7 @@ contract RainRe7Sim is Test {
         vm.startPrank(rainUser2);
         emit log_named_uint("- Rain User 2 - Starting USDC Balance ", IERC20(USDC).balanceOf(rainUser2));
         emit log_named_uint("- Rain Collateral Contract 2 - Starting USDC Balance ", IERC20(USDC).balanceOf(rainCollateralContract2));
-        IERC20(USDC).transfer(address(rainCollateralContract2), 120000 * 10 ** 6);
+        IERC20(USDC).transfer(address(rainCollateralContract2), rainUser2Amount);
         emit log_named_uint("- Rain User 2 - Ending USDC Balance ", IERC20(USDC).balanceOf(rainUser2));
         emit log_named_uint("- Rain Collateral Contract 2 - Ending USDC Balance ", IERC20(USDC).balanceOf(rainCollateralContract2));
         vm.stopPrank();
@@ -313,36 +316,75 @@ contract RainRe7Sim is Test {
         vm.startPrank(rainUser3);
         emit log_named_uint("- Rain User 3 - Starting USDC Balance ", IERC20(USDC).balanceOf(rainUser3));
         emit log_named_uint("- Rain Collateral Contract 3 - Starting USDC Balance ", IERC20(USDC).balanceOf(rainCollateralContract3));
-        IERC20(USDC).transfer(address(rainCollateralContract3), 80000 * 10 ** 6);
+        IERC20(USDC).transfer(address(rainCollateralContract3), rainUser3Amount);
         emit log_named_uint("- Rain User 3 - Ending USDC Balance ", IERC20(USDC).balanceOf(rainUser3));
         emit log_named_uint("- Rain Collateral Contract 3 - Ending USDC Balance ", IERC20(USDC).balanceOf(rainCollateralContract3));
+        vm.stopPrank();
+
+        emit log_named_string("\n \u2713 Rain User 4 Transfers USDC to Rain Collateral Contract 3", "");
+        vm.startPrank(rainUser4);
+        emit log_named_uint("- Rain User 4 - Starting USDC Balance ", IERC20(USDC).balanceOf(rainUser4));
+        emit log_named_uint("- Rain Collateral Contract 4 - Starting USDC Balance ", IERC20(USDC).balanceOf(rainCollateralContract4));
+        IERC20(USDC).transfer(address(rainCollateralContract4), rainUser4Amount);
+        emit log_named_uint("- Rain User 4 - Ending USDC Balance ", IERC20(USDC).balanceOf(rainUser4));
+        emit log_named_uint("- Rain Collateral Contract 4 - Ending USDC Balance ", IERC20(USDC).balanceOf(rainCollateralContract4));
+        vm.stopPrank();
+
+        // Rain calls liquidateAsset function on each Rain Collateral Contract to transfer USDC to Treasury (Spigot)
+        emit log_named_string("\n \u2713 Rain Calls liquidateAsset on Rain Collateral Contracts", "");
+        vm.startPrank(rainControllerAdminAddress);
+        address admin = rainCollateralController.controllerAdmin();
+        emit log_named_address("- Rain Collateral Controller Admin", admin);
+        address[] memory assets = new address[](1);
+        uint256[] memory amounts = new uint256[](1);
+
+        assets[0] = address(USDC);
+        amounts[0] = rainUser0Amount;
+
+        (uint256 startingSpigotBalance0, uint256 endingSpigotSpigotBalance0) = _liquidateCollateralContractAssets(rainCollateralContract0, rainUser0Amount, assets, amounts);
+
+        (uint256 startingSpigotBalance1, uint256 endingSpigotSpigotBalance1) = _liquidateCollateralContractAssets(rainCollateralContract1, rainUser1Amount, assets, amounts);
+
+        (uint256 startingSpigotBalance2, uint256 endingSpigotSpigotBalance2) = _liquidateCollateralContractAssets(rainCollateralContract2, rainUser2Amount, assets, amounts);
+
+        (uint256 startingSpigotBalance3, uint256 endingSpigotSpigotBalance3) = _liquidateCollateralContractAssets(rainCollateralContract3, rainUser3Amount, assets, amounts);
+
+        (uint256 startingSpigotBalance4, uint256 endingSpigotSpigotBalance4) = _liquidateCollateralContractAssets(rainCollateralContract4, rainUser4Amount, assets, amounts);
+
         vm.stopPrank();
 
         // Rain calls claimRevenue function on Spigot which calls liquidateAsset (Spigot) to transfer USDC from Rain Collateral Contracts to Treasury (Spigot)
         // TODO: convert memory to calldata to save gas
         vm.startPrank(rainBorrower);
         emit log_named_string("\n \u2713 [Borrower] Calls the Spigot Claim Function", "");
-        bytes4 liquidateFunc = _getSelector("liquidateAsset(address,address[],uint256[])");
 
-        address[] memory assets = new address[](1);
-        uint256[] memory amounts = new uint256[](1);
-        assets[0] = address(USDC);
-
-        uint256 claimed0 = _claimRevenueOnBehalfOfSpigot(liquidateFunc, rainCollateralContract0, rainUser0Amount, assets, amounts);
-        assertEq(rainUser0Amount, claimed0);
-
-        uint256 claimed1 = _claimRevenueOnBehalfOfSpigot(liquidateFunc, rainCollateralContract1, rainUser1Amount, assets, amounts);
-        assertEq(rainUser1Amount, claimed1);
-
-        uint256 claimed2 = _claimRevenueOnBehalfOfSpigot(liquidateFunc, rainCollateralContract2, rainUser2Amount, assets, amounts);
-        assertEq(rainUser2Amount, claimed2);
-
-        uint256 claimed3 = _claimRevenueOnBehalfOfSpigot(liquidateFunc, rainCollateralContract3, rainUser3Amount, assets, amounts);
-        assertEq(rainUser3Amount, claimed3);
-
-        uint256 claimed4 = _claimRevenueOnBehalfOfSpigot(liquidateFunc, rainCollateralContract4, rainUser4Amount, assets, amounts);
-        assertEq(rainUser4Amount, claimed4);
+        uint256 claimedFromSpigot = _claimRevenueOnBehalfOfSpigot(
+            bytes4(0),
+            rainCollateralContract0
+        );
         assertEq(finalSpigotBalance, IERC20(USDC).balanceOf(address(spigot)));
+
+        // bytes4 liquidateFunc = _getSelector("liquidateAsset(address,address[],uint256[])");
+
+        // address[] memory assets = new address[](1);
+        // uint256[] memory amounts = new uint256[](1);
+        // assets[0] = address(USDC);
+
+        // uint256 claimed0 = _claimRevenueOnBehalfOfSpigot(liquidateFunc, rainCollateralContract0, rainUser0Amount, assets, amounts);
+        // assertEq(rainUser0Amount, claimed0);
+
+        // uint256 claimed1 = _claimRevenueOnBehalfOfSpigot(liquidateFunc, rainCollateralContract1, rainUser1Amount, assets, amounts);
+        // assertEq(rainUser1Amount, claimed1);
+
+        // uint256 claimed2 = _claimRevenueOnBehalfOfSpigot(liquidateFunc, rainCollateralContract2, rainUser2Amount, assets, amounts);
+        // assertEq(rainUser2Amount, claimed2);
+
+        // uint256 claimed3 = _claimRevenueOnBehalfOfSpigot(liquidateFunc, rainCollateralContract3, rainUser3Amount, assets, amounts);
+        // assertEq(rainUser3Amount, claimed3);
+
+        // uint256 claimed4 = _claimRevenueOnBehalfOfSpigot(liquidateFunc, rainCollateralContract4, rainUser4Amount, assets, amounts);
+        // assertEq(rainUser4Amount, claimed4);
+        // assertEq(finalSpigotBalance, IERC20(USDC).balanceOf(address(spigot)));
 
         vm.stopPrank();
 
@@ -473,24 +515,57 @@ contract RainRe7Sim is Test {
         return address(securedLine);
     }
 
-    function _claimRevenueOnBehalfOfSpigot(bytes4 claimFunc, address rainCollateralContract, uint256 amount, address[] memory assets, uint256[] memory amounts) internal returns (uint256){
+
+    function _liquidateCollateralContractAssets(
+        address rainCollateralContract,
+        uint256 amount,
+        address[] memory assets,
+        uint256[] memory amounts
+    ) internal returns (uint256, uint256) {
+        emit log_named_address("\n - Rain Collateral Contract ", rainCollateralContract);
         amounts[0] = amount;
-        bytes memory claimFuncData = abi.encodeWithSelector(
-            claimFunc,
-            rainCollateralContract,
-            assets,
-            amounts
-        );
+        uint256 startingSpigotBalance = IERC20(USDC).balanceOf(address(spigot));
+        emit log_named_uint("- starting Spigot balance ", startingSpigotBalance);
+        rainCollateralController.liquidateAsset(rainCollateralContract, assets, amounts);
+        uint256 endingSpigotBalance = IERC20(USDC).balanceOf(address(spigot));
+        emit log_named_uint("- ending Spigot balance ", endingSpigotBalance);
+        return (startingSpigotBalance, endingSpigotBalance);
+    }
+
+    function _claimRevenueOnBehalfOfSpigot(
+        bytes4 claimFunc,
+        address rainCollateralContract
+    ) internal returns (uint256) {
+        bytes memory claimFuncData = abi.encodeWithSelector(claimFunc);
 
         emit log_named_address("\n - Rain Collateral Contract ", rainCollateralContract);
         uint256 startingSpigotBalance = IERC20(USDC).balanceOf(address(spigot));
+        emit log_named_uint("- starting Spigot balance ", startingSpigotBalance);
         uint256 claimed = spigot.claimRevenue(rainCollateralControllerAddress, USDC, claimFuncData);
         uint256 endingSpigotBalance = IERC20(USDC).balanceOf(address(spigot));
-        emit log_named_uint("- starting Spigot balance ", startingSpigotBalance);
         emit log_named_uint("- amount claimed from Rain Collateral Controller ", claimed);
         emit log_named_uint("- ending Spigot balance ", endingSpigotBalance);
         return claimed;
     }
+
+    // function _claimRevenueOnBehalfOfSpigot(bytes4 claimFunc, address rainCollateralContract, uint256 amount, address[] memory assets, uint256[] memory amounts) internal returns (uint256){
+    //     amounts[0] = amount;
+    //     bytes memory claimFuncData = abi.encodeWithSelector(
+    //         claimFunc,
+    //         rainCollateralContract,
+    //         assets,
+    //         amounts
+    //     );
+
+    //     emit log_named_address("\n - Rain Collateral Contract ", rainCollateralContract);
+    //     uint256 startingSpigotBalance = IERC20(USDC).balanceOf(address(spigot));
+    //     uint256 claimed = spigot.claimRevenue(rainCollateralControllerAddress, USDC, claimFuncData);
+    //     uint256 endingSpigotBalance = IERC20(USDC).balanceOf(address(spigot));
+    //     emit log_named_uint("- starting Spigot balance ", startingSpigotBalance);
+    //     emit log_named_uint("- amount claimed from Rain Collateral Controller ", claimed);
+    //     emit log_named_uint("- ending Spigot balance ", endingSpigotBalance);
+    //     return claimed;
+    // }
 
 
     // fund a loan as a lender
