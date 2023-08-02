@@ -76,7 +76,8 @@ contract RainRe7SimPolygon is Test {
     PolygonOracle oracle;
 
     // address constant oracleAddress = 0x570ff5021d3F4bAFb8c688d73ECD13A43FaB4304;
-    address oracleAddress;
+    // address oracleAddress;
+    address constant oracleAddress = 0xF1baA8242e3AAF65D4Eb030459854cddE209acb9;
     address constant zeroExSwapTarget = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
 
     // Rain Cards Borrower Address
@@ -136,7 +137,7 @@ contract RainRe7SimPolygon is Test {
 
     // Fork Settings
     // uint256 constant FORK_BLOCK_NUMBER = 45_626_437; //17_638_122; // Forking mainnet at block on 7/6/23 at 7 40 PM EST
-    uint256 constant FORK_BLOCK_NUMBER = 45_792_239; //17_638_122; // Forking mainnet at block on 7/6/23 at 7 40 PM EST
+    uint256 constant FORK_BLOCK_NUMBER = 45_828_079; //17_638_122; // Forking mainnet at block on 7/6/23 at 7 40 PM EST
     uint256 polygonFork;
 
     event log_named_bytes4(string key, bytes4 value);
@@ -146,10 +147,9 @@ contract RainRe7SimPolygon is Test {
     function setUp() public {
         polygonFork = vm.createFork(vm.envString("POLYGON_RPC_URL"), FORK_BLOCK_NUMBER);
         vm.selectFork(polygonFork);
-        oracle = new PolygonOracle();
-        oracleAddress = address(oracle);
-        int256 price = oracle.getLatestAnswer(USDC);
-        emit log_named_int("price", price);
+        // oracle = new PolygonOracle();
+        // oracleAddress = address(oracle);
+        // int256 price = oracle.getLatestAnswer(USDC);
 
         emit log_named_string("- rpc", vm.envString("MAINNET_RPC_URL"));
         emit log_named_address("- borrower", rainBorrower);
@@ -416,7 +416,7 @@ contract RainRe7SimPolygon is Test {
         vm.stopPrank();
 
         // interest accrued
-        bytes32 creditPositionId = 0x01ca7b48167dc63e8e3d6f2add59eb9de26c3b273ae737b06137aec94e85061e;
+        bytes32 creditPositionId = 0x501973eaa1a09d0259dcc9a1568cf1f125d059c252d0d5e62c51bbe0b13a5322;
         uint256 interestAccrued = securedLine.interestAccrued(creditPositionId);
         emit log_named_uint("- Interest Accrued ", interestAccrued);
 
@@ -524,6 +524,7 @@ contract RainRe7SimPolygon is Test {
         spigot = new Spigot(rainControllerOwnerAddress, rainControllerOwnerAddress);
 
         // create SecuredLine
+        emit log_named_address(" - create new line with oracle ", oracleAddress);
         securedLine = new SecuredLine(
             oracleAddress,
             arbiterAddress,
@@ -612,8 +613,13 @@ contract RainRe7SimPolygon is Test {
 
         emit log_named_string("\n \u2713 Borrower Accepts Lender Proposal to Line of Credit", "");
         vm.startPrank(rainBorrower);
-        int256 price = oracle.getLatestAnswer(USDC);
+        emit log_named_address("- lender 1", lenderAddress);
+        // int256 price = oracle.getLatestAnswer(USDC);
+        int256 price = IOracle(oracleAddress).getLatestAnswer(USDC);
         emit log_named_int("- price", price);
+        emit log_named_address("- USDC", USDC);
+        emit log_named_uint("- loan size", loanSizeInUSDC);
+        emit log_named_address("- oracleAddress", oracleAddress);
         id = securedLine.addCredit(
             dRate, // drate
             fRate, // frate
@@ -621,6 +627,7 @@ contract RainRe7SimPolygon is Test {
             USDC, // token
             lenderAddress // lender
         );
+        emit log_named_address("- lender 2", lenderAddress);
         vm.stopPrank();
 
         assertEq(IERC20(USDC).balanceOf(address(securedLine)), loanSizeInUSDC, "LoC balance doesn't match");
