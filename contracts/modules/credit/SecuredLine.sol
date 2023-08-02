@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-// Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
+// Copyright: https://github.com/credit-cooperative/Line-Of-Credit/blob/master/COPYRIGHT.md
 
  pragma solidity ^0.8.16;
 import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
@@ -12,8 +12,7 @@ import {ILineOfCredit} from "../../interfaces/ILineOfCredit.sol";
 import {ISecuredLine} from "../../interfaces/ISecuredLine.sol";
 
 /**
- * @title  - Debt DAO Secured Line of Credit
- * @author - Kiba Gateaux
+ * @title  - Credit Cooperative Secured Line of Credit
  * @notice - The SecuredLine combines both collateral modules (SpigotedLine + EscrowedLine) with core lending functionality from LineOfCredit
  *         - to create a fully secured lending facility backed by revenue via Spigot or tokens via Escrow.
  * @dev    - modifies _liquidate(), _healthcheck(), _init(), and _declareInsolvent() functionality

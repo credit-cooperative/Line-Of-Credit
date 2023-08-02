@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-// Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
+// Copyright: https://github.com/credit-cooperative/Line-Of-Credit/blob/master/COPYRIGHT.md
 
  pragma solidity ^0.8.16;
 
@@ -15,8 +15,7 @@ import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
 import {SafeERC20} from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 
 /**
-  * @title  - Debt DAO Spigoted Line of Credit
-  * @author - Kiba Gateaux
+  * @title  - Credit Cooperative Spigoted Line of Credit
   * @notice - Line of Credit contract with additional functionality for integrating with a Spigot and revenue based collateral.
             - Allows Arbiter to repay debt using collateralized revenue streams onbehalf of Borrower and Lender(s)
   * @dev    - Inherits LineOfCredit functionality
