@@ -26,3 +26,7 @@ SimpleRevenueContract=$(forge create --rpc-url $GOERLI_RPC_URL --constructor-arg
 SimpleRevenueContractAddress=$(echo "$SimpleRevenueContract" | jq -r '.deployedTo')
 echo $SimpleRevenueContractAddress
 
+
+forge create --rpc-url $POLYGON_RPC_URL --constructor-args 0xb7c75c110467B1c5dc1af60D0A3C245eD0b883f9 --private-key $POLYGON_PRIVATE_KEY --etherscan-api-key $POLYGON_ETHERSCAN_API_KEY  contracts/modules/oracle/Oracle.sol:Oracle  --verify
+
+forge create --rpc-url $POLYGON_RPC_URL  --private-key $POLYGON_PRIVATE_KEY --etherscan-api-key $POLYGON_ETHERSCAN_API_KEY  contracts/modules/oracle/PolygonOracle.sol:PolygonOracle  --verify

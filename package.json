@@ -1,10 +1,10 @@
 {
-  "name": "Line-of-Credit",
+  "name": "Line-Of-Credit",
   "version": "1.0.0",
-  "description": "DebtDAO",
+  "description": "Credit-Cooperative",
   "main": "index.js",
-  "repository": "git@github.com:debtdao/Line-of-Credit.git",
-  "author": "DebtDAO",
+  "repository": "git@github.com:credit-cooperative/Line-of-Credit.git",
+  "author": "Credit-Cooperative",
   "scripts": {
     "prepare": "husky install",
     "prettier": "prettier --write **.sol",
