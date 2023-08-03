@@ -8,7 +8,7 @@ import "./IMockRainCollateralFactory.sol";
 
 using SafeERC20 for IERC20;
 
-contract RainCollateral is Ownable {
+contract MockRainCollateral is Ownable {
 
     address public factory;
 

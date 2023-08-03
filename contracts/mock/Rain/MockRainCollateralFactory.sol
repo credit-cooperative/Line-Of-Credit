@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 
-contract RainCollateralFactory {
+contract MockRainCollateralFactory {
     address public controller;
 
     constructor(address _controller) {

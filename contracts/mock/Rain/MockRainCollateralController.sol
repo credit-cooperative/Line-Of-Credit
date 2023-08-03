@@ -7,7 +7,7 @@ import "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import "./IMockRainCollateralFactory.sol";
 import "./IMockRainCollateral.sol";
 
-contract RainCollateralController is Ownable {
+contract MockRainCollateralController is Ownable {
     address public controllerAdmin;
 
     /// @notice Treasury contract address where Rain Company keeps its treasury.
