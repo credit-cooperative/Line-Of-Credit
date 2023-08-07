@@ -14,6 +14,7 @@ contract MockRainCollateralController is Ownable {
     ///         Payment and liqudation moves assets to treasury.
     address public treasury;
 
+    mapping (address => uint256) public nonce;
 
     constructor(address _controllerAdmin, address _treasury, address initialOwner) Ownable(initialOwner) {
         controllerAdmin = _controllerAdmin;
@@ -34,15 +35,13 @@ contract MockRainCollateralController is Ownable {
 
     function liquidateAsset(
         address _collateralProxy,
-        address[] calldata _assets,
-        uint256[] calldata _amounts
+        address _asset,
+        uint256 _amount
     ) external {
         require(msg.sender == controllerAdmin, "Not controller admin");
-        require(_assets.length == _amounts.length, "Invalid Params");
-        for (uint256 i = 0; i < _assets.length; i++) {
-            _transferToTreasury(_collateralProxy, _assets[i], _amounts[i]);
-        }
 
+        _transferToTreasury(_collateralProxy, _asset, _amount);
+    
     }
 
     /**
@@ -70,6 +69,10 @@ contract MockRainCollateralController is Ownable {
     function updateTreasury(address _treasury) external onlyOwner {
         require(_treasury != address(0), "Zero Address");
         treasury = _treasury;
+    }
+
+    function increaseNonce(address _collateralProxy) external onlyOwner {
+        nonce[_collateralProxy]++;
     }
 
 }
