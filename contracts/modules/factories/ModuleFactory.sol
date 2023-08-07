@@ -52,9 +52,10 @@ contract ModuleFactory is IModuleFactory {
     function registerSpigot(
         address spigot,
         address owner,
+        address borrower, //
         address operator
     ) external {
 
-        emit RegisteredSpigot(spigot, owner, operator);
+        emit RegisteredSpigot(spigot, owner, borrower, operator);
     }
 }
