@@ -29,7 +29,7 @@ interface ILineFactory {
 
     event RegisteredUpdatedStatus(address indexed line, uint256 indexed status); // store as normal uint so it can be indexed in subgraph
 
-    event RegisteredLine(address indexed line, address indexed oracle, address indexed arbiter, address borrower);
+    event RegisteredLine(address indexed line, address indexed oracle, address indexed arbiter, address borrower, address operator);
 
 
     error ModuleTransferFailed(address line, address spigot, address escrow);
