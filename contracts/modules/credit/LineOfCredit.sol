@@ -319,6 +319,22 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     }
 
     ////////////////////
+    //AMEND AND EXTEND//
+    ////////////////////
+    
+    function amendAndExtend(uint256 extension) external {
+        if (msg.sender != borrower && msg.sender != lender){
+            revert; // custom error msg
+        }
+        if (status != LineLib.STATUS.REPAID){
+          revert; // custom error msg
+        }
+        deadline = deadline + extension;
+        _updateStatus(LineLib.STATUS.ACTIVE); // some custom error msg
+    }
+
+
+    ////////////////////
     // FUND TRANSFERS //
     ////////////////////
 
