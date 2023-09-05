@@ -10,11 +10,11 @@ import {ERC1155} from "openzeppelin/token/ERC1155/ERC1155.sol";
 import {IERC1155} from "openzeppelin/token/ERC1155/IERC1155.sol";
 
 
-contract ArfRevenueContract is Ownable, MutualConsent {
+contract ArfRepaymentContract is Ownable, MutualConsent {
 
     // able to perform certain admin actions
     address public manager;
-    IERC20 revenueToken;
+    IERC20 repaymentToken;
 
     // ERC1155 token contract address
     address public erc1155Address;
@@ -26,7 +26,7 @@ contract ArfRevenueContract is Ownable, MutualConsent {
 
     constructor(address _owner, address token, address _erc1155Address) Ownable(_owner) {
         manager = _owner;
-        revenueToken = IERC20(token);
+        repaymentToken = IERC20(token);
         erc1155Address = _erc1155Address;
     }
 
@@ -39,30 +39,38 @@ contract ArfRevenueContract is Ownable, MutualConsent {
     function repayLoan(string memory newMetadata, uint256 amount) external payable {
 
         // based on metadata, update loan to reflect whether or not loan has been fully repaid
-
+        // calls internal function to update metadata
         // Transfer repaid funds to the owner
-        revenueToken.transferFrom(msg.sender, address(this), amount);
+        repaymentToken.transferFrom(msg.sender, address(this), amount);
     }
 
     // Function to update metadata of a token
     function updateMetadata(uint256 tokenId, string memory newMetadata) external {
+        // calls internal upate metadata function
         // allows the updating of info on a 1155 token stored in contract based on off chain activity 
     }
 
+    function _updateMetadata(uint256 tokenId, string memory newMetadata) internal {
+        // do stuff to metadata
+    }
+
     // Functions to withdraw funds from contract
+
+    // Spigot/owner calls this to transfer funds to spigot/owner
     function claimPullPayment() external returns (bool) {
         require(msg.sender == owner(), "Revenue: Only owner can claim");
-        if (address(revenueToken) != Denominations.ETH) {
-            require(revenueToken.transfer(owner(), revenueToken.balanceOf(address(this))), "Revenue: bad transfer");
+        if (address(repaymentToken) != Denominations.ETH) {
+            require(repaymentToken.transfer(owner(), repaymentToken.balanceOf(address(this))), "Revenue: bad transfer");
         } else {
             payable(owner()).transfer(address(this).balance);
         }
         return true;
     }
 
+    // callable by anyone to sends funds to spigot/owner
     function sendPushPayment() external returns (bool) {
-        if (address(revenueToken) != Denominations.ETH) {
-            require(revenueToken.transfer(owner(), revenueToken.balanceOf(address(this))), "Revenue: bad transfer");
+        if (address(repaymentToken) != Denominations.ETH) {
+            require(repaymentToken.transfer(owner(), repaymentToken.balanceOf(address(this))), "Revenue: bad transfer");
         } else {
             payable(owner()).transfer(address(this).balance);
         }
@@ -70,7 +78,8 @@ contract ArfRevenueContract is Ownable, MutualConsent {
     }
     
 
-    // set a new manager
+    // Sets a new manager. This is useful for certain functions that need to be called by a manager that is seperate from the spigot
+    // Example: updating metadata
     function setManager(address newManager) external mutualConsent(manager, owner()) {
         require(newManager != address(0), "Zero address not valid");
         manager = newManager;
