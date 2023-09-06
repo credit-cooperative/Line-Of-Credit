@@ -4,7 +4,7 @@ source .env
 ###  Controller ###
 
 # Constructor Args: admin, treasury, owner
-forge create --rpc-url $POLYGON_RPC_URL --constructor-args 0xf44B95991CaDD73ed769454A03b3820997f00873 0xf44B95991CaDD73ed769454A03b3820997f00873 0xf44B95991CaDD73ed769454A03b3820997f00873 \
+forge create --rpc-url $POLYGON_RPC_URL --constructor-args 0x06dae7Ba3958EF288adB0B9b3732eC204E48BC47 0x06dae7Ba3958EF288adB0B9b3732eC204E48BC47 0x06dae7Ba3958EF288adB0B9b3732eC204E48BC47 \
 --private-key $POLYGON_PRIVATE_KEY --etherscan-api-key $POLYGON_ETHERSCAN_API_KEY \
 contracts/mock/Rain/MockRainCollateralController.sol:MockRainCollateralController --verify
 
