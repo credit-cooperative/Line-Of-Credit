@@ -16,6 +16,13 @@ forge create --rpc-url $POLYGON_RPC_URL --constructor-args 0x06dae7Ba3958EF288ad
 --private-key $POLYGON_PRIVATE_KEY --etherscan-api-key $POLYGON_ETHERSCAN_API_KEY \
 contracts/mock/Rain/MockRainCollateralFactory.sol:MockRainCollateralFactory  --verify
 
+### Beacon ###
+
+# Constructor Args: initialOwner
+forge create --rpc-url $POLYGON_RPC_URL --constructor-args 0x06dae7Ba3958EF288adB0B9b3732eC204E48BC47 \
+--private-key $POLYGON_PRIVATE_KEY --etherscan-api-key $POLYGON_ETHERSCAN_API_KEY \
+contracts/mock/Rain/MockRainBeacon.sol:MockRainBeacon  --verify
+
 
 ### Collateral ###
 
