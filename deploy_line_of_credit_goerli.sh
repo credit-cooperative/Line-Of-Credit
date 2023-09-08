@@ -8,10 +8,57 @@
 
 source .env
 
+echo  -n "Borrower Address: "
+read borrower_address
+
+echo  -n "Oracle Address: "
+read oracle_address
+
+echo  -n "Arbiter Address: "
+read arbiter_address
+
+echo  -n "Swap Target Address: "
+read swap_target_address
+
+echo -n "Min C Ratio: "
+read min_c_ratio
+
+echo -n "Default Split: "
+read default_split
+
+echo -n "TTL: "
+read ttl
+
+echo -n "owner: "
+read owner
+
+echo -n "operator: "
+read operator
+
+echo "borrower address: " $borrower_address
+echo "oracle address: " $oracle_address
+echo "arbiter_address: "  $arbiter_address
+echo "swap target address: " $swap_target_address
+echo "min c ratio: " $min_c_ratio
+echo "default split: " $default_split
+echo "ttl: " $ttl
+echo "owner: " $owner
+echo "operator: " $operator
+
+read -p "Do you wish to continue? [y/N] " answer
+
+case $answer in
+    [Yy]* ) echo "Continuing...";;
+    [Nn]* ) echo "Exiting..."; exit;;
+    * ) echo "Please answer yes or no."; exit;;
+esac
+
+echo "Deploying Line of Credit"
+
 
 ### constructor arguments: minCRatio, oracle address, owner, borrower
 Escrow=$(forge create --rpc-url $GOERLI_RPC_URL \
---constructor-args 5000 0x93E01461b2B02Fe872C1C5CceAd3E334BFA3C0De 0xf44B95991CaDD73ed769454A03b3820997f00873 0xf44B95991CaDD73ed769454A03b3820997f00873 \
+--constructor-args $min_c_ratio $oracle_address $owner $borrower_address \
 --private-key $GOERLI_PRIVATE_KEY --etherscan-api-key $GOERLI_ETHERSCAN_API_KEY contracts/modules/escrow/Escrow.sol:Escrow --verify --json)
 EscrowAddress=$(echo "$Escrow" | jq -r '.deployedTo')
 echo $EscrowAddress
@@ -19,7 +66,7 @@ echo $EscrowAddress
 
 ### constructor arguments: owner, operator
 Spigot=$(forge create --rpc-url $GOERLI_RPC_URL \
---constructor-args 0xf44B95991CaDD73ed769454A03b3820997f00873 0x97fCbc96ed23e4E9F0714008C8f137D57B4d6C97 \
+--constructor-args $owner $operator \
 --private-key $GOERLI_PRIVATE_KEY --etherscan-api-key $GOERLI_ETHERSCAN_API_KEY contracts/modules/spigot/Spigot.sol:Spigot --verify --json)
 SpigotAddress=$(echo "$Spigot" | jq -r '.deployedTo')
 echo $SpigotAddress
@@ -27,7 +74,7 @@ echo $SpigotAddress
 
 ### constructor arguments: oracle, arbiter, borrower, swapTarget, spigot, escrow, ttl (3 days), defaultSplit
 SecuredLine=$(forge create --rpc-url $GOERLI_RPC_URL \
---constructor-args 0x93E01461b2B02Fe872C1C5CceAd3E334BFA3C0De 0x9832FD4537F3143b5C2989734b11A54D4E85eEF6 0xf44B95991CaDD73ed769454A03b3820997f00873 0x47B005bC1AD130D6a61c2d21047Ee84e03e5Aa8f $SpigotAddress $EscrowAddress 259200 50 \
+--constructor-args $oracle_address $arbiter_address $borrower_address $swap_target_address $SpigotAddress $EscrowAddress $ttl $default_split \
 --private-key $GOERLI_PRIVATE_KEY --etherscan-api-key $GOERLI_ETHERSCAN_API_KEY contracts/modules/credit/SecuredLine.sol:SecuredLine --verify --json)
 SecuredLineAddress=$(echo "$SecuredLine" | jq -r '.deployedTo')
 echo $SecuredLineAddress
