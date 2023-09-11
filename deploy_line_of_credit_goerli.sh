@@ -8,6 +8,14 @@
 
 source .env
 
+read -p "Did you change FOUNDRY_PROFILE to the correct chain? [y/N] " answer
+
+case $answer in
+    [Yy]* ) echo "Continuing...";;
+    [Nn]* ) echo "Exiting..."; exit;;
+    * ) echo "Please answer yes or no."; exit;;
+esac
+
 echo  -n "Borrower Address: "
 read borrower_address
 
@@ -28,6 +36,7 @@ read default_split
 
 echo -n "TTL: "
 read ttl
+let ttl=ttl * 86400
 
 echo -n "owner: "
 read owner
