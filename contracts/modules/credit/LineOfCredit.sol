@@ -333,11 +333,11 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         }
 
         if (status == LineLib.STATUS.ACTIVE){
-            _amendActiveLine(msg.sender, extension);
+            _amendActiveLine(extension);
         }
     }
 
-    function _amendActiveLine(address borrower, uint256 extension) internal {
+    function _amendActiveLine(uint256 extension) internal {
         // all lenders of open positions must agree to extend
         uint256 len = ids.length;
         bytes32 id;
@@ -352,13 +352,13 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     }
 
 
-    function lenderAmend() external {
+    function lenderAmend(bool isAmendable) external {
         uint256 len = ids.length;
         bytes32 id;
         for (uint256 i; i < len; ++i) {
             id = ids[i];
             if (credits[id].lender == msg.sender) {
-                lenderAmendMap[id] = !lenderAmendMap[id];
+                lenderAmendMap[id] = isAmendable;
             }
         }
 
