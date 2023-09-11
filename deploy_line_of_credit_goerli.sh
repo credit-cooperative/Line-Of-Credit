@@ -35,8 +35,8 @@ echo -n "Default Split: "
 read default_split
 
 echo -n "TTL: "
-read ttl
-let ttl=ttl * 86400
+read days
+ttl=$((days * 86400))
 
 echo -n "owner: "
 read owner
