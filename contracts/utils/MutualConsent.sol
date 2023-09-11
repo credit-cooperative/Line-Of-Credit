@@ -95,7 +95,7 @@ abstract contract MutualConsent {
 
         // The consent hash is defined by the hash of the transaction call data and sender of msg,
         // which uniquely identifies the function, arguments, and sender.
-        console.log("Msg Data Value: ", msg.data);
+
         bytes32 expectedProposalId = keccak256(abi.encodePacked(msg.data, nonCaller));
 
         if (mutualConsentProposals[expectedProposalId] == address(0)) {
