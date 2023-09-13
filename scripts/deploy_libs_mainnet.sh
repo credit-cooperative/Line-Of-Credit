@@ -8,7 +8,7 @@ brew install jq
 
 ### DEPLOY LIBS ###
 
-source .env
+source ../.env
 
 LineLib=$(forge create --rpc-url $MAINNET_RPC_URL --private-key $MAINNET_PRIVATE_KEY --etherscan-api-key $MAINNET_ETHERSCAN_API_KEY  --optimizer-runs 20000 contracts/utils/LineLib.sol:LineLib --json --verify)
 LineLibAddress=$(echo "$LineLib" | jq -r '.deployedTo')
