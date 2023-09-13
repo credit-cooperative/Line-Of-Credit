@@ -554,6 +554,7 @@ contract RainRe7SimPolygon is Test {
             address(spigot),
             address(escrow),
             rainBorrower,
+            rainBorrower,
             revenueSplit,
             minCRatio
         );
