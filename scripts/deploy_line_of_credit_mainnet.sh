@@ -6,7 +6,7 @@
 
 ### Deploy LoC Modules ###
 
-source .env
+source ../.env
 
 read -p "Did you change FOUNDRY_PROFILE to the correct chain? [y/N] " answer
 
