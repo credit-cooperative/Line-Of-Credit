@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-// Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
+// Copyright: https://github.com/credit-cooperative/Line-Of-Credit/blob/master/COPYRIGHT.md
 
  pragma solidity ^0.8.16;
 
@@ -29,7 +29,7 @@ interface ILineFactory {
 
     event RegisteredUpdatedStatus(address indexed line, uint256 indexed status); // store as normal uint so it can be indexed in subgraph
 
-    event RegisteredLine(address indexed line, address indexed oracle, address indexed arbiter, address borrower);
+    event RegisteredLine(address indexed line, address indexed oracle, address indexed arbiter, address borrower, address operator);
 
 
     error ModuleTransferFailed(address line, address spigot, address escrow);

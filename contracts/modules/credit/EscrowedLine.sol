@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-// Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
+// Copyright: https://github.com/credit-cooperative/Line-Of-Credit/blob/master/COPYRIGHT.md
 
  pragma solidity ^0.8.16;
 
@@ -15,7 +15,7 @@ import {LineOfCredit} from "./LineOfCredit.sol";
 
 abstract contract EscrowedLine is IEscrowedLine, ILineOfCredit {
     // contract holding all collateral for borrower
-    IEscrow public escrow;
+    IEscrow public immutable escrow;
 
     constructor(address _escrow) {
         escrow = IEscrow(_escrow);

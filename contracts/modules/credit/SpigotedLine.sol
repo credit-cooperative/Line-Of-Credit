@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-// Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
+// Copyright: https://github.com/credit-cooperative/Line-Of-Credit/blob/master/COPYRIGHT.md
 
  pragma solidity ^0.8.16;
 
@@ -15,8 +15,7 @@ import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
 import {SafeERC20} from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 
 /**
-  * @title  - Debt DAO Spigoted Line of Credit
-  * @author - Kiba Gateaux
+  * @title  - Credit Cooperative Spigoted Line of Credit
   * @notice - Line of Credit contract with additional functionality for integrating with a Spigot and revenue based collateral.
             - Allows Arbiter to repay debt using collateralized revenue streams onbehalf of Borrower and Lender(s)
   * @dev    - Inherits LineOfCredit functionality
@@ -25,16 +24,16 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
     using SafeERC20 for IERC20;
 
     /// @notice see Spigot
-    ISpigot public spigot;
+    ISpigot public immutable spigot;
 
     /// @notice - maximum revenue we want to be able to take from spigots if Line is in default
     uint8 constant MAX_SPLIT = 100;
 
     /// @notice % of revenue tokens to take from Spigot if the Line of Credit is healthy. 0 decimals
-    uint8 public defaultRevenueSplit;
+    uint8 public immutable defaultRevenueSplit;
 
     /// @notice exchange aggregator (mainly 0x router) to trade revenue tokens from a Spigot for credit tokens owed to lenders
-    address payable public swapTarget;
+    address payable public immutable swapTarget;
 
     /**
      * @notice - excess unsold revenue claimed from Spigot to be sold later or excess credit tokens bought from revenue but not yet used to repay debt

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-// Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
+// Copyright: https://github.com/credit-cooperative/Line-Of-Credit/blob/master/COPYRIGHT.md
 
  pragma solidity ^0.8.16;
 
@@ -8,7 +8,7 @@ interface IModuleFactory {
 
     event DeployedEscrow(address indexed deployedAt, uint32 indexed minCRatio, address indexed oracle, address owner);
 
-    event RegisteredSpigot(address indexed deployedAt, address indexed owner, address operator);
+    event RegisteredSpigot(address indexed deployedAt, address indexed owner, address borrower, address operator);
 
     event RegisteredEscrow(address indexed deployedAt, uint32 indexed minCRatio, address indexed oracle, address owner);
 
@@ -18,5 +18,5 @@ interface IModuleFactory {
 
     function registerEscrow(uint32 minCRatio, address oracle, address owner, address escrow) external;
 
-    function registerSpigot(address spigot, address owner, address operator) external;
+    function registerSpigot(address spigot, address owner, address borrower, address operator) external;
 }

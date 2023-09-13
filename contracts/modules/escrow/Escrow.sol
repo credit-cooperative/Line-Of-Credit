@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-// Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
+// Copyright: https://github.com/credit-cooperative/Line-Of-Credit/blob/master/COPYRIGHT.md
 
  pragma solidity ^0.8.16;
 
@@ -16,8 +16,7 @@ import {LineLib} from "../../utils/LineLib.sol";
 import {EscrowState, EscrowLib} from "../../utils/EscrowLib.sol";
 
 /**
- * @title  - Debt DAO Escrow
- * @author - James Senegalli
+ * @title  - Credit Cooperative Escrow
  * @notice - Ownable contract that allows someone to deposit ERC20 and ERC4626 tokens as collateral to back a Line of Credit
  */
 contract Escrow is IEscrow, ReentrancyGuard {
@@ -25,13 +24,13 @@ contract Escrow is IEscrow, ReentrancyGuard {
     using EscrowLib for EscrowState;
 
     /// @notice the minimum value of the collateral in relation to the outstanding debt e.g. 10% of outstanding debt
-    uint32 public minimumCollateralRatio;
+    uint32 public immutable minimumCollateralRatio;
 
     /// @notice Stakeholders and contracts used in Escrow
-    address public oracle;
+    address public immutable oracle;
 
     /// @notice borrower on line contract
-    address public borrower;
+    address public immutable borrower;
 
     /// @notice all data around terms for collateral and current deposits
     EscrowState private state;
