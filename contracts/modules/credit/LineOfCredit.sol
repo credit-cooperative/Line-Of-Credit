@@ -34,7 +34,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     using CreditListLib for bytes32[];
 
     /// @notice - the timestamp that all creditors must be repaid by
-    uint256 public immutable deadline;
+    uint256 public deadline;
 
     /// @notice - the account that can drawdown and manage debt positions
     address public immutable borrower;
