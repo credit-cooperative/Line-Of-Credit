@@ -17,6 +17,7 @@ Or if you already have repo installed you can run `git pull --recurse-submodules
 
 #### (post-checkout): Reinitialize git submodules when switching between branches
 ```
+git reset HEAD <path to submodule>
 git submodule deinit --force .
 git submodule update --init --recursive
 ```
