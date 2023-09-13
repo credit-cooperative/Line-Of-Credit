@@ -12,6 +12,15 @@ If you have forge installed already you can run `forge install`
 Alternatively using  git when cloning you can run `git clone --recurse-submodules`
 Or if you already have repo installed you can run `git pull --recurse-submodules`
 
+
+## Git Hooks:
+
+#### (post-checkout): Reinitialize git submodules when switching between branches
+```
+git submodule deinit --force .
+git submodule update --init --recursive
+```
+
 ## Deploying
 
 ### Testnet Deployments

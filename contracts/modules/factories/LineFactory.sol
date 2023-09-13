@@ -128,6 +128,7 @@ contract LineFactory is ILineFactory {
         address spigot,
         address escrow,
         address borrower,
+        address operator,
         uint8 revenueSplit,
         uint32 minCRatio
     ) external {
@@ -135,9 +136,9 @@ contract LineFactory is ILineFactory {
             revert InvalidArbiterAddress();
         }
         factory.registerEscrow(minCRatio, oracle, line, escrow);
-        factory.registerSpigot(spigot, line, borrower);
+        factory.registerSpigot(spigot, line, borrower, operator);
 
-        emit RegisteredLine(line, oracle, arbiter, borrower);
+        emit RegisteredLine(line, oracle, arbiter, borrower, operator);
         emit RegisteredUpdatedStatus(line, uint256(ILineOfCredit(line).status()));
         emit RegisteredSecuredLine(line, escrow, spigot, swapTarget, revenueSplit);
     }

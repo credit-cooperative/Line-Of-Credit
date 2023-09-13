@@ -508,7 +508,7 @@ contract RainRe7Sim is Test {
         // Arbiter registers Spigot, Escrow, and SecuredLine using Factory Contracts to appear in Subgraph & Dapp
         vm.startPrank(arbiterAddress);
 
-        lineFactory.registerSecuredLine(address(securedLine), address(spigot), address(escrow), rainBorrower, revenueSplit, minCRatio);
+        lineFactory.registerSecuredLine(address(securedLine), address(spigot), address(escrow), rainBorrower, rainBorrower, revenueSplit, minCRatio);
 
         vm.stopPrank();
 
