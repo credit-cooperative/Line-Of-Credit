@@ -4,7 +4,6 @@
 // forked from https://github.com/IndexCoop/index-coop-smart-contracts/blob/master/contracts/lib/MutualConsent.sol
 
 pragma solidity ^0.8.16;
-import "../../../forge-std/console.sol";
 
 /**
  * @title MutualConsent

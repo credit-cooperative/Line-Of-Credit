@@ -580,7 +580,8 @@ contract RainRe7Sim is Test {
             fRate, // frate
             loanSizeInUSDC, // amount
             USDC, // token
-            lenderAddress // lender
+            lenderAddress, // lender
+            false
         );
         vm.stopPrank();
 
@@ -592,7 +593,8 @@ contract RainRe7Sim is Test {
             fRate, // frate
             loanSizeInUSDC, // amount
             USDC, // token
-            lenderAddress // lender
+            lenderAddress, // lender
+            false
         );
         vm.stopPrank();
 
