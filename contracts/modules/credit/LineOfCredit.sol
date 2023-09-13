@@ -55,6 +55,8 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     /// @dev    - may contain null elements
     bytes32[] public ids;
 
+    mapping(bytes32 => bool) lenderAmendMap;
+
     /// @notice id -> position data
     mapping(bytes32 => Credit) public credits;
 
@@ -243,6 +245,8 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         if (isVault) {
             _vaultCallback(lender, id, amount);
         }
+        // set this to false. If amend and extend has been called, then this will be set to true if the all lenders agree to extend
+        lenderAmendMap[id] = false;
 
         return id;
     }
@@ -317,6 +321,50 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         credits[id] = _repay(credit, id, amount, msg.sender);
     }
+
+    ////////////////////
+    //AMEND AND EXTEND//
+    ////////////////////
+    
+    function amendAndExtend(uint256 extension) external onlyBorrower {
+        if (status == LineLib.STATUS.REPAID){
+            deadline = deadline + extension;
+            _updateStatus(LineLib.STATUS.ACTIVE); // some custom error msg
+        }
+
+        if (status == LineLib.STATUS.ACTIVE){
+            _amendActiveLine(extension);
+        }
+    }
+
+    function _amendActiveLine(uint256 extension) internal {
+        // all lenders of open positions must agree to extend
+        uint256 len = ids.length;
+        bytes32 id;
+        for (uint256 i; i < len; ++i) {
+            id = ids[i];
+            if (lenderAmendMap[id] == false) {
+                revert NotAllLendersAgree();
+            } 
+        }
+
+        deadline = deadline + extension;
+    }
+
+
+    function lenderAmend(bool isAmendable) external {
+        uint256 len = ids.length;
+        bytes32 id;
+        for (uint256 i; i < len; ++i) {
+            id = ids[i];
+            if (credits[id].lender == msg.sender) {
+                lenderAmendMap[id] = isAmendable;
+            }
+        }
+
+        revert CallerAccessDenied();
+    }
+
 
     ////////////////////
     // FUND TRANSFERS //
