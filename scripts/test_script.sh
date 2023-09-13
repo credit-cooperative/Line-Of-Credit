@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source .env
+source ../.env
 
 echo  -n "Borrower Address: "
 read borrower_address

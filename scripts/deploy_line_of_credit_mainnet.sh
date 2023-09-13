@@ -88,7 +88,7 @@ SecuredLine=$(forge create --rpc-url $MAINNET_RPC_URL \
 SecuredLineAddress=$(echo "$SecuredLine" | jq -r '.deployedTo')
 echo $SecuredLineAddress
 
-# After deployement, transfer ownership of both Spigot and Escrow to Line of Credit, and the init() on Line of Credit, register on Line Factory
+# After deployment, transfer ownership of both Spigot and Escrow to Line of Credit, and the init() on Line of Credit, register on Line Factory
 # transfer ownership of spigot: updateOwner
 # transfer ownership of escrow: updateLine
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-source .env
+source ../.env
 
 # DEPLOY ORACLE ###
 

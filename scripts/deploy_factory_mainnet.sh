@@ -6,7 +6,7 @@ brew install jq
 
 ### DEPLOY FACTORY MODULES ###
 
-source .env
+source ../.env
 
 ModuleFactory=$(forge create --rpc-url $MAINNET_RPC_URL --private-key $MAINNET_PRIVATE_KEY --etherscan-api-key $MAINNET_ETHERSCAN_API_KEY contracts/modules/factories/ModuleFactory.sol:ModuleFactory --verify --json)
 ModuleFactoryAddress=$(echo "$ModuleFactory" | jq -r '.deployedTo')
