@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-// Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
+// Copyright: https://github.com/credit-cooperative/Line-Of-Credit/blob/master/COPYRIGHT.md
 
  pragma solidity ^0.8.16;
 
@@ -13,7 +13,7 @@ contract InterestRateCredit is IInterestRateCredit {
     // = 31557600 * 10000 = 315576000000;
     uint256 constant INTEREST_DENOMINATOR = ONE_YEAR * BASE_DENOMINATOR;
 
-    address lineContract;
+    address immutable lineContract;
 
     mapping(bytes32 => Rate) public rates; // position id -> lending rates
 

@@ -1,7 +1,7 @@
 ## Documentation Site
 
-We have comprehensive docs on our site
-https://docs.debtdao.finance/developers/architecture
+We have comprehensive docs on our site:
+https://docs.creditcoop.xyz/developer-documentation/architecture
 
 ## Installing
 
@@ -9,9 +9,17 @@ We track remote remotes like Foundry and Chainlink via submodules so you will ne
 
 If you have forge installed already you can run `forge install`
 
-Alternatively using just git
-When cloning you can run `git clone --recurse-submodules`
+Alternatively using  git when cloning you can run `git clone --recurse-submodules`
 Or if you already have repo installed you can run `git pull --recurse-submodules`
+
+
+## Git Hooks:
+
+#### (post-checkout): Reinitialize git submodules when switching between branches
+```
+git submodule deinit --force .
+git submodule update --init --recursive
+```
 
 ## Deploying
 
@@ -30,7 +38,7 @@ We have deployed 2 test versions of our contracts to Mainnet. You can find those
 
 To deploy a LineFactory you must deploy ModuleFactory, Arbiter, and Oracle contracts as well as know what the [0x protocol ExchangeProxy](https://docs.0x.org/introduction/0x-cheat-sheet#exchange-proxy-addresses) address is for the network you are deploying on.
 
-To deploy a SecuredLine you should call our [LineFactory](https://github.com/debtdao/Line-of-Credit/blob/master/contracts/interfaces/ILineFactory.sol) contract so your Line will automatically be indexed by subgraphs and display on interfaces for lenders to send you offers. There are multiple functions to deploy lines depending on the granularaity and control you want for your terms and conditions.
+To deploy a SecuredLine you should call our [LineFactory](https://github.com/credit-cooperative/Line-of-Credit/blob/master/contracts/interfaces/ILineFactory.sol) contract so your Line will automatically be indexed by subgraphs and display on interfaces for lenders to send you offers. There are multiple functions to deploy lines depending on the granularaity and control you want for your terms and conditions.
 
 ## Testing
 
@@ -38,14 +46,14 @@ We use foundry for testing. Follow [installation guide](https://github.com/found
 
 Before running tests, make sure the foundry.toml file is correctly configured. Make sure it includes the following:
 
-``` 
+```
 [profile.default]
 src = 'contracts'
 test = 'test'
 script = 'scripts'
 out = 'out'
 libs = [
-    
+
 ]
 remappings = [
     "forge-std/=lib/forge-std/src/",
@@ -53,7 +61,7 @@ remappings = [
     "chainlink/=lib/chainlink/contracts/src/v0.8/",
     "openzeppelin/=lib/openzeppelin-contracts/contracts/"
 ]
-libraries = [] 
+libraries = []
 ```
 
 Check the the .env file includes the following environment variables:
@@ -89,7 +97,7 @@ Check test coverage:
 ## Deployment
 For all deployments, the `deploy.sh` script can be modified to deploy all libraries and modules necessary to create Lines of Credit. To run the script, you will need the `jq` library which can be installed usng homebrew(mac) or apt-get(Windows). You can uncomment the command for your OS in the script to install automatically.
 
-There are 4 variables that will need to be adjusted depening on if you are deploying to local, goerli or mainnet. RPC_URL, PRIVATE_KEY and the toml profile that the script will write the libraries to. These  variables are in `deploy.sh`. The 4th variable will be  in your `.env` file and is the FOUNDRY_PROFILE environment variable.  
+There are 4 variables that will need to be adjusted depening on if you are deploying to local, goerli or mainnet. RPC_URL, PRIVATE_KEY and the toml profile that the script will write the libraries to. These  variables are in `deploy.sh`. The 4th variable will be  in your `.env` file and is the FOUNDRY_PROFILE environment variable.
 
 
 ### Local

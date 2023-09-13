@@ -1,4 +1,5 @@
-pragma solidity ^0.8.16;
+// SPDX-License-Identifier: GPL-3.0
+// Copyright: https://github.com/credit-cooperative/Line-Of-Credit/blob/master/COPYRIGHT.md
 
 //TODO rm for deployement
 import "forge-std/console.sol";
@@ -22,8 +23,7 @@ interface ICCVault {
 }
 
 /**
- * @title  - Debt DAO Unsecured Line of Credit
- * @author - Kiba Gateaux
+ * @title  - Credit Cooperative Unsecured Line of Credit
  * @notice - Core credit facility logic for proposing, depositing, borrowing, and repaying debt.
  *         - Contains core financial covnenants around term length (`deadline`), collateral ratios, liquidations, etc.
  * @dev    - contains internal functions overwritten by SecuredLine, SpigotedLine, and EscrowedLine
@@ -34,19 +34,19 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     using CreditListLib for bytes32[];
 
     /// @notice - the timestamp that all creditors must be repaid by
-    uint256 public deadline;
+    uint256 public immutable deadline;
 
     /// @notice - the account that can drawdown and manage debt positions
-    address public borrower;
+    address public immutable borrower;
 
     /// @notice - neutral 3rd party that mediates btw borrower and all lenders
-    address public arbiter;
+    address public immutable arbiter;
 
     /// @notice - price feed to use for valuing credit tokens
-    IOracle public oracle;
+    IOracle public immutable oracle;
 
     /// @notice - contract responsible for calculating interest owed on debt positions
-    InterestRateCredit public interestRate;
+    InterestRateCredit public immutable interestRate;
 
     /// @notice - current amount of active positions (aka non-null ids) in `ids` list
     uint256 private count;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-// Copyright: https://github.com/test-org2222/Line-Of-Credit/blog/master/COPYRIGHT.md
+// Copyright: https://github.com/credit-cooperative/Line-Of-Credit/blob/master/COPYRIGHT.md
 
  pragma solidity ^0.8.16;
 
@@ -11,10 +11,9 @@ import {ISecuredLine} from "../../interfaces/ISecuredLine.sol";
 import {ILineOfCredit} from "../../interfaces/ILineOfCredit.sol";
 
 /**
- * @title   - Debt DAO Line Factory
- * @author  - Mom
+ * @title   - Credit Cooperative Line Factory
  * @notice  - Facotry contract to deploy SecuredLine, Spigot, and Escrow contracts.
- * @dev     - Have immutable default values for Debt DAO system external dependencies.
+ * @dev     - Have immutable default values for Credit Cooperative system external dependencies.
  */
 contract LineFactory is ILineFactory {
     IModuleFactory immutable factory;
@@ -120,25 +119,26 @@ contract LineFactory is ILineFactory {
         );
 
         emit DeployedSecuredLine(address(line), mEscrow, mSpigot, swapTarget, coreParams.revenueSplit);
-        
+
 
     }
 
     function registerSecuredLine(
-        address line, 
-        address spigot, 
-        address escrow, 
+        address line,
+        address spigot,
+        address escrow,
         address borrower,
-        uint8 revenueSplit, 
+        address operator,
+        uint8 revenueSplit,
         uint32 minCRatio
     ) external {
         if (msg.sender != arbiter){
             revert InvalidArbiterAddress();
-        } 
+        }
         factory.registerEscrow(minCRatio, oracle, line, escrow);
-        factory.registerSpigot(spigot, line, borrower);
-        
-        emit RegisteredLine(line, oracle, arbiter, borrower);
+        factory.registerSpigot(spigot, line, borrower, operator);
+
+        emit RegisteredLine(line, oracle, arbiter, borrower, operator);
         emit RegisteredUpdatedStatus(line, uint256(ILineOfCredit(line).status()));
         emit RegisteredSecuredLine(line, escrow, spigot, swapTarget, revenueSplit);
     }
