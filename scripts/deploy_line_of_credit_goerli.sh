@@ -34,7 +34,7 @@ read min_c_ratio
 echo -n "Default Split: "
 read default_split
 
-echo -n "TTL: "
+echo -n "TTL (days): "
 read days
 ttl=$((days * 86400))
 
