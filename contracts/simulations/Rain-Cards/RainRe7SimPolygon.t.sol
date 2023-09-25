@@ -49,6 +49,8 @@ interface IRainCollateralFactory {
     function transferOwnership(address newOwner) external;
 
     function updateController(address _controller) external;
+
+    function createCollateralContract(string calldata _name, address _user) external returns (address);
 }
 
 interface IRainCollateralBeacon {
@@ -310,6 +312,16 @@ contract RainRe7SimPolygon is Test {
         emit log_named_uint("- Rain Collateral 0 - Ending Nonce", endingNonce);
         assertEq(true, isNonceIncreased);
         assertEq(endingNonce, startingNonce + 1);
+
+        bytes4 createCollateralContractFunc = rainCollateralFactory.createCollateralContract.selector;
+        bytes memory createCollateralContractData = abi.encodeWithSelector(
+            createCollateralContractFunc,
+            "Rain Collateral 1",
+            address(10)
+        );
+        bool isCollateralContractCreated = spigot.operate(rainCollateralFactoryAddress, createCollateralContractData);
+        assertEq(true, isCollateralContractCreated);
+
         vm.stopPrank();
 
         // fast forward 45 days
