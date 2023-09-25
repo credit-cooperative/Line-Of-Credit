@@ -51,6 +51,12 @@ interface IRainCollateralFactory {
     function updateController(address _controller) external;
 }
 
+interface IRainCollateralBeacon {
+    function owner() external view returns (address);
+
+    function transferOwnership(address newOwner) external;
+}
+
 contract RainRe7SimPolygon is Test {
     bytes32 constant DEFAULT_ADMIN_ROLE = 0x00;
 
@@ -71,6 +77,7 @@ contract RainRe7SimPolygon is Test {
 
     IRainCollateralFactory rainCollateralFactory;
     IRainCollateralController rainCollateralController;
+    IRainCollateralBeacon rainCollateralBeacon;
 
     // Credit Coop Infra Addresses
     PolygonOracle oracle;
@@ -87,10 +94,12 @@ contract RainRe7SimPolygon is Test {
     // Rain Controller Contract & Associated Addresses
     address rainCollateralFactoryAddress = 0x3F95401d768F90Ab529060121499CDa7Dc8d95b1;
     address rainCollateralControllerAddress = 0x5d5Cef756412045617415FC78D510003238EAfFd;
+    address rainCollateralBeaconAddress = 0xD75242e1814aa587905d9Fbd6be6D456063F50f1;
     address rainControllerAdminAddress = 0xB92949bdF09F4193599Ae7700211751ab5F74aCd;
     address rainFactoryOwnerAddress = 0x21ebc2f23a91fD7eB8406CDCE2FD653de280B5fc;
     address rainControllerOwnerAddress = 0x21ebc2f23a91fD7eB8406CDCE2FD653de280B5fc;
     address rainTreasuryContractAddress = 0x318ea64575feA5333c845bccEb5A6211952283AD;
+    address rainCollateralBeaconOwnerAddress = 0x21ebc2f23a91fd7eb8406cdce2fd653de280b5fc;
 
     // Rain Collateral Contracts 0 - 3:
     address rainCollateralContract0 = 0x3423097c1631629295185e8ae8a2586e30436f95;
@@ -175,6 +184,7 @@ contract RainRe7SimPolygon is Test {
         // Define Interface for Rain Collateral Factory & Controller
         rainCollateralFactory = IRainCollateralFactory(rainCollateralFactoryAddress);
         rainCollateralController = IRainCollateralController(rainCollateralControllerAddress);
+        rainCollateralBeacon = IRainCollateralBeacon(rainCollateralBeaconAddress);
     }
 
     ///////////////////////////////////////////////////////
@@ -244,6 +254,23 @@ contract RainRe7SimPolygon is Test {
         assertEq(address(securedLine.spigot()), rainCollateralController.owner());
 
         vm.stopPrank();
+
+        // Rain Collateral Factory Owner Transfers Ownership to Rain Collateral Controller Owner
+        vm.startPrank(rainFactoryOwnerAddress);
+        rainCollateralFactory.transferOwnership(address(securedLine.spigot()));
+        assertEq(address(securedLine.spigot()), rainCollateralFactory.owner());
+
+        vm.stopPrank();
+
+        // Rain Collateral Beacon Owner Transfers Ownership to Rain Collateral Controller Owner
+
+        vm.startPrank(rainCollateralBeaconOwnerAddress);
+
+        rainCollateralBeacon.transferOwnership(address(securedLine.spigot()));
+        assertEq(address(securedLine.spigot()), rainCollateralBeacon.owner());
+
+        vm.stopPrank();
+
 
         // Re7 proposes position
         // Rain accepts position
@@ -505,8 +532,12 @@ contract RainRe7SimPolygon is Test {
         vm.startPrank(rainControllerOwnerAddress);
         emit log_named_string("\n \u2713 Borrower Removes Rain Collateral Controller from Spigot", "");
         spigot.removeSpigot(rainCollateralControllerAddress);
+        spigot.removeSpigot(rainCollateralBeaconAddress);
+        spigot.removeSpigot(rainCollateralFactoryAddress);
 
         assertEq(rainControllerOwnerAddress, rainCollateralController.owner());
+        assertEq(rainControllerOwnerAddress, rainCollateralBeacon.owner());
+        assertEq(rainControllerOwnerAddress, rainCollateralFactory.owner());
 
         vm.stopPrank();
 
