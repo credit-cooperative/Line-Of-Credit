@@ -64,7 +64,9 @@ contract RainRe7SimPolygon is Test {
     // PolygonOracle oracle;
 
     // ISpigot spigot;
-    ISpigot.Setting private settings;
+    ISpigot.Setting private settings1;
+    ISpigot.Setting private settings2;
+    ISpigot.Setting private settings3;
     // ISecuredLine securedLine;
     ILineOfCredit line;
     // ISpigotedLine spigotedLine;
@@ -99,7 +101,7 @@ contract RainRe7SimPolygon is Test {
     address rainFactoryOwnerAddress = 0x21ebc2f23a91fD7eB8406CDCE2FD653de280B5fc;
     address rainControllerOwnerAddress = 0x21ebc2f23a91fD7eB8406CDCE2FD653de280B5fc;
     address rainTreasuryContractAddress = 0x318ea64575feA5333c845bccEb5A6211952283AD;
-    address rainCollateralBeaconOwnerAddress = 0x21ebc2f23a91fd7eb8406cdce2fd653de280b5fc;
+    address rainCollateralBeaconOwnerAddress = 0x21ebc2f23a91fD7eB8406CDCE2FD653de280B5fc;
 
     // Rain Collateral Contracts 0 - 3:
     address rainCollateralContract0 = 0x3423097c1631629295185e8ae8a2586e30436f95;
@@ -226,10 +228,16 @@ contract RainRe7SimPolygon is Test {
 
         // Credit Coop Arbiter Whitelists Functions for Rain's Normal Operations
         emit log_named_string("\n \u2713 Arbiter Whitelists increaseNonce function", "");
-        bytes4 whitelistedFunc = _getSelector("increaseNonce(address)");
-        securedLine.updateWhitelist(whitelistedFunc, true);
-        assertEq(true, ISpigot(securedLine.spigot()).isWhitelisted(whitelistedFunc));
-        delete whitelistedFunc;
+        bytes4 whitelistedFunc1 = _getSelector("increaseNonce(address)");
+        securedLine.updateWhitelist(whitelistedFunc1, true);
+        assertEq(true, ISpigot(securedLine.spigot()).isWhitelisted(whitelistedFunc1));
+        delete whitelistedFunc1;
+
+        emit log_named_string("\n \u2713 Arbiter Whitelists creaetCollateralContract function", "");
+        bytes4 whitelistedFunc2 = _getSelector("createCollateralContract(string,address)");
+        securedLine.updateWhitelist(whitelistedFunc2, true);
+        assertEq(true, ISpigot(securedLine.spigot()).isWhitelisted(whitelistedFunc2));
+        delete whitelistedFunc2;
 
         vm.stopPrank();
 
@@ -443,8 +451,9 @@ contract RainRe7SimPolygon is Test {
         vm.stopPrank();
 
         // interest accrued
-        bytes32 creditPositionId = 0x501973eaa1a09d0259dcc9a1568cf1f125d059c252d0d5e62c51bbe0b13a5322;
-        uint256 interestAccrued = securedLine.interestAccrued(creditPositionId);
+        bytes32 id = securedLine.ids(0);
+        emit log_named_bytes32("id", id);
+        uint256 interestAccrued = securedLine.interestAccrued(id);
         emit log_named_uint("- Interest Accrued ", interestAccrued);
 
         // Rain claims and repay the full balance, principal plus interest, of the Line of Credit
@@ -462,7 +471,9 @@ contract RainRe7SimPolygon is Test {
         // Rain closes the Line of Credit
         emit log_named_string("\n \u2713 Borrower Calls close Function to Close Line of Credit", "");
         vm.startPrank(rainBorrower);
-        securedLine.close(creditPositionId);
+ 
+
+        securedLine.close(id);
 
         // Check status == REPAID after position is repaid and closed
         uint256 statusIsRepaid = uint256(securedLine.status());
@@ -504,7 +515,7 @@ contract RainRe7SimPolygon is Test {
         vm.startPrank(lenderAddress);
         emit log_named_string("\n \u2713 Lender Withdraws All Repaid Principal and Interest", "");
         emit log_named_uint("- Withdrawal Amount: ", interestAccrued + loanSizeInUSDC);
-        securedLine.withdraw(creditPositionId, interestAccrued + loanSizeInUSDC);
+        securedLine.withdraw(id, interestAccrued + loanSizeInUSDC);
         uint256 lenderBalanceAfterRepayment = IERC20(USDC).balanceOf(lenderAddress);
         uint256 borrowerBalanceAfterRepayment = IERC20(USDC).balanceOf(rainBorrower);
 
@@ -678,9 +689,14 @@ contract RainRe7SimPolygon is Test {
 
     function _initSpigot(uint8 split, bytes4 claimFunc, bytes4 newOwnerFunc) internal // bytes4[] memory _whitelist
     {
-        settings = ISpigot.Setting(split, claimFunc, newOwnerFunc);
+        settings1 = ISpigot.Setting(split, claimFunc, newOwnerFunc);
+        settings2 = ISpigot.Setting(0, claimFunc, newOwnerFunc);
+        settings3 = ISpigot.Setting(0, claimFunc, newOwnerFunc);
+
 
         // add spigot for revenue contract
-        require(securedLine.addSpigot(rainCollateralControllerAddress, settings), "Failed to add spigot");
+        require(securedLine.addSpigot(rainCollateralControllerAddress, settings1), "Failed to add spigot");
+        require(securedLine.addSpigot(rainCollateralBeaconAddress, settings2), "Failed to add spigot");
+        require(securedLine.addSpigot(rainCollateralFactoryAddress, settings3), "Failed to add spigot");
     }
 }
