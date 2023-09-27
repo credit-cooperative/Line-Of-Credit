@@ -547,8 +547,10 @@ contract RainRe7SimPolygon is Test {
         vm.stopPrank();
 
         // Borrower Rolls Over to new LoC
-        vm.startPrank(rainBorrower);
 
+
+        vm.startPrank(rainBorrower);
+        emit log_named_string("\n \u2713 Borrower rolls over Spigot and Escrow modules to a new LoC", "");
         newLine = new LineOfCredit(
             address(oracle),
             arbiterAddress,
@@ -557,8 +559,6 @@ contract RainRe7SimPolygon is Test {
         );
 
         securedLine.rollover(address(newLine));
-
-        
 
         vm.stopPrank();
 
