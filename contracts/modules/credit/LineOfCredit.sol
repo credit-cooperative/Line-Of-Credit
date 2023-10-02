@@ -18,10 +18,6 @@ import {InterestRateCredit} from "../interest-rate/InterestRateCredit.sol";
 import {IOracle} from "../../interfaces/IOracle.sol";
 import {ILineOfCredit} from "../../interfaces/ILineOfCredit.sol";
 
-interface ICCVault {
-    function incrementCreditDeployed(bytes32 positionId) external returns (bytes32);
-}
-
 /**
  * @title  - Credit Cooperative Unsecured Line of Credit
  * @notice - Core credit facility logic for proposing, depositing, borrowing, and repaying debt.

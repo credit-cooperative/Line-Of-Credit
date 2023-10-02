@@ -68,8 +68,6 @@ interface ILineOfCredit {
     error NotActive();
     error NotBorrowing();
     error CallerAccessDenied();
-    error VaultIncrementFailed();
-    error NotAllLendersAgree();
 
     // Tokens
     error TokenTransferFailed();
