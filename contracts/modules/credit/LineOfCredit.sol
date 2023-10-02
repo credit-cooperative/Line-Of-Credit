@@ -32,6 +32,8 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     /// @notice - the timestamp that all creditors must be repaid by
     uint256 public deadline;
 
+    uint256 public deadlineExtension = 0;
+
     /// @notice - the account that can drawdown and manage debt positions
     address public immutable borrower;
 
@@ -313,11 +315,28 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     ////////////////////
     //AMEND AND EXTEND//
     ////////////////////
-    
+    function proposeExtention(uint extension) external onlyBorrower {
+        if (status != LineLib.STATUS.ACTIVE){
+            revert NotActive();
+        }
+
+        deadlineExtension = extension;
+
+        // set all lender approvals to false
+        uint256 len = ids.length;
+        bytes32 id;
+        for (uint256 i; i < len; ++i) {
+            id = ids[i];
+            lenderAmendMap[id] = false;
+        }
+
+    }
+
     function amendAndExtend(uint256 extension) external onlyBorrower {
         if (status == LineLib.STATUS.REPAID){
             deadline = deadline + extension;
             _updateStatus(LineLib.STATUS.ACTIVE); // some custom error msg
+            deadlineExtension = 0;
         }
 
         if (status == LineLib.STATUS.ACTIVE){
@@ -337,10 +356,16 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         }
 
         deadline = deadline + extension;
+        // reset all id's to false
+        for (uint256 i; i < len; ++i) {
+            id = ids[i];
+            lenderAmendMap[id] = false;
+        }
     }
 
 
-    function lenderAmend(bool isAmendable) external {
+    function lenderAmend(bool isAmendable, uint256 extension) external {
+        require(extension == deadlineExtension, "Extension does not match");
         uint256 len = ids.length;
         bytes32 id;
         for (uint256 i; i < len; ++i) {
@@ -351,6 +376,10 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         }
 
         revert CallerAccessDenied();
+    }
+
+    function getExtension() external view returns (uint256) {
+        return deadline + deadlineExtension;
     }
 
 
