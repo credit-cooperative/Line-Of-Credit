@@ -546,27 +546,21 @@ contract RainRe7SimPolygon is Test {
         );
         vm.stopPrank();
 
-        // Borrower Releases Spigot
+        // Borrower Rolls Over to new LoC
+
+
         vm.startPrank(rainBorrower);
+        emit log_named_string("\n \u2713 Borrower rolls over Spigot and Escrow modules to a new LoC", "");
+        newLine = new LineOfCredit(
+            address(oracle),
+            arbiterAddress,
+            rainBorrower,
+            ttl
+        );
 
-        emit log_named_string("\n \u2713 Borrower Releases Spigot to Rain Collateral Controller Owner Address", "");
-        securedLine.releaseSpigot(rainControllerOwnerAddress);
-        vm.stopPrank();
-
-        vm.startPrank(rainControllerOwnerAddress);
-        emit log_named_string("\n \u2713 Borrower Removes Rain Collateral Controller from Spigot", "");
-        spigot.removeSpigot(rainCollateralControllerAddress);
-        spigot.removeSpigot(rainCollateralBeaconAddress);
-        spigot.removeSpigot(rainCollateralFactoryAddress);
-
-        assertEq(rainControllerOwnerAddress, rainCollateralController.owner());
-        assertEq(rainControllerOwnerAddress, rainCollateralBeacon.owner());
-        assertEq(rainControllerOwnerAddress, rainCollateralFactory.owner());
+        securedLine.rollover(address(newLine));
 
         vm.stopPrank();
-
-        // // OPTIONAL - Joint Multisig Transfers Ownership of Rain Collateral Factory Back to Rain Collateral Factory Owner Address
-        // // TODO
 
     }
 
