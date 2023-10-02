@@ -233,8 +233,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         uint128 frate,
         uint256 amount,
         address token,
-        address lender,
-        bool isVault
+        address lender
     ) external payable override nonReentrant whileActive mutualConsent(lender, borrower) returns (bytes32) {
         bytes32 id = _createCredit(lender, token, amount);
 
@@ -242,9 +241,6 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         LineLib.receiveTokenOrETH(token, lender, amount);
 
-        if (isVault) {
-            _vaultCallback(lender, id, amount);
-        }
         // set this to false. If amend and extend has been called, then this will be set to true if the all lenders agree to extend
         lenderAmendMap[id] = false;
 
@@ -266,8 +262,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     /// see ILineOfCredit.increaseCredit
     function increaseCredit(
         bytes32 id,
-        uint256 amount,
-        bool isVault
+        uint256 amount
     ) external payable override nonReentrant whileActive mutualConsentById(id) {
         Credit memory credit = _accrue(credits[id], id);
 
@@ -279,9 +274,6 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         emit IncreaseCredit(id, amount);
 
-        if (isVault) {
-            _vaultCallback(credit.lender, id, amount);
-        }
     }
 
     ///////////////
@@ -552,32 +544,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         }
     }
 
-    // TODO: write a test to see if func call fails if lender is a bad address
-    // https://github.com/dragonfly-xyz/useful-solidity-patterns/tree/main/patterns/error-handling
 
-    // function _vaultCallback(address lender, bytes32 id) internal returns (bool) {
-    //     console.log("Vault: incrementing credit");
-    //     try ICCVault(lender).incrementDeployedCredit(id) {
-    //         console.log("Vault: credit incremented");
-    //     } catch (bytes memory lowLevelData) {
-    //         console.log("Vault: increment failed");
-    //         revert VaultIncrementFailed();
-    //     }
-    //     return true;
-    // }
-
-    function _vaultCallback(address lender, bytes32 id, uint256 amount) internal returns (bool) {
-        (bool success, ) = address(lender).call(
-            abi.encodeWithSignature("incrementCreditDeployed(bytes32,uint256)", id, amount)
-        );
-
-        if (success) {
-            // Vault: successfully incremented credit
-            return true;
-        } else {
-            revert("Vault: given address is not a vault");
-        }
-    }
 
     /* GETTERS */
 

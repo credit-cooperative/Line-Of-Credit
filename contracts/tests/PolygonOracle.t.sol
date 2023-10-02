@@ -337,10 +337,10 @@ contract OracleTest is Test, Events {
 
     function _addCreditAndBorrow(address token, uint256 amount) internal {
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, amount, token, lender, false);
+        line.addCredit(dRate, fRate, amount, token, lender);
         vm.stopPrank();
         vm.startPrank(lender);
-        line.addCredit(dRate, fRate, amount, token, lender, false);
+        line.addCredit(dRate, fRate, amount, token, lender);
         vm.stopPrank();
 
         vm.startPrank(arbiter);

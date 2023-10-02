@@ -119,8 +119,7 @@ interface ILineOfCredit {
         uint128 frate,
         uint256 amount,
         address token,
-        address lender,
-        bool isVault
+        address lender
     ) external payable returns (bytes32);
 
     /**
@@ -142,7 +141,7 @@ interface ILineOfCredit {
      * @param id         - position id that we are updating
      * @param amount     - amount to deposit by the Lender
      */
-    function increaseCredit(bytes32 id, uint256 amount, bool isVault) external payable;
+    function increaseCredit(bytes32 id, uint256 amount) external payable;
 
     // Borrower functions
 

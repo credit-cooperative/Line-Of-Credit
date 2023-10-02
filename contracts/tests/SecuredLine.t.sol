@@ -110,10 +110,10 @@ contract SecuredLineTest is Test {
 
     function _addCredit(address token, uint256 amount) public {
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, amount, token, lender, false);
+        line.addCredit(dRate, fRate, amount, token, lender);
         vm.stopPrank();
         vm.startPrank(lender);
-        line.addCredit(dRate, fRate, amount, token, lender, false);
+        line.addCredit(dRate, fRate, amount, token, lender);
         vm.stopPrank();
     }
 
@@ -289,10 +289,10 @@ contract SecuredLineTest is Test {
 
     function test_can_liquidate_if_debt_when_deadline_passes() public {
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
         vm.stopPrank();
         vm.startPrank(lender);
-        bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
+        bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
         vm.stopPrank();
         vm.startPrank(borrower);
         line.borrow(id, 1 ether);
@@ -304,10 +304,10 @@ contract SecuredLineTest is Test {
     // test should succeed to liquidate when no debt (but positions exist) and passed deadline
     function test_can_liquidate_if_no_debt_but_positions_exist_when_deadline_passes() public {
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
         vm.stopPrank();
         vm.startPrank(lender);
-        bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
+        bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
         vm.stopPrank();
         vm.warp(ttl + 1);
         line.liquidate(1 ether, address(supportedToken2));
@@ -353,10 +353,10 @@ contract SecuredLineTest is Test {
     // test should fail to liquidate if above cratio before deadline
     function test_cannot_liquidate_escrow_if_cratio_above_min() public {
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
         vm.stopPrank();
         vm.startPrank(lender);
-        bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
+        bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
         vm.stopPrank();
         vm.startPrank(borrower);
         line.borrow(id, 1 ether);
@@ -398,9 +398,9 @@ contract SecuredLineTest is Test {
 
     function test_cannot_liquidate_as_anon() public {
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
         vm.startPrank(lender);
-        bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
+        bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
         vm.startPrank(borrower);
         line.borrow(id, 1 ether);
 

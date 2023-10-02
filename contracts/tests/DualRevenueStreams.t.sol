@@ -182,8 +182,7 @@ contract DualRevenueStreamsTest is Test {
             fRate,
             LOAN_AMT,
             DAI,
-            lender,
-            false
+            lender
         );
         vm.stopPrank();
 
@@ -195,8 +194,7 @@ contract DualRevenueStreamsTest is Test {
             fRate,
             LOAN_AMT,
             DAI,
-            lender,
-            false
+            lender
         );
         vm.stopPrank();
     }

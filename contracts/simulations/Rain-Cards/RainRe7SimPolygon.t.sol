@@ -608,8 +608,7 @@ contract RainRe7SimPolygon is Test {
             fRate, // frate
             loanSizeInUSDC, // amount
             USDC, // token
-            lenderAddress, // lender
-            false
+            lenderAddress // lender
         );
         vm.stopPrank();
 
@@ -627,8 +626,7 @@ contract RainRe7SimPolygon is Test {
             fRate, // frate
             loanSizeInUSDC, // amount
             USDC, // token
-            lenderAddress, // lender
-            false
+            lenderAddress // lender
         );
         emit log_named_address("- lender 2", lenderAddress);
         vm.stopPrank();
