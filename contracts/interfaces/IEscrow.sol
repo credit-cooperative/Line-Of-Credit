@@ -52,4 +52,6 @@ interface IEscrow {
     function releaseCollateral(uint amount, address token, address to) external returns (uint);
 
     function liquidate(uint amount, address token, address to) external returns (bool);
+
+    function setMinimumCollateralRatio(uint32 ratio) external returns (bool);
 }

@@ -90,4 +90,30 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
     function _canDeclareInsolvent() internal virtual override(EscrowedLine, SpigotedLine) returns (bool) {
         return (EscrowedLine._canDeclareInsolvent() && SpigotedLine._canDeclareInsolvent());
     }
+
+    ////////////////////
+    //AMEND AND EXTEND//
+    ////////////////////
+    // TODO: add proper documentation
+    function amendAndExtend(uint256 ttlExtension, uint8 defaultSplit, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) external onlyBorrower {
+        bool noActiveCreditPositions = ids.length == 0;
+        if (status == LineLib.STATUS.REPAID || noActiveCreditPositions){
+            deadline = deadline + ttlExtension;
+            // TODO: check if SecuredLine has a Spigot
+            defaultRevenueSplit = defaultSplit;
+            // TODO: check if SecuredLine has an Escrow
+            // TODO: check that msg.sender is the Escrow State line address
+            escrow.setMinimumCollateralRatio(minimumCollateralRatio);
+            for (uint256 i = 0; i < revenueContracts.length; i++) {
+                spigot.updateOwnerSplit(revenueContracts[i], ownerSplits[i]);
+            }
+            _updateStatus(LineLib.STATUS.ACTIVE); // some custom error msg
+        }
+        revert CannotAmendAndExtend();
+    }
+
+
 }
+
+
+

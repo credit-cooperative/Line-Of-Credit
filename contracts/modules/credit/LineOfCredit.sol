@@ -315,68 +315,71 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     ////////////////////
     //AMEND AND EXTEND//
     ////////////////////
-    function proposeExtention(uint extension) external onlyBorrower {
-        if (status != LineLib.STATUS.ACTIVE){
-            revert NotActive();
-        }
 
-        deadlineExtension = extension;
+    // function proposeExtension(uint extension) external onlyBorrower {
+    //     if (status != LineLib.STATUS.ACTIVE){
+    //         revert NotActive();
+    //     }
 
-        // set all lender approvals to false
-        uint256 len = ids.length;
-        bytes32 id;
-        for (uint256 i; i < len; ++i) {
-            id = ids[i];
-            lenderAmendMap[id] = false;
-        }
+    //     deadlineExtension = extension;
 
-    }
+    //     // set all lender approvals to false
+    //     uint256 len = ids.length;
+    //     bytes32 id;
+    //     for (uint256 i; i < len; ++i) {
+    //         id = ids[i];
+    //         lenderAmendMap[id] = false;
+    //     }
 
-    function amendAndExtend(uint256 extension) external onlyBorrower {
-        if (status == LineLib.STATUS.REPAID){
-            deadline = deadline + extension;
-            _updateStatus(LineLib.STATUS.ACTIVE); // some custom error msg
-            deadlineExtension = 0;
-        }
+    // }
 
-        if (status == LineLib.STATUS.ACTIVE){
-            _amendActiveLine(extension);
-        }
-    }
+    // function amendAndExtend(uint256 ttlExtension, uint8 newDefaultSplit, newMinCRatio) external onlyBorrower {
+    //     bool noActiveCreditPositions = ids.length == 0;
+    //     if (status == LineLib.STATUS.REPAID || noActiveCreditPositions){
+    //         deadline = deadline + ttlExtension;
+    //         defaultSplit = newDefaultSplit;
+    //         _updateStatus(LineLib.STATUS.ACTIVE); // some custom error msg
+    //         // deadlineExtension = 0;
+    //     }
 
-    function _amendActiveLine(uint256 extension) internal {
-        // all lenders of open positions must agree to extend
-        uint256 len = ids.length;
-        bytes32 id;
-        for (uint256 i; i < len; ++i) {
-            id = ids[i];
-            if (lenderAmendMap[id] == false) {
-                revert NotAllLendersAgree();
-            } 
-        }
+    //     // if (status == LineLib.STATUS.ACTIVE){
+    //     //     _amendActiveLine(extension);
+    //     // }
+    // }
 
-        deadline = deadline + extension;
-        // reset all id's to false
-        for (uint256 i; i < len; ++i) {
-            id = ids[i];
-            lenderAmendMap[id] = false;
-        }
-    }
+    // function _amendActiveLine(uint256 extension) internal {
+    //     // all lenders of open positions must agree to extend
+    //     uint256 len = ids.length;
+    //     bytes32 id;
+    //     for (uint256 i; i < len; ++i) {
+    //         id = ids[i];
+    //         if (lenderAmendMap[id] == false) {
+    //             revert NotAllLendersAgree();
+    //         }
+    //     }
+
+    //     deadline = deadline + extension;
+    //     // reset all id's to false
+    //     for (uint256 i; i < len; ++i) {
+    //         id = ids[i];
+    //         lenderAmendMap[id] = false;
+    //     }
+    // }
 
 
-    function lenderAmend(bool isAmendable, uint256 extension) external {
-        require(extension == deadlineExtension, "Extension does not match");
-        uint256 len = ids.length;
-        bytes32 id;
-        for (uint256 i; i < len; ++i) {
-            id = ids[i];
-            if (credits[id].lender == msg.sender) {
-                lenderAmendMap[id] = isAmendable;
-            }
-        }
+    // function lenderAmend(bool isAmendable, uint256 extension) external {
+    //     require(extension == deadlineExtension, "Extension does not match");
+    //     uint256 len = ids.length;
+    //     bytes32 id;
+    //     for (uint256 i; i < len; ++i) {
+    //         id = ids[i];
+    //         if (credits[id].lender == msg.sender) {
+    //             lenderAmendMap[id] = isAmendable;
+    //         }
+    //     }
 
-        revert CallerAccessDenied();
-    }
+    //     revert CallerAccessDenied();
+    // }
 
     function getExtension() external view returns (uint256) {
         return deadline + deadlineExtension;

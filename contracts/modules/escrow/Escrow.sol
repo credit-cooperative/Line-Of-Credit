@@ -24,7 +24,7 @@ contract Escrow is IEscrow, ReentrancyGuard {
     using EscrowLib for EscrowState;
 
     /// @notice the minimum value of the collateral in relation to the outstanding debt e.g. 10% of outstanding debt
-    uint32 public immutable minimumCollateralRatio;
+    uint32 public minimumCollateralRatio;
 
     /// @notice Stakeholders and contracts used in Escrow
     address public immutable oracle;
@@ -34,6 +34,13 @@ contract Escrow is IEscrow, ReentrancyGuard {
 
     /// @notice all data around terms for collateral and current deposits
     EscrowState private state;
+
+
+    ///////////  MODIFIERS  ///////////
+    modifier onlyLineContract() {
+        require(msg.sender == state.line, "Escrow: only line address.");
+        _;
+    }
 
     /**
       * @notice           - Initiates immutable terms for a Line of Credit agreement related to collateral requirements
@@ -140,5 +147,10 @@ contract Escrow is IEscrow, ReentrancyGuard {
      */
     function liquidate(uint256 amount, address token, address to) external nonReentrant returns (bool) {
         return state.liquidate(amount, token, to);
+    }
+
+    function setMinimumCollateralRatio(uint32 newMinimumCollateralRatio) external onlyLineContract nonReentrant returns (bool) {
+        minimumCollateralRatio = newMinimumCollateralRatio;
+        return true;
     }
 }

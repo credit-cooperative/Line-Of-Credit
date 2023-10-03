@@ -30,7 +30,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
     uint8 constant MAX_SPLIT = 100;
 
     /// @notice % of revenue tokens to take from Spigot if the Line of Credit is healthy. 0 decimals
-    uint8 public immutable defaultRevenueSplit;
+    uint8 public defaultRevenueSplit;
 
     /// @notice exchange aggregator (mainly 0x router) to trade revenue tokens from a Spigot for credit tokens owed to lenders
     address payable public immutable swapTarget;
