@@ -532,8 +532,106 @@ contract SecuredLineTest is Test {
         assertEq(uint(LineLib.STATUS.INSOLVENT), uint(line.status()));
     }
 
+    // amendAndExtend()
 
+    function test_only_borrower_can_amend_and_extend() public {
+        address[] memory revenueContracts;
+        uint8[] memory ownerSplits;
 
+        vm.startPrank(lender);
+        vm.expectRevert(ILineOfCredit.CallerAccessDenied.selector);
+        line.amendAndExtend(1, 0, 0, revenueContracts, ownerSplits);
+        vm.stopPrank();
+
+        vm.startPrank(arbiter);
+        vm.expectRevert(ILineOfCredit.CallerAccessDenied.selector);
+        line.amendAndExtend(1, 0, 0, revenueContracts, ownerSplits);
+        vm.stopPrank();
+    }
+
+    function test_cannot_amend_and_extend_if_active_positions() public {
+        _addCredit(address(supportedToken1), 1 ether);
+        address[] memory revenueContracts;
+        uint8[] memory ownerSplits;
+
+        vm.startPrank(borrower);
+        vm.expectRevert(ISecuredLine.CannotAmendAndExtend.selector);
+        line.amendAndExtend(1, 0, 0, revenueContracts, ownerSplits);
+        vm.stopPrank();
+    }
+
+    function test_can_amend_and_extend_if_active_line_w_no_active_positions() public {
+        emit log_named_uint("status 1", uint(line.status()));
+        emit log_named_uint("ttl 1", line.deadline());
+        emit log_named_uint("defaultSplit 1", uint(line.defaultRevenueSplit()));
+        emit log_named_uint("minCRatio 1", uint(escrow.minimumCollateralRatio()));
+        emit log_named_uint("# active positions 1", line.countActivePositions());
+        uint256 deadline1 = line.deadline();
+        address[] memory revenueContracts;
+        uint8[] memory ownerSplits;
+
+        vm.startPrank(borrower);
+        line.amendAndExtend(1, 10, 0, revenueContracts, ownerSplits);
+        assertEq(uint(line.countActivePositions()), 0);
+        assertEq(uint(line.deadline()), deadline1 + 1);
+        assertEq(line.defaultRevenueSplit(), 10);
+        assertEq(line.minimumCollateralRatio(), 0);
+        vm.stopPrank();
+
+        emit log_named_uint("\nstatus 2", uint(line.status()));
+        emit log_named_uint("ttl 2", line.deadline());
+        emit log_named_uint("defaultSplit 2", uint(line.defaultRevenueSplit()));
+        emit log_named_uint("minCRatio 2", uint(escrow.minimumCollateralRatio()));
+        emit log_named_uint("# active positions 2", line.countActivePositions());
+
+        vm.startPrank(borrower);
+        line.amendAndExtend(1, 50, 100, revenueContracts, ownerSplits);
+        vm.stopPrank();
+
+        emit log_named_uint("\nstatus 3", uint(line.status()));
+        emit log_named_uint("ttl 3", line.deadline());
+        emit log_named_uint("defaultSplit 3", uint(line.defaultRevenueSplit()));
+        emit log_named_uint("minCRatio 3", uint(escrow.minimumCollateralRatio()));
+        emit log_named_uint("# active positions 3", line.countActivePositions());
+    }
+
+    function test_can_amend_and_extend_if_repaid_line() public {
+        emit log_named_uint("status 1", uint(line.status()));
+        emit log_named_uint("ttl 1", line.deadline());
+        emit log_named_uint("defaultSplit 1", uint(line.defaultRevenueSplit()));
+        emit log_named_uint("minCRatio 1", uint(escrow.minimumCollateralRatio()));
+        // emit log_named_uint("# active positions", uint(line.ids().length));
+
+        address[] memory revenueContracts;
+        uint8[] memory ownerSplits;
+
+        vm.startPrank(borrower);
+        // vm.expectRevert(ISecuredLine.CannotAmendAndExtend.selector);
+        line.amendAndExtend(1, 0, 0, revenueContracts, ownerSplits);
+        vm.stopPrank();
+
+        emit log_named_uint("status 2", uint(line.status()));
+        emit log_named_uint("ttl 2", line.deadline());
+        emit log_named_uint("defaultSplit 2", uint(line.defaultRevenueSplit()));
+        emit log_named_uint("minCRatio 2", uint(escrow.minimumCollateralRatio()));
+
+        vm.startPrank(borrower);
+        // vm.expectRevert(ISecuredLine.CannotAmendAndExtend.selector);
+        line.amendAndExtend(1, 0, 0, revenueContracts, ownerSplits);
+        vm.stopPrank();
+
+        emit log_named_uint("status 3", uint(line.status()));
+        emit log_named_uint("ttl 3", line.deadline());
+        emit log_named_uint("defaultSplit 3", uint(line.defaultRevenueSplit()));
+        emit log_named_uint("minCRatio 3", uint(escrow.minimumCollateralRatio()));
+    }
+
+    function test_amend_and_extend_does_not_update_owner_splits_0_revenue_contracts() public {}
+    function test_amend_and_extend_updates_owner_splits_1_revenue_contracts() public {}
+    function test_amend_and_extend_updates_owner_splits_2_revenue_contracts() public {}
+    // TODO: what happens if invalid array inputs?
+    // TODO: what happens if invalid default split
+    // TODO: what happens if invalid minCRatio
 
 
     // Rollover()

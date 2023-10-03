@@ -2,6 +2,10 @@
 // Copyright: https://github.com/credit-cooperative/Line-Of-Credit/blob/master/COPYRIGHT.md
 
  pragma solidity ^0.8.16;
+
+ // TODO: Imports for development purpose only
+ import "forge-std/console.sol";
+
 import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
 import {LineLib} from "../../utils/LineLib.sol";
 import {EscrowedLine} from "./EscrowedLine.sol";
@@ -91,13 +95,21 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
         return (EscrowedLine._canDeclareInsolvent() && SpigotedLine._canDeclareInsolvent());
     }
 
-    ////////////////////
-    //AMEND AND EXTEND//
-    ////////////////////
-    // TODO: add proper documentation
-    function amendAndExtend(uint256 ttlExtension, uint8 defaultSplit, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) external onlyBorrower {
+    /**
+     * @notice - Allows borrower to extend the deadline of the line, update the default revenue split and minimum c ratio percentages, and the owner splits for each revenue contract attached to the Spigot.
+     * @dev - callable by `borrower`
+     * @dev - requires line to not have open, active credit positions
+     * @param ttlExtension The amount of time to extend the line by
+     * @param defaultSplit The default revenue split percentage for the line
+     * @param minimumCollateralRatio The minimum collateral ratio required for the line
+     * @param revenueContracts The list of revenue contracts to update with new owner splits
+     * @param ownerSplits The corresponding list of new owner splits for each revenue contract
+     * @return true is line is amended, extended, and set to ACTIVE status
+     */
+    function amendAndExtend(uint256 ttlExtension, uint8 defaultSplit, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) external onlyBorrower returns (bool) {
         bool noActiveCreditPositions = ids.length == 0;
-        if (status == LineLib.STATUS.REPAID || noActiveCreditPositions){
+        // if (status == LineLib.STATUS.REPAID || noActiveCreditPositions){
+        if (noActiveCreditPositions){
             deadline = deadline + ttlExtension;
             // TODO: check if SecuredLine has a Spigot
             defaultRevenueSplit = defaultSplit;
@@ -108,6 +120,7 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
                 spigot.updateOwnerSplit(revenueContracts[i], ownerSplits[i]);
             }
             _updateStatus(LineLib.STATUS.ACTIVE); // some custom error msg
+            return true;
         }
         revert CannotAmendAndExtend();
     }
