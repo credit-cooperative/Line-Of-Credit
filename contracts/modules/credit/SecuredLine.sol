@@ -130,6 +130,10 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
             delete mutualConsentProposalIds;
 
             _updateStatus(LineLib.STATUS.ACTIVE); // some custom error msg
+            emit AmendAndExtendLine(line, borrower, deadline);
+            emit AmendSpigot(line, spigot, defaultRevenueSplit);
+            emit AmendEscrow(line, escrow, minimumCollateralRatio);
+            emit AmendRevenueContracts(line, spigot, revenueContracts, ownerSplits);
             return true;
         }
         revert CannotAmendAndExtend();

@@ -564,19 +564,28 @@ contract SecuredLineTest is Test {
     // TODO: test w/ 1 and 2 proposals
     // TODO: end-to-end test where user has accepted positions in the past and repaid the line and positions
     function test_amend_and_extend_clears_credit_proposals() public {
+        // borrower repays and closes line
+        vm.startPrank(borrower);
+        line.depositAndClose();
+        vm.stopPrank();
+
         // lender proposes credit position
         vm.startPrank(lender);
         line.addCredit(dRate, fRate, amount, token, lender);
         vm.stopPrank();
 
-        // credits.length == 1
-        // get creditId
-        // mutualConsentProposals[id]
+        bytes32 proposalId = line.mutualConsentProposalIds(0);
 
-        // amendAndExtend
+        address[] memory revenueContracts;
+        uint8[] memory ownerSplits;
 
-        // credits.length == 0
-        // mutualConsentProposals[id] == address(0)
+        // borrower amends and extends the line removing the proposed credit position
+        vm.startPrank(borrower);
+        line.amendAndExtend(1, 0, 0, revenueContracts, ownerSplits);
+        assertEq(line.mutualConsentProposalIds().length, 0);
+        assertEq(line.mutualConsentProposals(proposalId), address(0));
+
+        vm.stopPrank();
 
         // TODO: tests that event emitted
     }
