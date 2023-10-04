@@ -561,6 +561,8 @@ contract SecuredLineTest is Test {
     }
 
     // TODO: implement this test
+    // TODO: test w/ 1 and 2 proposals
+    // TODO: end-to-end test where user has accepted positions in the past and repaid the line and positions
     function test_amend_and_extend_clears_credit_proposals() public {
         // lender proposes credit position
         vm.startPrank(lender);
