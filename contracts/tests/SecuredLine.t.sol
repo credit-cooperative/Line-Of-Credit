@@ -560,6 +560,25 @@ contract SecuredLineTest is Test {
         vm.stopPrank();
     }
 
+    // TODO: implement this test
+    function test_amend_and_extend_clears_credit_proposals() public {
+        // lender proposes credit position
+        vm.startPrank(lender);
+        line.addCredit(dRate, fRate, amount, token, lender);
+        vm.stopPrank();
+
+        // credits.length == 1
+        // get creditId
+        // mutualConsentProposals[id]
+
+        // amendAndExtend
+
+        // credits.length == 0
+        // mutualConsentProposals[id] == address(0)
+
+        // TODO: tests that event emitted
+    }
+
     function test_can_amend_and_extend_if_active_line_w_no_active_positions() public {
         emit log_named_uint("status 1", uint(line.status()));
         emit log_named_uint("ttl 1", line.deadline());

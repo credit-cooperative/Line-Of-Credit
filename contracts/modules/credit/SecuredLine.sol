@@ -119,6 +119,16 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
             for (uint256 i = 0; i < revenueContracts.length; i++) {
                 spigot.updateOwnerSplit(revenueContracts[i], ownerSplits[i]);
             }
+            // clear all mutual consent proposals to add credit
+            // NOTE: this prevents a borrower from maliciously changing deal terms after a lender has proposed a credit position
+            for (uint256 i = 0; i < mutualConsentProposalIds.length; i++) {
+                // remove mutual consent proposal for all active credits
+                delete mutualConsentProposals[ids[i]];
+                // TODO: emits event
+            }
+            // reset the array of proposal ids to length 0
+            delete mutualConsentProposalIds;
+
             _updateStatus(LineLib.STATUS.ACTIVE); // some custom error msg
             return true;
         }
