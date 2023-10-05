@@ -9,11 +9,9 @@ import {Ownable} from "openzeppelin/access/Ownable.sol";
 import {ERC1155} from "openzeppelin/token/ERC1155/ERC1155.sol";
 import {IERC1155} from "openzeppelin/token/ERC1155/IERC1155.sol";
 import {SafeERC20} from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import {SafeMath} from "openzeppelin/utils/math/SafeMath.sol";
 
 
 contract ArfRepaymentContract is AccessControl {
-    using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
     uint256[] private allocations; // 100000 = 100%. allocation sent to beneficiaries
