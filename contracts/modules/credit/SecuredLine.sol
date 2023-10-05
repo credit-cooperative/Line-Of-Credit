@@ -112,8 +112,9 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
         if (noActiveCreditPositions){
             deadline = deadline + ttlExtension;
             // TODO: check if SecuredLine has a Spigot
-            defaultRevenueSplit = defaultSplit;
             // TODO: check if SecuredLine has an Escrow
+                // TODO: what happens if line is repaid and Spigot is transferred to borrower/operator?
+            defaultRevenueSplit = defaultSplit;
             // TODO: check that msg.sender is the Escrow State line address
             escrow.setMinimumCollateralRatio(minimumCollateralRatio);
             for (uint256 i = 0; i < revenueContracts.length; i++) {
@@ -130,10 +131,12 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
             delete mutualConsentProposalIds;
 
             _updateStatus(LineLib.STATUS.ACTIVE); // some custom error msg
-            emit AmendAndExtendLine(line, borrower, deadline);
-            emit AmendSpigot(line, spigot, defaultRevenueSplit);
-            emit AmendEscrow(line, escrow, minimumCollateralRatio);
-            emit AmendRevenueContracts(line, spigot, revenueContracts, ownerSplits);
+            // TODO: should these events be condensed into a single event?
+            emit AmendAndExtendLine(address(this), borrower, deadline);
+            // TODO: add back events
+            // emit AmendSpigot(address(this), spigot, defaultRevenueSplit);
+            // emit AmendEscrow(address(this), escrow, minimumCollateralRatio);
+            // emit AmendRevenueContracts(address(this), spigot, revenueContracts, ownerSplits);
             return true;
         }
         revert CannotAmendAndExtend();

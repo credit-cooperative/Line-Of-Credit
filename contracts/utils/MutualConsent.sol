@@ -20,7 +20,7 @@ abstract contract MutualConsent {
     // equivalent to any fn with no args, ie just a fn selector
     uint256 constant MIN_DATA_LENGTH_BYTES = 4;
 
-    bytes32[] mutualConsentProposalIds;
+    bytes32[] public mutualConsentProposalIds;
 
     // Mapping of upgradable units and if consent has been initialized by other party
     mapping(bytes32 => address) public mutualConsentProposals;
@@ -147,7 +147,7 @@ abstract contract MutualConsent {
         // If order of elements is not important,
         // replace the id to remove with the last one,
         // and then reduce the array's length by one
-        mutualConsentProposalIds[index] = mutualConsentProposalIds[ids.length - 1];
+        mutualConsentProposalIds[index] = mutualConsentProposalIds[mutualConsentProposalIds.length - 1];
         mutualConsentProposalIds.pop();
     }
 }

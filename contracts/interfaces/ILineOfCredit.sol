@@ -242,6 +242,8 @@ interface ILineOfCredit {
 
     function oracle() external returns (IOracle);
 
+    // function mutualConsentProposalIds() external returns (bytes32[] memory);
+
     /**
      * @notice - getter for amount of active ids + total ids in list
      * @return - (uint256, uint256) - active credit lines, total length
