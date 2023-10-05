@@ -40,7 +40,7 @@ contract ArfRepaymentContract is AccessControl {
     constructor(
         address _repaymentToken, 
         address _erc1155Address,
-        address _adminMultisig,
+        bytes32 _adminMultisig,
         address[] memory _startingBeneficiaries,
         uint256[] memory _startingAllocations
         ) {
@@ -48,7 +48,7 @@ contract ArfRepaymentContract is AccessControl {
         require(_startingBeneficiaries.length >= MIN_BENEFICIARIES, "Must have at least 2 beneficiaries");
 
         // setup multisig as admin that has signers from the borrower and lenders.
-        _setupRole(DEFAULT_ADMIN_ROLE, _adminMultisig); 
+        _setRoleAdmin(DEFAULT_ADMIN_ROLE, _adminMultisig); 
 
         // What token is being used for repayment
         repaymentToken = IERC20(_repaymentToken);
@@ -60,7 +60,7 @@ contract ArfRepaymentContract is AccessControl {
 
         uint256 sum=0;
         for (uint256 i=0; i<allocations.length; i++) {
-            sum = sum.add(allocations[i]);
+            sum = sum + allocations[i];
         }
 
         require(sum == FULL_ALLOC, "Ratio does not equal 100000");
@@ -179,10 +179,10 @@ contract ArfRepaymentContract is AccessControl {
 
         for (uint256 i = 0; i < _allocations.length; i++) {
             if (i == _allocations.length - 1) {
-                newAmounts[i] = total.sub(allocatedBalance);
+                newAmounts[i] = total - allocatedBalance;
             } else {
-                currBalance = total.mul(_allocations[i]).div(FULL_ALLOC);
-                allocatedBalance = allocatedBalance.add(currBalance);
+                currBalance = (total * _allocations[i]) / (FULL_ALLOC);
+                allocatedBalance = allocatedBalance + currBalance;
                 newAmounts[i] = currBalance;
             }
         }
@@ -199,7 +199,7 @@ contract ArfRepaymentContract is AccessControl {
         require(_allocations.length == beneficiaries.length, "Invalid length");
         uint256 sum=0;
         for (uint256 i=0; i<_allocations.length; i++) {
-            sum = sum.add(_allocations[i]);
+            sum = sum + _allocations[i];
         }
         require(sum == FULL_ALLOC, "Ratio does not equal 100000");
 
