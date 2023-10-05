@@ -150,4 +150,10 @@ abstract contract MutualConsent {
         mutualConsentProposalIds[index] = mutualConsentProposalIds[mutualConsentProposalIds.length - 1];
         mutualConsentProposalIds.pop();
     }
+
+    // Getters
+
+    function getTotalMutualConsentProposalIds() external view returns (uint256) {
+        return mutualConsentProposalIds.length;
+    }
 }
