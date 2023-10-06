@@ -8,14 +8,11 @@ import {LineLib} from "../utils/LineLib.sol";
 import {ISpigot} from "../interfaces/ISpigot.sol";
 
 struct SpigotState {
-    /// @notice Economic owner of Spigot revenue streams
-    address owner;
-    /// @notice account in charge of running onchain ops of spigoted contracts on behalf of owner
-    address operator;
-    /// @notice Total amount of revenue tokens help by the Spigot and available to be claimed by owner
-    mapping(address => uint256) ownerTokens; // token -> claimable
-    /// @notice Total amount of revenue tokens help by the Spigot and available to be claimed by operator
-    mapping(address => uint256) operatorTokens; // token -> claimable
+    address[] public beneficiaries; // Claims on the repayment
+    mapping(address => ISpigot.Beneficiary) public beneficiaryInfo; // beneficiary -> info
+    uint128 public constant MAX_BENEFICIARIES = 5;
+    uint128 public constant MIN_BENEFICIARIES = 1;
+    uint256 public constant FULL_ALLOC = 100000;
     /// @notice Functions that the operator is allowed to run on all revenue contracts controlled by the Spigot
     mapping(bytes4 => bool) whitelistedFunctions; // function -> allowed
     /// @notice Configurations for revenue contracts related to the split of revenue, access control to claiming revenue tokens and transfer of Spigot ownership

@@ -10,6 +10,13 @@ interface ISpigot {
         bytes4 transferOwnerFunction; // function signature on contract to call and transfer ownership
     }
 
+    struct Beneficiary {
+        address beneficiary;
+        uint256 allocation;
+        uint256 debtOwed;
+        uint256 debtRepaid;
+    }
+
     // Spigot Events
     event AddSpigot(address indexed revenueContract, uint256 ownerSplit, bytes4 claimFnSig, bytes4 trsfrFnSig);
 

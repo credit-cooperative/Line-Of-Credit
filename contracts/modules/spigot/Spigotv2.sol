@@ -14,18 +14,14 @@ import {SafeERC20} from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 contract ArfRepaymentContract is AccessControl {
     using SafeERC20 for IERC20;
 
-    uint256[] private allocations; // 100000 = 100%. allocation sent to beneficiaries
-    address[] private beneficiaries; // Claims on the repayment
+
     // struct -> address, amount
 
-    uint128 public constant MAX_BENEFICIARIES = 5;
-    uint128 public constant MIN_BENEFICIARIES = 1;
-    uint256 public constant FULL_ALLOC = 100000;
+
 
     // able to perform certain admin actions
     IERC20 repaymentToken;
 
-    uint256 public creditExtended; //
 
     mapping (address => uint256) beneficiaryOutstandingDebt;
 
@@ -75,7 +71,15 @@ contract ArfRepaymentContract is AccessControl {
         }
     }
 
-
+    ///////////////////////// OUSTANDING QUESTIONS //////////////////////////
+    /**
+        - do we allow differet beneficiaries to to pull our allocations at different times?
+            - maybe a struct? Tracks address, amount owed, amout repaid?
+            - have a check to subract amount repaid anytime there is distribution
+    
+    
+    
+     */
 
 
     // Split up functions for library: 
@@ -95,8 +99,10 @@ contract ArfRepaymentContract is AccessControl {
     //////////////////////////////////////////////////////*/
 
     // For non CC lenders, we need to track debt as to not overpay. 
-    // maybe CC is position 0, and then we can track the debt of the other lenders in the mapping
 
+    /**  maybe CC is position 0, borrower is position 1, other lenders are 2,3,4 
+    and then we can track the debt of the other lenders in the mapping */
+ 
     
     // map beneficiary to outstanding debt
 

@@ -73,6 +73,8 @@ contract Spigot is ISpigot, ReentrancyGuard {
      * @param token     - address of revenue token that is being escrowed by spigot
      * @return claimed  -  The amount of tokens claimed by the `owner`
      */
+
+     // Claim position 0
     function claimOwnerTokens(address token) external nonReentrant returns (uint256 claimed) {
         return state.claimOwnerTokens(token);
     }
@@ -83,6 +85,8 @@ contract Spigot is ISpigot, ReentrancyGuard {
      * @param token - address of revenue token that is being escrowed by spigot
      * @return claimed -  The amount of tokens claimed by the `operator`
      */
+
+     // claim position 1
     function claimOperatorTokens(address token) external nonReentrant returns (uint256 claimed) {
         return state.claimOperatorTokens(token);
     }
@@ -138,6 +142,8 @@ contract Spigot is ISpigot, ReentrancyGuard {
      * @param revenueContract - Address of spigoted revenue generating contract
      * @param ownerSplit - new % split to give owner
      */
+
+     // remove this in favor of updatet allocation
     function updateOwnerSplit(address revenueContract, uint8 ownerSplit) external returns (bool) {
         return state.updateOwnerSplit(revenueContract, ownerSplit);
     }
