@@ -28,7 +28,7 @@ read arbiter_address
 echo  -n "Swap Target Address: "
 read swap_target_address
 
-echo -n "Min C Ratio: "
+echo -n "Min C Ratio (In BPS): "
 read min_c_ratio
 
 echo -n "Default Split: "
