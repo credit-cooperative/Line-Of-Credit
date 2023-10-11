@@ -293,6 +293,26 @@ library SpigotLib {
         );
     }
 
+    /**
+    @dev needs tt
+     */
+    function _distributeFunds(address revToken) internal {
+
+        uint256 _currentBalance;
+        _currentBalance = IERC20(revToken).balanceOf(address(this));
+
+        if (_currentBalance > 0){
+            // feeBalances[0] is fee sent to smartTreasury
+            uint256[] memory feeBalances = _amountsFromAllocations(allocations, _currentBalance);
+    
+            for (uint256 a_index = 0; a_index < allocations.length; a_index++){
+                // check if revtoken is the same as beneficiary desired token
+                // if so, call the spigotTrade function, charge fee??
+                IERC20(revToken).safeTransfer(beneficiaries[a_index], feeBalances[a_index]);
+            }
+        }
+    }
+
     // Spigot Events
     event AddSpigot(address indexed revenueContract, uint256 ownerSplit, bytes4 claimFnSig, bytes4 trsfrFnSig);
 
