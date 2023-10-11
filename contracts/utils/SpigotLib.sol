@@ -11,7 +11,7 @@ struct SpigotState {
     address[] public beneficiaries; // Claims on the repayment
     mapping(address => ISpigot.Beneficiary) public beneficiaryInfo; // beneficiary -> info
     uint128 public constant MAX_BENEFICIARIES = 5;
-    uint128 public constant MIN_BENEFICIARIES = 1;
+    uint128 public constant MIN_BENEFICIARIES = 2;
     uint256 public constant FULL_ALLOC = 100000;
     /// @notice Functions that the operator is allowed to run on all revenue contracts controlled by the Spigot
     mapping(bytes4 => bool) whitelistedFunctions; // function -> allowed
