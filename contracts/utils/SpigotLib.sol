@@ -10,6 +10,8 @@ import {ISpigot} from "../interfaces/ISpigot.sol";
 struct SpigotState {
     address[] public beneficiaries; // Claims on the repayment
     mapping(address => ISpigot.Beneficiary) public beneficiaryInfo; // beneficiary -> info
+    address operator;
+    address ccLoc; // aka the owner
     uint128 public constant MAX_BENEFICIARIES = 5;
     uint128 public constant MIN_BENEFICIARIES = 2;
     uint256 public constant FULL_ALLOC = 100000;
