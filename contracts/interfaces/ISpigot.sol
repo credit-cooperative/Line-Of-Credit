@@ -13,6 +13,7 @@ interface ISpigot {
     struct Beneficiary {
         address beneficiary;
         uint256 allocation;
+        address desiredRepaymentToken;
         uint256 debtOwed;
         uint256 debtRepaid;
     }
