@@ -264,7 +264,7 @@ library SpigotedLineLib {
             }
         }
 
-        if (status == LineLib.STATUS.REPAID && msg.sender == borrower) {
+        if (status == LineLib.STATUS.REPAID && ((msg.sender == borrower) || (msg.sender == arbiter && to == borrower))) {
             LineLib.sendOutTokenOrETH(token, to, amount);
             return amount;
         }

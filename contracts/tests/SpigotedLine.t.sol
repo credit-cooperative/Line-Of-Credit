@@ -1264,12 +1264,82 @@ contract SpigotedLineTest is Test, Events {
       uint unused = line.unused(address(revenueToken));
       hoax(borrower);
       uint swept = line.sweep(address(borrower), address(revenueToken), 0);
+      emit log_named_uint('swept', swept);
+      emit log_named_uint('unused', unused);
+      emit log_named_uint('borrower token balance 2', revenueToken.balanceOf(address(borrower)));
 
       assertEq(unused, 10, '2');     // all unused sent to arbi
       assertEq(swept, unused, '3'); // all unused sent to arbi
       assertEq(swept, 10, '4');      // untraded revenue
       assertEq(swept, revenueToken.balanceOf(address(borrower)) - balance, '5'); // arbi balance updates properly
     }
+
+    function test_arbiter_sweep_to_borrower_when_repaid() public {
+      _borrow(line.ids(0), lentAmount);
+
+      uint claimed = (MAX_REVENUE * ownerSplit) / 100; // expected claim amount
+      console.log(claimed);
+      bytes memory tradeData = abi.encodeWithSignature(
+        'trade(address,address,uint256,uint256)',
+        address(revenueToken),
+        address(creditToken),
+        claimed - 10,
+        lentAmount + 1 ether // give excess tokens so we can sweep with out UsedExcess error
+      );
+
+      vm.prank(arbiter);
+      line.claimAndRepay(address(revenueToken), tradeData);
+
+      bytes32 id = line.ids(0);
+      hoax(borrower);
+      line.close(id);
+
+      // initial mint + spigot revenue to borrower (- unused?)
+      uint balance = revenueToken.balanceOf(address(borrower));
+      console.log(balance);
+      console.log(MAX_REVENUE);
+      assertEq(balance, MAX_REVENUE, '1');
+
+      uint unused = line.unused(address(revenueToken));
+      hoax(arbiter);
+      uint swept = line.sweep(address(borrower), address(revenueToken), 0);
+      assertEq(unused, 10, '2');     // all unused sent to arbi
+      assertEq(swept, unused, '3'); // all unused sent to arbi
+      assertEq(swept, 10, '4');      // untraded revenue
+      assertEq(swept, revenueToken.balanceOf(address(borrower)) - balance, '5'); // arbi balance updates properly
+    }
+
+    function test_arbiter_only_sweep_to_borrower_when_repaid() public {
+      _borrow(line.ids(0), lentAmount);
+
+      uint claimed = (MAX_REVENUE * ownerSplit) / 100; // expected claim amount
+      console.log(claimed);
+      bytes memory tradeData = abi.encodeWithSignature(
+        'trade(address,address,uint256,uint256)',
+        address(revenueToken),
+        address(creditToken),
+        claimed - 10,
+        lentAmount + 1 ether // give excess tokens so we can sweep with out UsedExcess error
+      );
+
+      vm.prank(arbiter);
+      line.claimAndRepay(address(revenueToken), tradeData);
+
+      bytes32 id = line.ids(0);
+      hoax(borrower);
+      line.close(id);
+
+      // initial mint + spigot revenue to borrower (- unused?)
+      uint balance = revenueToken.balanceOf(address(borrower));
+      console.log(balance);
+      console.log(MAX_REVENUE);
+      assertEq(balance, MAX_REVENUE, '1');
+
+      hoax(arbiter);
+      vm.expectRevert(ILineOfCredit.CallerAccessDenied.selector);
+      line.sweep(address(arbiter), address(revenueToken), 0);
+    }
+
 
     function test_cant_sweep_tokens_when_liquidate_as_anon() public {
       _borrow(line.ids(0), lentAmount);
