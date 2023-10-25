@@ -575,9 +575,32 @@ contract SecuredLineTest is Test {
     // TODO: test w/ 1 and 2 proposals
     // TODO: end-to-end test where user has accepted positions in the past and repaid the line and positions
     function test_amend_and_extend_clears_credit_proposals() public {
+        address[] memory revenueContracts;
+        uint8[] memory ownerSplits;
+
+        _addCredit(address(supportedToken1), 1 ether);
+        bytes32 id = line.ids(0);
+
         // borrower repays and closes line
         vm.startPrank(borrower);
+        line.borrow(id, 1 ether);
         line.depositAndClose();
+        vm.stopPrank();
+
+        // amend and extend #1: borrower setting line status to ACTIVE
+        vm.startPrank(borrower);
+        // TODO: tests that event emitted (add the other tests here)
+        // uint256 deadline = line.deadline();
+        emit log_named_uint("Status: ", uint(line.status()));
+        // TODO: add back expectEmit
+        // vm.expectEmit(line, borrower, deadline + 1);
+        // emit Events.AmendAndExtendLine(line, borrower, deadline + 1);
+        line.amendAndExtend(1, 0, 0, revenueContracts, ownerSplits);
+        assertEq(line.getTotalMutualConsentProposalIds(), 0);
+        // assertEq(line.mutualConsentProposals(proposalId), address(0));
+        // TODO: add test that line status is active
+        // assertEq(line.)
+
         vm.stopPrank();
 
         // lender proposes credit position
@@ -587,10 +610,7 @@ contract SecuredLineTest is Test {
 
         bytes32 proposalId = line.mutualConsentProposalIds(0);
 
-        address[] memory revenueContracts;
-        uint8[] memory ownerSplits;
-
-        // borrower amends and extends the line removing the proposed credit position
+        // amend and extend #2: borrower amends and extends the line removing the proposed credit position
         vm.startPrank(borrower);
         // TODO: tests that event emitted (add the other tests here)
         // uint256 deadline = line.deadline();
@@ -598,6 +618,7 @@ contract SecuredLineTest is Test {
         // vm.expectEmit(line, borrower, deadline + 1);
         // emit Events.AmendAndExtendLine(line, borrower, deadline + 1);
         line.amendAndExtend(1, 0, 0, revenueContracts, ownerSplits);
+        emit log_named_uint("Total Mutual Consent Proposal Ids: ", line.getTotalMutualConsentProposalIds());
         assertEq(line.getTotalMutualConsentProposalIds(), 0);
         assertEq(line.mutualConsentProposals(proposalId), address(0));
 

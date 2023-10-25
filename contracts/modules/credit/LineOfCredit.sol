@@ -47,7 +47,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     InterestRateCredit public immutable interestRate;
 
     /// @notice - current amount of active positions (aka non-null ids) in `ids` list
-    uint256 private count;
+    uint256 public count;
 
     /// @notice - positions ids of all open credit lines.
     /// @dev    - may contain null elements

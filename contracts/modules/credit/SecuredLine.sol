@@ -107,8 +107,9 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
      * @return true is line is amended, extended, and set to ACTIVE status
      */
     function amendAndExtend(uint256 ttlExtension, uint8 defaultSplit, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) external onlyBorrower returns (bool) {
-        bool noActiveCreditPositions = ids.length == 0;
+        bool noActiveCreditPositions = count == 0;
         // if (status == LineLib.STATUS.REPAID || noActiveCreditPositions){
+        console.log("noActiveCreditPositions: %s", noActiveCreditPositions);
         if (noActiveCreditPositions){
             deadline = deadline + ttlExtension;
             // TODO: check if SecuredLine has a Spigot
@@ -117,6 +118,7 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
             defaultRevenueSplit = defaultSplit;
             // TODO: check that msg.sender is the Escrow State line address
             escrow.setMinimumCollateralRatio(minimumCollateralRatio);
+            console.log("Deadline: ", deadline);
             for (uint256 i = 0; i < revenueContracts.length; i++) {
                 spigot.updateOwnerSplit(revenueContracts[i], ownerSplits[i]);
             }
@@ -124,7 +126,8 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
             // NOTE: this prevents a borrower from maliciously changing deal terms after a lender has proposed a credit position
             for (uint256 i = 0; i < mutualConsentProposalIds.length; i++) {
                 // remove mutual consent proposal for all active credits
-                delete mutualConsentProposals[ids[i]];
+                delete mutualConsentProposals[mutualConsentProposalIds[i]];
+                // mutualConsentProposals[ids[i]] = address(0);
                 // TODO: emits event
             }
             // reset the array of proposal ids to length 0
