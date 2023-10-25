@@ -43,7 +43,7 @@ contract Spigot is ISpigot, ReentrancyGuard {
     }
 
     // ##########################
-    // #####   Claimoooor   #####
+    // #####     Claimer    #####
     // ##########################
 
     /**
@@ -88,9 +88,7 @@ contract Spigot is ISpigot, ReentrancyGuard {
     }
 
     // ##########################
-    // ##### *ring* *ring*  #####
-    // #####  OPERATOOOR    #####
-    // #####  OPERATOOOR    #####
+    // #####  OPERATOR    #####
     // ##########################
 
     /**
@@ -106,7 +104,7 @@ contract Spigot is ISpigot, ReentrancyGuard {
     }
 
     // ##########################
-    // #####  Maintainooor  #####
+    // #####    Maintainer  #####
     // ##########################
 
     /**
@@ -175,7 +173,7 @@ contract Spigot is ISpigot, ReentrancyGuard {
     }
 
     // ##########################
-    // #####   GETTOOOORS   #####
+    // #####     GETTERS    #####
     // ##########################
 
     /**

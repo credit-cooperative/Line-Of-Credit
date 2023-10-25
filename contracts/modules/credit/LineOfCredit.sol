@@ -116,7 +116,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         _;
     }
 
-    modifier onlyBorrowerOrServicer() {
+    modifier onlyBorrowerOrArbiter() {
         if (msg.sender != borrower || msg.sender != arbiter) {
             revert CallerAccessDenied();
         }
@@ -281,7 +281,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     ///////////////
 
     /// see ILineOfCredit.depositAndClose
-    function depositAndClose() external payable override nonReentrant whileBorrowing onlyBorrowerOrServicer {
+    function depositAndClose() external payable override nonReentrant whileBorrowing onlyBorrowerOrArbiter {
         bytes32 id = ids[0];
         Credit memory credit = _accrue(credits[id], id);
 

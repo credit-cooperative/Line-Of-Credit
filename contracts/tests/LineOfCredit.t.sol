@@ -307,7 +307,7 @@ contract LineTest is Test, Events {
         line.close(id);
     }
 
-    function test_servicer_can_manually_close_if_no_outstanding_credit() public {
+    function test_arbiter_can_manually_close_if_no_outstanding_credit() public {
         _addCredit(address(supportedToken1), 1 ether);
         bytes32 id = line.ids(0);
         hoax(arbiter);
@@ -428,7 +428,7 @@ contract LineTest is Test, Events {
         assertEq(p + i, 0, "Line outstanding credit should be 0");
     }
 
-    function test_servicer_can_deposit_and_close_position() public {
+    function test_arbiter_can_deposit_and_close_position() public {
         _addCredit(address(supportedToken1), 1 ether);
         bytes32 id = line.ids(0);
         assertEq(
@@ -778,7 +778,7 @@ contract LineTest is Test, Events {
         assertFalse(isOpen);
     }
 
-    function test_servicer_can_close_after_lender_withdraws_full_deposit() public {
+    function test_arbiter_can_close_after_lender_withdraws_full_deposit() public {
         assertEq(supportedToken1.balanceOf(address(line)), 0, "Line balance should be 0");
         assertEq(supportedToken1.balanceOf(lender), mintAmount, "Lender should have initial mint balance");
 
@@ -1109,7 +1109,7 @@ contract LineTest is Test, Events {
         line.close(id);
     }
 
-    function test_can_close_as_servicer() public {
+    function test_can_close_as_arbiter() public {
         _addCredit(address(supportedToken1), 1 ether);
         bytes32 id = line.ids(0);
         hoax(borrower);
