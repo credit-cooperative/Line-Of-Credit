@@ -136,6 +136,53 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     }
 
     /**
+     * @notice - Allows borrower to extend the deadline of the line.
+     * @dev - callable by `borrower`
+     * @dev - requires line to not have open, active credit positions
+     * @param ttlExtension The amount of time to extend the line by
+     * @return true is line is extended and set to ACTIVE status.
+     */
+    function extend(uint256 ttlExtension) external onlyBorrower returns (bool) {
+        bool noActiveCreditPositions = count == 0;
+        if (noActiveCreditPositions) {
+            if (proposalCount > 0) {
+                _clearProposals();
+            }
+            bool isExtended = _extend(ttlExtension);
+            return isExtended;
+        }
+        revert CannotExtendLine();
+    }
+
+    function _extend(uint256 ttlExtension) internal returns (bool) {
+        deadline = deadline + ttlExtension;
+        if (status != LineLib.STATUS.ACTIVE) {
+            _updateStatus(LineLib.STATUS.ACTIVE);
+        }
+        emit ExtendLine(address(this), borrower, deadline);
+        return true;
+    }
+
+    /**
+     * @notice - Revokes all mutual consent proposals for the line.
+     * @dev - privileged internal function. MUST check params and logic flow before calling
+     * @dev - prevents a borrower from maliciously changing deal terms after a lender has proposed a credit position by calling amend, extend, or amendAndExtend functions
+     */
+    function _clearProposals() internal {
+        // clear all mutual consent proposals to add credit
+        for (uint256 i = 0; i < mutualConsentProposalIds.length; i++) {
+            // remove mutual consent proposal for all active credits
+            bytes32 proposalIdToDelete = mutualConsentProposalIds[i];
+            delete mutualConsentProposals[proposalIdToDelete];
+
+            // TODO: is this an appropriate use of this event? Or should it be a separate event?
+            emit MutualConsentRevoked(proposalIdToDelete);
+        }
+        // reset the array of proposal ids to length 0
+        delete mutualConsentProposalIds;
+    }
+
+    /**
      * @notice - evaluates all covenants encoded in _healthcheck from different Line variants
      * @dev - updates `status` variable in storage if current status is diferent from existing status
      * @return - current health status of Line

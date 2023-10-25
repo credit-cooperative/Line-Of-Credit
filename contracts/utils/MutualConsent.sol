@@ -22,6 +22,8 @@ abstract contract MutualConsent {
 
     bytes32[] public mutualConsentProposalIds;
 
+    uint256 public proposalCount;
+
     // Mapping of upgradable units and if consent has been initialized by other party
     mapping(bytes32 => address) public mutualConsentProposals;
 
@@ -102,6 +104,7 @@ abstract contract MutualConsent {
         if (mutualConsentProposals[expectedProposalId] == address(0)) {
             bytes32 newProposalId = keccak256(abi.encodePacked(msg.data, msg.sender));
             mutualConsentProposalIds.push(newProposalId); // add proposal id to array
+            proposalCount++;
             mutualConsentProposals[newProposalId] = msg.sender; // save caller's consent for nonCaller to accept
 
             emit MutualConsentRegistered(newProposalId, nonCaller);
@@ -149,11 +152,7 @@ abstract contract MutualConsent {
         // and then reduce the array's length by one
         mutualConsentProposalIds[index] = mutualConsentProposalIds[mutualConsentProposalIds.length - 1];
         mutualConsentProposalIds.pop();
+        proposalCount--;
     }
 
-    // Getters
-
-    function getTotalMutualConsentProposalIds() external view returns (uint256) {
-        return mutualConsentProposalIds.length;
-    }
 }

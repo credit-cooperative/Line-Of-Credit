@@ -11,7 +11,8 @@ interface ISecuredLine is IEscrowedLine, ISpigotedLine {
     error DebtOwed();
     error BadNewLine();
     error BadRollover();
-    error CannotAmendAndExtend();
+    error CannotAmendAndExtendLine();
+    error CannotAmendLine();
 
     // Borrower functions
 

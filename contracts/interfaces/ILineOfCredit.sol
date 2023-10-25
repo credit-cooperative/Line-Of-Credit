@@ -24,7 +24,8 @@ interface ILineOfCredit {
     event UpdateStatus(uint256 indexed status); // store as normal uint so it can be indexed in subgraph
 
     event DeployLine(address indexed oracle, address indexed arbiter, address indexed borrower);
-    event AmendAndExtendLine(address indexed line, address indexed borrower, uint256 indexed deadline);
+    event ExtendLine(address indexed line, address indexed borrower, uint256 indexed deadline);
+    event AmendLine(address indexed line, address indexed borrower, uint256 indexed deadline);
     event AmendSpigot(address indexed line, address indexed spigot, uint8 defaultRevenueSplit);
     event AmendEscrow(address indexed line, address indexed escrow, uint32 indexed minimumCollateralRatio);
     event AmendRevenueContracts(address indexed line, address indexed spigot, address[] indexed revenueContracts, uint8[] ownerSplits);
@@ -90,6 +91,7 @@ interface ILineOfCredit {
     error CantStepQ();
     error EthSupportDisabled();
     error BorrowFailed();
+    error CannotExtendLine();
 
     // Fully public functions
 

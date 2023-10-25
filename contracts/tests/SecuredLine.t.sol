@@ -566,7 +566,7 @@ contract SecuredLineTest is Test {
         uint8[] memory ownerSplits;
 
         vm.startPrank(borrower);
-        vm.expectRevert(ISecuredLine.CannotAmendAndExtend.selector);
+        vm.expectRevert(ISecuredLine.CannotAmendAndExtendLine.selector);
         line.amendAndExtend(1, 0, 0, revenueContracts, ownerSplits);
         vm.stopPrank();
     }
@@ -596,7 +596,7 @@ contract SecuredLineTest is Test {
         // vm.expectEmit(line, borrower, deadline + 1);
         // emit Events.AmendAndExtendLine(line, borrower, deadline + 1);
         line.amendAndExtend(1, 0, 0, revenueContracts, ownerSplits);
-        assertEq(line.getTotalMutualConsentProposalIds(), 0);
+        assertEq(line.proposalCount(), 0);
         // assertEq(line.mutualConsentProposals(proposalId), address(0));
         // TODO: add test that line status is active
         // assertEq(line.)
@@ -618,8 +618,8 @@ contract SecuredLineTest is Test {
         // vm.expectEmit(line, borrower, deadline + 1);
         // emit Events.AmendAndExtendLine(line, borrower, deadline + 1);
         line.amendAndExtend(1, 0, 0, revenueContracts, ownerSplits);
-        emit log_named_uint("Total Mutual Consent Proposal Ids: ", line.getTotalMutualConsentProposalIds());
-        assertEq(line.getTotalMutualConsentProposalIds(), 0);
+        emit log_named_uint("Total Mutual Consent Proposal Ids: ", line.proposalCount());
+        assertEq(line.proposalCount(), 0);
         assertEq(line.mutualConsentProposals(proposalId), address(0));
 
         vm.stopPrank();
@@ -672,7 +672,7 @@ contract SecuredLineTest is Test {
         uint8[] memory ownerSplits;
 
         vm.startPrank(borrower);
-        // vm.expectRevert(ISecuredLine.CannotAmendAndExtend.selector);
+        // vm.expectRevert(ISecuredLine.CannotAmendAndExtendLine.selector);
         line.amendAndExtend(1, 0, 0, revenueContracts, ownerSplits);
         vm.stopPrank();
 
@@ -682,7 +682,7 @@ contract SecuredLineTest is Test {
         emit log_named_uint("minCRatio 2", uint(escrow.minimumCollateralRatio()));
 
         vm.startPrank(borrower);
-        // vm.expectRevert(ISecuredLine.CannotAmendAndExtend.selector);
+        // vm.expectRevert(ISecuredLine.CannotAmendAndExtendLine.selector);
         line.amendAndExtend(1, 0, 0, revenueContracts, ownerSplits);
         vm.stopPrank();
 

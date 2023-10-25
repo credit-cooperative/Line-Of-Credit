@@ -108,43 +108,61 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
      */
     function amendAndExtend(uint256 ttlExtension, uint8 defaultSplit, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) external onlyBorrower returns (bool) {
         bool noActiveCreditPositions = count == 0;
-        // if (status == LineLib.STATUS.REPAID || noActiveCreditPositions){
-        console.log("noActiveCreditPositions: %s", noActiveCreditPositions);
         if (noActiveCreditPositions){
-            deadline = deadline + ttlExtension;
-            // TODO: check if SecuredLine has a Spigot
-            // TODO: check if SecuredLine has an Escrow
-                // TODO: what happens if line is repaid and Spigot is transferred to borrower/operator?
-            defaultRevenueSplit = defaultSplit;
-            // TODO: check that msg.sender is the Escrow State line address
-            escrow.setMinimumCollateralRatio(minimumCollateralRatio);
-            console.log("Deadline: ", deadline);
-            for (uint256 i = 0; i < revenueContracts.length; i++) {
-                spigot.updateOwnerSplit(revenueContracts[i], ownerSplits[i]);
+            if (proposalCount > 0) {
+                _clearProposals();
             }
-            // clear all mutual consent proposals to add credit
-            // NOTE: this prevents a borrower from maliciously changing deal terms after a lender has proposed a credit position
-            for (uint256 i = 0; i < mutualConsentProposalIds.length; i++) {
-                // remove mutual consent proposal for all active credits
-                delete mutualConsentProposals[mutualConsentProposalIds[i]];
-                // mutualConsentProposals[ids[i]] = address(0);
-                // TODO: emits event
-            }
-            // reset the array of proposal ids to length 0
-            delete mutualConsentProposalIds;
-
-            _updateStatus(LineLib.STATUS.ACTIVE); // some custom error msg
-            // TODO: should these events be condensed into a single event?
-            emit AmendAndExtendLine(address(this), borrower, deadline);
-            // TODO: add back events
-            // emit AmendSpigot(address(this), spigot, defaultRevenueSplit);
-            // emit AmendEscrow(address(this), escrow, minimumCollateralRatio);
-            // emit AmendRevenueContracts(address(this), spigot, revenueContracts, ownerSplits);
+            _amend(defaultSplit, minimumCollateralRatio, revenueContracts, ownerSplits);
+            _extend(ttlExtension);
             return true;
         }
-        revert CannotAmendAndExtend();
+        revert CannotAmendAndExtendLine();
     }
 
+    /**
+     * @notice - Allows borrower to update the default revenue split and minimum c ratio percentages, and the owner splits for each revenue contract attached to the Spigot.
+     * @dev - callable by `borrower`
+     * @dev - requires line to not have open, active credit positions
+     * @param defaultSplit The default revenue split percentage for the line
+     * @param minimumCollateralRatio The minimum collateral ratio required for the line
+     * @param revenueContracts The list of revenue contracts to update with new owner splits
+     * @param ownerSplits The corresponding list of new owner splits for each revenue contract
+     * @return true is line is amended
+     */
+    // TODO: add beneficiaries array and corresponding splits
+    function amend(uint8 defaultSplit, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) external onlyBorrower returns (bool) {
+        bool noActiveCreditPositions = count == 0;
+        if (noActiveCreditPositions) {
+            if (proposalCount > 0) {
+                _clearProposals();
+            }
+            bool isAmended = _amend(defaultSplit, minimumCollateralRatio, revenueContracts, ownerSplits);
+            return isAmended;
+        }
+        revert CannotAmendLine();
+
+    }
+
+    // TODO: implement this function
+    // TODO: add beneficiaries array and corresponding splits
+    function _amend(uint8 defaultSplit, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) internal returns (bool) {
+        // TODO: check if SecuredLine has a Spigot
+        // TODO: check if SecuredLine has an Escrow
+        // TODO: what happens if line is repaid and Spigot is transferred to borrower/operator?
+        defaultRevenueSplit = defaultSplit;
+        // TODO: check that msg.sender is the Escrow State line address
+        escrow.setMinimumCollateralRatio(minimumCollateralRatio);
+        for (uint256 i = 0; i < revenueContracts.length; i++) {
+            spigot.updateOwnerSplit(revenueContracts[i], ownerSplits[i]);
+        }
+        emit AmendLine(address(this), borrower, deadline);
+        // TODO: add events
+        // emit AmendSpigot(address(this), spigot, defaultRevenueSplit);
+        // emit AmendEscrow(address(this), escrow, minimumCollateralRatio);
+        // emit AmendRevenueContracts(address(this), spigot, revenueContracts, ownerSplits);
+        // emit AmendBeneficiaries(address(this), spigot, beneficiaries);
+        return true;
+    }
 
 }
 
