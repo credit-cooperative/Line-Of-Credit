@@ -116,6 +116,13 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         _;
     }
 
+    modifier onlyBorrowerOrServicer() {
+        if (msg.sender != borrower || msg.sender != arbiter) {
+            revert CallerAccessDenied();
+        }
+        _;
+    }
+
     /**
      * @notice - mutualConsent() but hardcodes borrower address and uses the position id to
                  get Lender address instead of passing it in directly
@@ -274,7 +281,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     ///////////////
 
     /// see ILineOfCredit.depositAndClose
-    function depositAndClose() external payable override nonReentrant whileBorrowing onlyBorrower {
+    function depositAndClose() external payable override nonReentrant whileBorrowing onlyBorrowerOrServicer {
         bytes32 id = ids[0];
         Credit memory credit = _accrue(credits[id], id);
 
@@ -286,7 +293,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     }
 
     /// see ILineOfCredit.close
-    function close(bytes32 id) external payable override nonReentrant onlyBorrower {
+    function close(bytes32 id) external payable override nonReentrant  {
         Credit memory credit = _accrue(credits[id], id);
 
         uint256 facilityFee = credit.interestAccrued;
