@@ -146,8 +146,8 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
     // TODO: implement this function
     // TODO: add beneficiaries array and corresponding splits
     function _amend(uint8 defaultSplit, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) internal returns (bool) {
-        // TODO: check if SecuredLine has a Spigot
-        // TODO: check if SecuredLine has an Escrow
+        // TODO: check if SecuredLine owns Spigot address (otherwise should fail)
+        // TODO: check if SecuredLine owns Escrow (otherwise should fail)
         // TODO: what happens if line is repaid and Spigot is transferred to borrower/operator?
         defaultRevenueSplit = defaultSplit;
         // TODO: check that msg.sender is the Escrow State line address
