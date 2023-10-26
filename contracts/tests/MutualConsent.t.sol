@@ -22,7 +22,7 @@ import {MutualConsent} from "../utils/MutualConsent.sol";
 import {SimpleOracle} from "../mock/SimpleOracle.sol";
 
 interface Events {
-    event Borrow(bytes32 indexed id, uint256 indexed amount);
+    event Borrow(bytes32 indexed id, uint256 indexed amount, address indexed to);
 
     event MutualConsentRegistered(bytes32 proposalId, address taker);
     event MutualConsentRevoked(bytes32 proposalId);

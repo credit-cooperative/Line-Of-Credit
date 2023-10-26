@@ -296,7 +296,7 @@ contract RainRe7SimPolygon is Test {
         // Rain draws down full amount
         vm.startPrank(rainBorrower);
         emit log_named_string("\n \u2713 Borrower Borrows Full Amount from Line of Credit", "");
-        securedLine.borrow(positionId, loanSizeInUSDC);
+        securedLine.borrow(positionId, loanSizeInUSDC, securedLine.borrower());
         emit log_named_uint("- Rain Borrower Ending Balance ", IERC20(USDC).balanceOf(rainBorrower));
         vm.stopPrank();
 
@@ -484,7 +484,7 @@ contract RainRe7SimPolygon is Test {
         // Rain closes the Line of Credit
         emit log_named_string("\n \u2713 Borrower Calls close Function to Close Line of Credit", "");
         vm.startPrank(rainBorrower);
- 
+
 
         securedLine.close(id);
 

@@ -162,7 +162,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         return true;
     }
 
-    function updateBorrower(address newBorrower) external onlyBorrower {
+    function updateBorrower(address newBorrower) public onlyBorrower {
         if (newBorrower == address(0)) {
             revert InvalidBorrower();
         }
@@ -347,7 +347,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     }
 
     /// see ILineOfCredit.close
-    function close(bytes32 id) external payable override nonReentrant  {
+    function close(bytes32 id) external payable override nonReentrant onlyBorrowerOrArbiter {
         Credit memory credit = _accrue(credits[id], id);
 
         uint256 facilityFee = credit.interestAccrued;
@@ -387,7 +387,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     ////////////////////
 
     /// see ILineOfCredit.borrow
-    function borrow(bytes32 id, uint256 amount) external override nonReentrant whileActive onlyBorrower {
+    function borrow(bytes32 id, uint256 amount, address to) external override nonReentrant whileActive onlyBorrower {
         Credit memory credit = _accrue(credits[id], id);
 
         if (!credit.isOpen) {
@@ -408,9 +408,14 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
             revert BorrowFailed();
         }
 
-        LineLib.sendOutTokenOrETH(credit.token, borrower, amount);
+        // If the "to" address is not provided (i.e., it's the zero address), set it to the borrower.
+        if (to == address(0)) {
+            to = borrower;
+        }
 
-        emit Borrow(id, amount);
+        LineLib.sendOutTokenOrETH(credit.token, to, amount);
+
+        emit Borrow(id, amount, to);
 
         _sortIntoQ(id);
     }
@@ -602,9 +607,5 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
             dRate,
             fRate
         );
-    }
-
-    function countActivePositions() external view returns (uint256) {
-        return ids.length;
     }
 }

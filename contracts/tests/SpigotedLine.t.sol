@@ -131,7 +131,7 @@ contract SpigotedLineTest is Test, Events {
 
     function _borrow(bytes32 id, uint amount) public {
       vm.startPrank(borrower);
-      line.borrow(id, amount);
+      line.borrow(id, amount, borrower);
       vm.stopPrank();
     }
 

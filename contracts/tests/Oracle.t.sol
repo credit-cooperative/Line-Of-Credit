@@ -338,7 +338,7 @@ contract OracleTest is Test, Events {
 
         vm.startPrank(borrower);
         escrow.addCollateral(1 ether, address(token));
-        line.borrow(line.ids(0), 1 ether);
+        line.borrow(line.ids(0), 1 ether, borrower);
         vm.stopPrank();
     }
 

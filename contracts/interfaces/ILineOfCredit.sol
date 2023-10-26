@@ -63,7 +63,7 @@ interface ILineOfCredit {
     // Borrower Events
 
     // receive full line or drawdown on credit
-    event Borrow(bytes32 indexed id, uint256 indexed amount);
+    event Borrow(bytes32 indexed id, uint256 indexed amount, address indexed to);
 
     // Emits that a Borrower has repaid an amount of interest Results in an increase in interestRepaid, i.e. interest not yet withdrawn by a Lender). There is no corresponding function
     event RepayInterest(bytes32 indexed id, uint256 indexed amount);
@@ -159,8 +159,9 @@ interface ILineOfCredit {
      * @dev          - callable by borrower
      * @param id     - the position to draw down on
      * @param amount - amount of tokens the borrower wants to withdraw
+     * @param to - address to send tokens to. defaults to `borrower` if no address provided
      */
-    function borrow(bytes32 id, uint256 amount) external;
+    function borrow(bytes32 id, uint256 amount, address to) external;
 
     /**
      * @notice       - Transfers token used in position id from msg.sender to Line contract.
@@ -182,7 +183,7 @@ interface ILineOfCredit {
      * @notice - Removes and deletes a position, preventing any more borrowing or interest.
      *         - Requires that the position principal has already been repais in full
      * @dev      - MUST repay accrued interest from facility fee during call
-     * @dev - callable by `borrower`, Lender, or `arbiter`
+     * @dev - callable by `borrower` or `arbiter`
      * @dev          - The function retains the `payable` designation, despite reverting with a non-zero msg.value, as a gas-optimization
      * @param id -the position id to be closed
      */
@@ -191,7 +192,7 @@ interface ILineOfCredit {
     /**
      * @notice - Closes a line and sets status to REPAID.
      * @dev      - Only callable if there are no active credit positions.
-     * @dev - callable by `borrower` or Lender
+     * @dev - callable by `borrower` or `arbiter`
      * @dev          - The function retains the `payable` designation, despite reverting with a non-zero msg.value, as a gas-optimization
      */
     function closeLine() external payable;

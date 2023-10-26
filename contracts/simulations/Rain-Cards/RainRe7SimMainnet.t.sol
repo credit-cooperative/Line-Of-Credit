@@ -243,7 +243,7 @@ contract RainRe7Sim is Test {
         // Rain draws down full amount
         vm.startPrank(rainBorrower);
         emit log_named_string("\n \u2713 Borrower Borrows Full Amount from Line of Credit", "");
-        securedLine.borrow(positionId, 200000 * 10 ** 6);
+        securedLine.borrow(positionId, 200000 * 10 ** 6, securedLine.borrower());
         emit log_named_uint("- Rain Borrower Ending Balance ", IERC20(USDC).balanceOf(rainBorrower));
         vm.stopPrank();
 

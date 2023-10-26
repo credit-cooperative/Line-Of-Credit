@@ -149,7 +149,7 @@ contract Escrow is IEscrow, ReentrancyGuard {
         return state.liquidate(amount, token, to);
     }
 
-    function setMinimumCollateralRatio(uint32 newMinimumCollateralRatio) external onlyLineContract nonReentrant returns (bool) {
+    function updateMinimumCollateralRatio(uint32 newMinimumCollateralRatio) external onlyLineContract nonReentrant returns (bool) {
         minimumCollateralRatio = newMinimumCollateralRatio;
         return true;
     }

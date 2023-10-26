@@ -219,7 +219,7 @@ library SpigotedLineLib {
         address arbiter,
         address to
     ) external returns (bool) {
-        if (status == LineLib.STATUS.REPAID && msg.sender == borrower) {
+        if (status == LineLib.STATUS.REPAID && (msg.sender == borrower || (msg.sender == arbiter && to == borrower))) {
             if (!ISpigot(spigot).updateOwner(to)) {
                 revert ReleaseSpigotFailed();
             }

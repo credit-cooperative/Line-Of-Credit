@@ -79,7 +79,7 @@ contract OracleTest is Test, Events {
     // Fork Settings
     uint256 constant FORK_BLOCK_NUMBER = 45_626_437; //17_638_122; // Forking mainnet at block on 7/6/23 at 7 40 PM EST
     uint256 polygonFork;
-    
+
 
     // string MAINNET_RPC_URL = vm.envString("MAINNET_RPC_URL");
 
@@ -349,7 +349,7 @@ contract OracleTest is Test, Events {
 
         vm.startPrank(borrower);
         escrow.addCollateral(1 ether, address(token));
-        line.borrow(line.ids(0), 1 ether);
+        line.borrow(line.ids(0), 1 ether, borrower);
         vm.stopPrank();
     }
 

@@ -125,7 +125,7 @@ contract EscrowedLineTest is Test {
         bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
         vm.stopPrank();
         vm.startPrank(borrower);
-        line.borrow(id, 1 ether);
+        line.borrow(id, 1 ether, borrower);
         vm.stopPrank();
         vm.expectRevert(ILineOfCredit.NotLiquidatable.selector);
         line.liquidate(1 ether, address(supportedToken2));
@@ -138,7 +138,7 @@ contract EscrowedLineTest is Test {
 
         bytes32 id = line.ids(0);
         vm.startPrank(borrower);
-        line.borrow(id, 1 ether);
+        line.borrow(id, 1 ether, borrower);
         vm.stopPrank();
         (uint p,) = line.updateOutstandingDebt();
         assertGt(p, 0);
@@ -178,7 +178,7 @@ contract EscrowedLineTest is Test {
         uint balanceOfArbiter = supportedToken2.balanceOf(arbiter);
         bytes32 id = line.ids(0);
         vm.startPrank(borrower);
-        line.borrow(id, 1 ether);
+        line.borrow(id, 1 ether, borrower);
         vm.stopPrank();
         (uint p, uint i) = line.updateOutstandingDebt();
         assertGt(p, 0);

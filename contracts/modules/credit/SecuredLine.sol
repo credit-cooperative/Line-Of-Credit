@@ -106,12 +106,12 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
      * @param ownerSplits The corresponding list of new owner splits for each revenue contract
      * @return true is line is amended, extended, and set to ACTIVE status
      */
-    function amendAndExtend(uint256 ttlExtension, uint8 defaultSplit, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) external onlyBorrower returns (bool) {
+    function amendAndExtend(address newBorrower, uint256 ttlExtension, uint8 defaultSplit, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) external onlyBorrower returns (bool) {
         if (count == 0){
             if (proposalCount > 0) {
                 _clearProposals();
             }
-            _amend(defaultSplit, minimumCollateralRatio, revenueContracts, ownerSplits);
+            _amend(newBorrower, defaultSplit, minimumCollateralRatio, revenueContracts, ownerSplits);
             _extend(ttlExtension);
             return true;
         }
@@ -129,12 +129,12 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
      * @return true is line is amended
      */
     // TODO: add beneficiaries array and corresponding splits
-    function amend(uint8 defaultSplit, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) external onlyBorrower returns (bool) {
+    function amend(address newBorrower, uint8 defaultSplit, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) external onlyBorrower returns (bool) {
         if (count == 0) {
             if (proposalCount > 0) {
                 _clearProposals();
             }
-            bool isAmended = _amend(defaultSplit, minimumCollateralRatio, revenueContracts, ownerSplits);
+            bool isAmended = _amend(newBorrower, defaultSplit, minimumCollateralRatio, revenueContracts, ownerSplits);
             return isAmended;
         }
         revert CannotAmendLine();
@@ -143,13 +143,14 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
 
     // TODO: implement this function
     // TODO: add beneficiaries array and corresponding splits
-    function _amend(uint8 defaultSplit, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) internal returns (bool) {
+    function _amend(address newBorrower, uint8 defaultSplit, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) internal returns (bool) {
         // TODO: check if SecuredLine owns Spigot address (otherwise should fail)
         // TODO: check if SecuredLine owns Escrow (otherwise should fail)
         // TODO: what happens if line is repaid and Spigot is transferred to borrower/operator?
+        updateBorrower(newBorrower);
         defaultRevenueSplit = defaultSplit;
         // TODO: check that msg.sender is the Escrow State line address
-        escrow.setMinimumCollateralRatio(minimumCollateralRatio);
+        escrow.updateMinimumCollateralRatio(minimumCollateralRatio);
         for (uint256 i = 0; i < revenueContracts.length; i++) {
             spigot.updateOwnerSplit(revenueContracts[i], ownerSplits[i]);
         }
