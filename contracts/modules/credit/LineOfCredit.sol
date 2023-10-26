@@ -356,8 +356,8 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         credits[id] = _close(_repay(credit, id, facilityFee, borrower), id);
     }
 
-    /// see ILineOfCredit.close
-    function close() external payable override nonReentrant onlyBorrowerOrArbiter {
+    /// see ILineOfCredit.closeLine
+    function closeLine() external payable override nonReentrant onlyBorrowerOrArbiter {
         if (count == 0) {
             _updateStatus(LineLib.STATUS.REPAID);
         }

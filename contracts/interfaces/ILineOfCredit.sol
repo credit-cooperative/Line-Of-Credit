@@ -54,7 +54,7 @@ interface ILineOfCredit {
     event CloseCreditPosition(bytes32 indexed id);
 
     // Emitted when a line is closed by the line's borrower or arbiter
-    event CloseLine(address(this))
+    event CloseLine(address indexed line);
 
     // After accrueInterest runs, emits the amount of interest added to a Borrower's outstanding balance of interest due
     // but not yet repaid to the Line of Credit contract
@@ -96,6 +96,7 @@ interface ILineOfCredit {
     error EthSupportDisabled();
     error BorrowFailed();
     error CannotExtendLine();
+    error InvalidBorrower();
 
     // Fully public functions
 
@@ -181,7 +182,7 @@ interface ILineOfCredit {
      * @notice - Removes and deletes a position, preventing any more borrowing or interest.
      *         - Requires that the position principal has already been repais in full
      * @dev      - MUST repay accrued interest from facility fee during call
-     * @dev - callable by `borrower` or Lender
+     * @dev - callable by `borrower`, Lender, or `arbiter`
      * @dev          - The function retains the `payable` designation, despite reverting with a non-zero msg.value, as a gas-optimization
      * @param id -the position id to be closed
      */
@@ -193,7 +194,7 @@ interface ILineOfCredit {
      * @dev - callable by `borrower` or Lender
      * @dev          - The function retains the `payable` designation, despite reverting with a non-zero msg.value, as a gas-optimization
      */
-    function close() external payable;
+    function closeLine() external payable;
 
     // Lender functions
 
