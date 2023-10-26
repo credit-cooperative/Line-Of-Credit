@@ -293,13 +293,16 @@ library SpigotLib {
    */
     function _setSplitAllocation(uint256[] memory _allocations) internal {
         require(_allocations.length == beneficiaries.length, "Invalid length");
+        require(_allocations[0] == 0, "operator must always have 0% allocation. Their split is determined by the rev contracts");
         uint256 sum=0;
         for (uint256 i=0; i<_allocations.length; i++) {
             sum = sum + _allocations[i];
         }
         require(sum == FULL_ALLOC, "Ratio does not equal 100000");
 
-        allocations = _allocations;
+        for (uint256 i = 0; i < _startingBeneficiaries.length; i++) {
+            state.beneficiaryInfo[i].allocation = _allocations[i];
+        }
     }
 
     function _amountsFromAllocations(uint256[] memory _allocations, uint256 total) internal pure returns (uint256[] memory newAmounts) {
@@ -344,6 +347,24 @@ library SpigotLib {
         beneficiaries[_index] = _newBeneficiary;
 
         _setSplitAllocation(_newAllocation);
+    }
+
+    function resetAllocation(uint256[] calldata _newAllocation) external onlyAdmin() {
+        _setSplitAllocation(_newAllocation);
+    }
+
+    function resetDebtOwed(uint256[] calldata _newDebtOwed) external onlyAdmin() {
+        require(_newDebtOwed.length == beneficiaries.length, "Invalid length");
+        for (uint256 i = 0; i < beneficiaries.length; i++) {
+            state.beneficiaryInfo[i].debtOwed = _newDebtOwed[i];
+        }
+    }
+
+    function updateDesiredRepaymentToken(address[] calldata _newToken) external onlyAdmin() {
+        require(_newToken != address(0), "Invalid token");
+        for (uint256 i = 0; i < beneficiaries.length; i++) {
+            state.beneficiaryInfo[i].desiredRepaymentToken = _newToken;
+        }
     }
 
     // Spigot Events
