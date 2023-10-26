@@ -237,11 +237,14 @@ library SpigotedLineLib {
     }
 
     /**
-      * @notice -  Sends any remaining tokens (revenue or credit tokens) in the Spigot to the Borrower after the loan has been repaid.
-                  -  In case of a Borrower default (loan status = liquidatable), this is a fallback mechanism to withdraw all the tokens and send them to the Arbiter
+      * @notice -  Sends unused tokens in the Line to the Borrower after the loan has been repaid.
+                  - Can be used after borrower has repaid the loan to withdraw any unused tokens from the Line
+                  -  In case of a Borrower default (loan status = liquidatable), this can be used as fallback mechanism to withdraw all the tokens and send them to the Arbiter
                   -  Does not transfer anything if line is healthy
+                  - `arbiter` can only withdraw unused tokens to the `borrower`
+                  - `borrower` can withdraw unused tokens to any address
       * @dev    - callable by `borrower` or `arbiter`
-      * @return - whether or not spigot was released
+      * @return - amount that is swept
     */
     function sweep(
         address to,
