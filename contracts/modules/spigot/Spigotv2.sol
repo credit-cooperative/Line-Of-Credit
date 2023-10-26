@@ -20,15 +20,12 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
     using SafeERC20 for IERC20;
     using SpigotLib for SpigotState;
 
+    SpigotState private state;
 
-    // able to perform certain admin actions
-    IERC20 repaymentToken;
+    uint128 constant MAX_BENEFICIARIES = 5;
+    uint128 constant MIN_BENEFICIARIES = 2;
+    uint256 constant FULL_ALLOC = 100000;
 
-
-    mapping (address => uint256) beneficiaryOutstandingDebt;
-
-    // ERC1155 token contract address
-    IERC1155 public erc1155Token;
 
     modifier onlyAdmin {
         require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Unauthorised");
@@ -36,47 +33,42 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
     }
 
     constructor(
-        address _erc1155Address,
         address[] memory _startingBeneficiaries,
         uint256[] memory _startingAllocations,
         uint256[] memory _debtOwed,
-        uint256[] memory _desiredRevToken,
+        address[] memory _repaymentToken,
+        address _adminMultisig
         ) {
         require(_startingBeneficiaries.length == _startingAllocations.length, "Beneficiaries and allocations must be equal length");
+        require(_startingAllocations[0] == 0);
+        require(_startingBeneficiaries.length <= MAX_BENEFICIARIES, "Max beneficiaries");
+        require(_startingBeneficiaries.length == _debtOwed.length, "Debt owed array and beneficiaries must be equal length");
+        require(_startingBeneficiaries.length == _repaymentToken.length, "Repayment token and beneficiaries must be equal length");
         require(_startingBeneficiaries.length >= MIN_BENEFICIARIES, "Must have at least 2 beneficiaries");
 
-        // setup multisig as admin that has signers from the borrower and lenders.
-        _setRoleAdmin(DEFAULT_ADMIN_ROLE, _adminMultisig); 
-
-        // What token is being used for repayment
-
-        // For Arf use case only
-        erc1155Token = IERC1155(_erc1155Address);
-
-        allocations = new uint256[](_startingAllocations.length); // setup fee split ratio
-
         uint256 sum=0;
-        for (uint256 i=0; i<allocations.length; i++) {
-            sum = sum + allocations[i];
+        for (uint256 i=0; i<_startingAllocations.length; i++) {
+            sum = sum + _startingAllocations[i];
         }
 
         require(sum == FULL_ALLOC, "Ratio does not equal 100000");
 
-        for (uint256 i = 0; i < _startingAllocations.length; i++) {
-            allocations[i] = _startingAllocations[i];
-        }
+        // setup multisig as admin that has signers from the borrower and lenders.
+        _setRoleAdmin(DEFAULT_ADMIN_ROLE, _adminMultisig); 
 
-        beneficiaries = new address[](_startingBeneficiaries.length); // setup beneficiaries
         for (uint256 i = 0; i < _startingBeneficiaries.length; i++) {
-            beneficiaries[i] = _startingBeneficiaries[i];
+            state.beneficiaries[i] = _startingBeneficiaries[i];
+            state.beneficiaryInfo[i].allocation = _startingAllocations[i];
+            state.beneficiaryInfo[i].debtOwed = _debtOwed[i];
+            state.beneficiaryInfo[i].repaymentToken = _repaymentToken[i];
         }
 
         state.operator = _startingBeneficiaries[0];
-        state.owner = _startingBeneficiaries[1];
+        state.ccLoc = _startingBeneficiaries[1];
     }
 
-    function owner() external view returns (address) {
-        return state.owner;
+    function lineAddress() external view returns (address) {
+        return state.ccLoc;
     }
 
     function operator() external view returns (address) {
@@ -108,10 +100,6 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
         return state.claimRevenue(revenueContract, token, data);
     }
 
-     // Claim position 0
-    function claimOwnerTokens(address token) external nonReentrant returns (uint256 claimed) {
-        return state.claimOwnerTokens(token);
-    }
 
     /**
      * @notice - Allows Spigot Operqtor to claim escrowed revenue tokens
@@ -122,7 +110,7 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
 
      // claim position 1
     function claimOperatorTokens(address token) external nonReentrant returns (uint256 claimed) {
-        return state.distributeFunds(); // maybe need to pass in token
+        return state.claimOperatorTokens(token); // maybe need to pass in token
     }
 
     ///////////////////////// OUSTANDING QUESTIONS //////////////////////////
@@ -164,8 +152,8 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
                         PUBLIC FUNCTIONS
     //////////////////////////////////////////////////////*/
 
-    function distributeFunds() external {
-        state._distributeFunds();
+    function distributeFunds(address token) external {
+        state._distributeFunds(token);
     }
 
     /**
@@ -198,73 +186,21 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
    */
 
     function addBeneficiaryAddress(address _newBeneficiary, uint256[] calldata _newAllocation) external onlyAdmin() {
-        require(beneficiaries.length < MAX_BENEFICIARIES, "Max beneficiaries");
-        require(_newBeneficiary!=address(0), "beneficiary cannot be 0 address");
-
-        for (uint256 i = 0; i < beneficiaries.length; i++) {
-            require(beneficiaries[i] != _newBeneficiary, "Duplicate beneficiary");
-        }
-
-        _distributeFunds();
-
-        beneficiaries.push(_newBeneficiary);
-
-        _setSplitAllocation(_newAllocation);
+        state.addBeneficiaryAddress(_newBeneficiary, _newAllocation);
     }
 
 
     function replaceBeneficiaryAt(uint256 _index, address _newBeneficiary, uint256[] calldata _newAllocation) external onlyAdmin() {
-        require(_index >= 1, "Invalid beneficiary to remove");
-        require(_newBeneficiary!=address(0), "Beneficiary cannot be 0 address");
-
-        for (uint256 i = 0; i < beneficiaries.length; i++) {
-            require(beneficiaries[i] != _newBeneficiary, "Duplicate beneficiary");
-        }
-
-        _distributeFunds();
-    
-        beneficiaries[_index] = _newBeneficiary;
-
-        _setSplitAllocation(_newAllocation);
+        state.replaceBeneficiaryAt(_index, _newBeneficiary, _newAllocation);
     }
 
     /*//////////////////////////////////////////////////////
                         I N T E R N A L                    
     //////////////////////////////////////////////////////*/
 
-    function _amountsFromAllocations(uint256[] memory _allocations, uint256 total) internal pure returns (uint256[] memory newAmounts) {
-        newAmounts = new uint256[](_allocations.length);
-        uint256 currBalance;
-        uint256 allocatedBalance;
+    
 
-        for (uint256 i = 0; i < _allocations.length; i++) {
-            if (i == _allocations.length - 1) {
-                newAmounts[i] = total - allocatedBalance;
-            } else {
-                currBalance = (total * _allocations[i]) / (FULL_ALLOC);
-                allocatedBalance = allocatedBalance + currBalance;
-                newAmounts[i] = currBalance;
-            }
-        }
-        return newAmounts;
-    }
 
-    /**
-  @notice Internal function to sets the split allocations of fees to send to fee beneficiaries
-  @dev The split allocations must sum to 100000.
-  @dev smartTreasury must be set for this to be called.
-  @param _allocations The updated split ratio.
-   */
-    function _setSplitAllocation(uint256[] memory _allocations) internal {
-        require(_allocations.length == beneficiaries.length, "Invalid length");
-        uint256 sum=0;
-        for (uint256 i=0; i<_allocations.length; i++) {
-            sum = sum + _allocations[i];
-        }
-        require(sum == FULL_ALLOC, "Ratio does not equal 100000");
-
-        allocations = _allocations;
-    }
 
         // ##########################
     // ##### *ring* *ring*  #####

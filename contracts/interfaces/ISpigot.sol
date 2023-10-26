@@ -11,7 +11,7 @@ interface ISpigot {
     }
 
     struct Beneficiary {
-        address bennyOperator; // do we want this?
+        // address bennyOperator; // do we want this?
         uint256 allocation; // should this be set based on debt repaid?
         address desiredRepaymentToken; // do we want this?
         uint256 debtOwed;
