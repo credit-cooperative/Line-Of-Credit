@@ -107,8 +107,7 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
      * @return true is line is amended, extended, and set to ACTIVE status
      */
     function amendAndExtend(uint256 ttlExtension, uint8 defaultSplit, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) external onlyBorrower returns (bool) {
-        bool noActiveCreditPositions = count == 0;
-        if (noActiveCreditPositions){
+        if (count == 0){
             if (proposalCount > 0) {
                 _clearProposals();
             }
@@ -131,8 +130,7 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
      */
     // TODO: add beneficiaries array and corresponding splits
     function amend(uint8 defaultSplit, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) external onlyBorrower returns (bool) {
-        bool noActiveCreditPositions = count == 0;
-        if (noActiveCreditPositions) {
+        if (count == 0) {
             if (proposalCount > 0) {
                 _clearProposals();
             }

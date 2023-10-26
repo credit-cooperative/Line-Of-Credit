@@ -35,7 +35,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     uint256 public deadlineExtension = 0;
 
     /// @notice - the account that can drawdown and manage debt positions
-    address public immutable borrower;
+    address public borrower;
 
     /// @notice - neutral 3rd party that mediates btw borrower and all lenders
     address public immutable arbiter;
@@ -143,8 +143,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
      * @return true is line is extended and set to ACTIVE status.
      */
     function extend(uint256 ttlExtension) external onlyBorrower returns (bool) {
-        bool noActiveCreditPositions = count == 0;
-        if (noActiveCreditPositions) {
+        if (count == 0) {
             if (proposalCount > 0) {
                 _clearProposals();
             }
@@ -161,6 +160,14 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         }
         emit ExtendLine(address(this), borrower, deadline);
         return true;
+    }
+
+    function updateBorrower(address newBorrower) external onlyBorrower {
+        if (newBorrower == address(0)) {
+            revert InvalidBorrower();
+        }
+        borrower = newBorrower;
+        emit UpdateBorrower(borrower, newBorrower);
     }
 
     /**
@@ -347,6 +354,15 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         // clear facility fees and close position
         credits[id] = _close(_repay(credit, id, facilityFee, borrower), id);
+    }
+
+    /// see ILineOfCredit.close
+    function close() external payable override nonReentrant onlyBorrowerOrArbiter {
+        if (count == 0) {
+            _updateStatus(LineLib.STATUS.REPAID);
+        }
+
+        emit CloseLine(address(this));
     }
 
     /// see ILineOfCredit.depositAndRepay

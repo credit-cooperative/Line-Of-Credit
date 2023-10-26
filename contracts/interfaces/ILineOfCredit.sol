@@ -25,6 +25,7 @@ interface ILineOfCredit {
 
     event DeployLine(address indexed oracle, address indexed arbiter, address indexed borrower);
     event ExtendLine(address indexed line, address indexed borrower, uint256 indexed deadline);
+    event UpdateBorrower(address indexed borrower, address indexed newBorrower);
     event AmendLine(address indexed line, address indexed borrower, uint256 indexed deadline);
     event AmendSpigot(address indexed line, address indexed spigot, uint8 defaultRevenueSplit);
     event AmendEscrow(address indexed line, address indexed escrow, uint32 indexed minimumCollateralRatio);
@@ -51,6 +52,9 @@ interface ILineOfCredit {
 
     // Emitted when any credit line is closed by the line's borrower or the position's lender
     event CloseCreditPosition(bytes32 indexed id);
+
+    // Emitted when a line is closed by the line's borrower or arbiter
+    event CloseLine(address(this))
 
     // After accrueInterest runs, emits the amount of interest added to a Borrower's outstanding balance of interest due
     // but not yet repaid to the Line of Credit contract
@@ -182,6 +186,14 @@ interface ILineOfCredit {
      * @param id -the position id to be closed
      */
     function close(bytes32 id) external payable;
+
+    /**
+     * @notice - Closes a line and sets status to REPAID.
+     * @dev      - Only callable if there are no active credit positions.
+     * @dev - callable by `borrower` or Lender
+     * @dev          - The function retains the `payable` designation, despite reverting with a non-zero msg.value, as a gas-optimization
+     */
+    function close() external payable;
 
     // Lender functions
 
