@@ -489,7 +489,7 @@ contract RainRe7Sim is Test {
 
     function _deployLoCWithConfig(LineFactory lineFactory) internal returns (address){
         // create Escrow and Spigot
-        escrow = new Escrow(minCRatio, oracleAddress, rainControllerOwnerAddress, rainBorrower);
+        escrow = new Escrow(minCRatio, oracleAddress, rainControllerOwnerAddress, rainBorrower, arbiterAddress);
         spigot = new Spigot(rainControllerOwnerAddress, rainControllerOwnerAddress);
 
         // create SecuredLine

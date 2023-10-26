@@ -53,7 +53,7 @@ contract EscrowedLineTest is Test {
         unsupportedToken = new RevenueToken();
 
         oracle = new SimpleOracle(address(supportedToken1), address(supportedToken2));
-        escrow = new Escrow(minCollateralRatio, address(oracle), arbiter, borrower);
+        escrow = new Escrow(minCollateralRatio, address(oracle), arbiter, borrower, arbiter);
         line = new MockEscrowedLine(
             address(escrow),
             address(oracle),
@@ -153,7 +153,7 @@ contract EscrowedLineTest is Test {
     function test_line_is_uninitilized_if_escrow_not_owned() public {
         address mock = address(new MockLine(0, address(3)));
 
-        Escrow e = new Escrow(minCollateralRatio, address(oracle), mock, borrower);
+        Escrow e = new Escrow(minCollateralRatio, address(oracle), mock, borrower, arbiter);
         MockEscrowedLine l = new MockEscrowedLine(
 
             address(escrow),

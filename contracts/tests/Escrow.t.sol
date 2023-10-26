@@ -55,9 +55,9 @@ contract EscrowTest is Test {
         badLine = new MockLine(0, arbiter);
 
         // deploy and save escrow
-        address _escrow = _createEscrow(minCollateralRatio, address(oracle), address(line), borrower);
+        address _escrow = _createEscrow(minCollateralRatio, address(oracle), address(line), borrower, arbiter);
 
-        badEscrow = new Escrow(minCollateralRatio, address(badOracle), address(badLine), borrower);
+        badEscrow = new Escrow(minCollateralRatio, address(badOracle), address(badLine), borrower, arbiter);
 
         // add escrow to mock line
         line.setEscrow(_escrow);
@@ -98,9 +98,10 @@ contract EscrowTest is Test {
         uint32 _minimumCollateralRatio,
         address _oracle,
         address _line,
-        address _borrower
+        address _borrower,
+        address _arbiter
     ) internal returns(address) {
-        escrow = new Escrow(_minimumCollateralRatio, _oracle, _line, _borrower);
+        escrow = new Escrow(_minimumCollateralRatio, _oracle, _line, _borrower, _arbiter);
 
         return address(escrow);
     }

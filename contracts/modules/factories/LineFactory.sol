@@ -44,7 +44,7 @@ contract LineFactory is ILineFactory {
 
     /// see ModuleFactory.deployEscrow.
     function deployEscrow(uint32 minCRatio, address owner, address borrower) external returns (address) {
-        return factory.deployEscrow(minCRatio, oracle, owner, borrower);
+        return factory.deployEscrow(minCRatio, oracle, owner, borrower, arbiter);
     }
 
     /// see ModuleFactory.deploySpigot.
@@ -55,7 +55,7 @@ contract LineFactory is ILineFactory {
     function deploySecuredLine(address borrower, uint256 ttl) external returns (address line) {
         // deploy new modules
         address s = factory.deploySpigot(address(this), borrower);
-        address e = factory.deployEscrow(defaultMinCRatio, oracle, address(this), borrower);
+        address e = factory.deployEscrow(defaultMinCRatio, oracle, address(this), borrower, arbiter);
         uint8 split = defaultRevenueSplit; // gas savings
         line = LineFactoryLib.deploySecuredLine(oracle, arbiter, borrower, payable(swapTarget), s, e, ttl, split);
         // give modules from address(this) to line so we can run line.init()
@@ -70,7 +70,7 @@ contract LineFactory is ILineFactory {
 
         // deploy new modules
         address s = factory.deploySpigot(address(this), coreParams.borrower);
-        address e = factory.deployEscrow(coreParams.cratio, oracle, address(this), coreParams.borrower);
+        address e = factory.deployEscrow(coreParams.cratio, oracle, address(this), coreParams.borrower, arbiter);
         line = LineFactoryLib.deploySecuredLine(
             oracle,
             arbiter,

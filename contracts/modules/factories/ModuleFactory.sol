@@ -33,10 +33,11 @@ contract ModuleFactory is IModuleFactory {
         uint32 minCRatio,
         address oracle,
         address owner,
-        address borrower
+        address borrower,
+        address arbiter
     ) external returns (address module) {
-        module = address(new Escrow(minCRatio, oracle, owner, borrower));
-        emit DeployedEscrow(module, minCRatio, oracle, owner);
+        module = address(new Escrow(minCRatio, oracle, owner, borrower, arbiter));
+        emit DeployedEscrow(module, minCRatio, oracle, owner, arbiter);
     }
 
     function registerEscrow(

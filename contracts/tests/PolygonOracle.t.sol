@@ -135,7 +135,7 @@ contract OracleTest is Test, Events {
         // assertEq(uint256(line.init()), uint256(LineLib.STATUS.ACTIVE));
 
         // deploy and save escrow
-        escrow = new Escrow ( minCollateralRatio, address(forkOracle), address(line), borrower);
+        escrow = new Escrow ( minCollateralRatio, address(forkOracle), address(line), borrower, arbiter);
 
         // _mintAndApprove();
 
@@ -207,7 +207,7 @@ contract OracleTest is Test, Events {
         vm.assume(amount > 0 && amount < 100 ether);
 
         // use the mainnet fork's chainlink feedregistry
-        escrow = new Escrow ( minCollateralRatio, address(forkOracle), address(line), borrower);
+        escrow = new Escrow ( minCollateralRatio, address(forkOracle), address(line), borrower, arbiter);
 
         vm.startPrank(arbiter);
         vm.expectEmit(true,false,false,true, address(escrow));

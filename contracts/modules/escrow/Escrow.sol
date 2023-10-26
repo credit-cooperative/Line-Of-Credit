@@ -32,6 +32,9 @@ contract Escrow is IEscrow, ReentrancyGuard {
     /// @notice borrower on line contract
     address public immutable borrower;
 
+    /// @notice arbiter on line contract
+    address public immutable arbiter;
+
     /// @notice all data around terms for collateral and current deposits
     EscrowState private state;
 
@@ -50,10 +53,11 @@ contract Escrow is IEscrow, ReentrancyGuard {
                           - also is the oracle providing current total outstanding debt value.
       * @param _borrower  - borrower on the _line contract. Cannot pull from _line because _line might not be a Line at construction.
     */
-    constructor(uint32 _minimumCollateralRatio, address _oracle, address _line, address _borrower) {
+    constructor(uint32 _minimumCollateralRatio, address _oracle, address _line, address _borrower, address _arbiter) {
         minimumCollateralRatio = _minimumCollateralRatio;
         oracle = _oracle;
         borrower = _borrower;
+        arbiter = _arbiter;
         state.line = _line;
     }
 
@@ -114,7 +118,7 @@ contract Escrow is IEscrow, ReentrancyGuard {
      * @return - the updated cratio
      */
     function releaseCollateral(uint256 amount, address token, address to) external nonReentrant returns (uint256) {
-        return state.releaseCollateral(borrower, oracle, minimumCollateralRatio, amount, token, to);
+        return state.releaseCollateral(borrower, arbiter, oracle, minimumCollateralRatio, amount, token, to);
     }
 
     /**
