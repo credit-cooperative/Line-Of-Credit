@@ -40,7 +40,7 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
         address _adminMultisig
         ) {
         require(_startingBeneficiaries.length == _startingAllocations.length, "Beneficiaries and allocations must be equal length");
-        require(_startingAllocations[0] == 0);
+        require(_startingAllocations[0] == 0, "operator must always have 0% allocation. Their split is determined by the rev contracts");
         require(_startingBeneficiaries.length <= MAX_BENEFICIARIES, "Max beneficiaries");
         require(_startingBeneficiaries.length == _debtOwed.length, "Debt owed array and beneficiaries must be equal length");
         require(_startingBeneficiaries.length == _repaymentToken.length, "Repayment token and beneficiaries must be equal length");
