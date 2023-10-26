@@ -87,6 +87,22 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
         return SpigotedLineLib.canDeclareInsolvent(address(spigot), arbiter);
     }
 
+    /// see ISpigotedLine.closePositionWithUnusedTokens
+    function closePositionWithUnusedTokens(bytes32 id) external nonReentrant onlyBorrowerOrArbiter {
+        Credit memory credit = _accrue(credits[id], id);
+
+        uint256 facilityFee = credit.interestAccrued;
+        uint256 unusedTokensForClosingPosition = unusedTokens[credit.token];
+        unusedTokens[credit.token] -= unusedTokensForClosingPosition;
+
+        if (unusedTokensForClosingPosition > facilityFee) {
+            // clear facility fees and close position
+            credits[id] = _close(_repay(credit, id, facilityFee, address(this)), id);
+        }
+
+    }
+
+
     /// see ISpigotedLine.claimAndRepay
     function claimAndRepay(
         address claimToken,
