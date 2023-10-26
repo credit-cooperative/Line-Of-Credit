@@ -64,8 +64,10 @@ interface ISpigot {
 
     // owner funcs
 
+    // NOTE: TO BE DEPRECATED!
     function claimOwnerTokens(address token) external returns (uint256 claimed);
 
+    // NOTE: TO BE DEPRECATED!
     function claimOperatorTokens(address token) external returns (uint256 claimed);
 
     function addSpigot(address revenueContract, Setting memory setting) external returns (bool);

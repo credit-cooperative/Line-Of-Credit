@@ -73,6 +73,7 @@ contract Spigot is ISpigot, ReentrancyGuard {
      * @param token     - address of revenue token that is being escrowed by spigot
      * @return claimed  -  The amount of tokens claimed by the `owner`
      */
+    // NOTE: TO BE DEPRECATED!
     function claimOwnerTokens(address token) external nonReentrant returns (uint256 claimed) {
         return state.claimOwnerTokens(token);
     }
@@ -83,6 +84,7 @@ contract Spigot is ISpigot, ReentrancyGuard {
      * @param token - address of revenue token that is being escrowed by spigot
      * @return claimed -  The amount of tokens claimed by the `operator`
      */
+    // NOTE: TO BE DEPRECATED!
     function claimOperatorTokens(address token) external nonReentrant returns (uint256 claimed) {
         return state.claimOperatorTokens(token);
     }
