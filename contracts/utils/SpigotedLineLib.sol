@@ -77,7 +77,7 @@ library SpigotedLineLib {
 
         // @dev claim has to be called after we get balance
         // reverts if there are no tokens to claim
-        uint256 claimed = ISpigot(spigot).claimOwnerTokens(claimToken);
+        uint256 claimed = ISpigot(spigot).distributeFunds(claimToken)[1];
 
         trade(claimed + unused, claimToken, swapTarget, zeroExTradeData);
 
@@ -168,7 +168,7 @@ library SpigotedLineLib {
 
     function canDeclareInsolvent(address spigot, address arbiter) external view returns (bool) {
         // Must have called releaseSpigot() and sold off protocol / revenue streams already
-        address owner_ = ISpigot(spigot).owner();
+        address owner_ = ISpigot(spigot).lineAddress();
         if (address(this) == owner_ || arbiter == owner_) {
             revert NotInsolvent(spigot);
         }

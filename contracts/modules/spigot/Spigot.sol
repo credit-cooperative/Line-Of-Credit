@@ -1,41 +1,73 @@
 // SPDX-License-Identifier: GPL-3.0
 // Copyright: https://github.com/credit-cooperative/Line-Of-Credit/blob/master/COPYRIGHT.md
 
- pragma solidity ^0.8.16;
-
+pragma solidity ^0.8.16;
+import {MutualConsent} from "../../utils/MutualConsent.sol";
+import {AccessControl} from "openzeppelin/access/AccessControl.sol";
+import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
+import {Ownable} from "openzeppelin/access/Ownable.sol";
+import {ERC1155} from "openzeppelin/token/ERC1155/ERC1155.sol";
+import {IERC1155} from "openzeppelin/token/ERC1155/IERC1155.sol";
+import {SafeERC20} from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "openzeppelin/utils/ReentrancyGuard.sol";
 import {LineLib} from "../../utils/LineLib.sol";
 import {SpigotState, SpigotLib} from "../../utils/SpigotLib.sol";
 
 import {ISpigot} from "../../interfaces/ISpigot.sol";
 
-/**
- * @title   Credit Cooperative Spigot
- * @notice  - a contract allowing the revenue stream of a smart contract to be split between two parties, Owner and Treasury
-            - operational control of revenue generating contract belongs to Spigot's Owner and delegated to Operator.
- * @dev     - Should be deployed once per agreement. Multiple revenue contracts can be attached to a Spigot.
- */
-contract Spigot is ISpigot, ReentrancyGuard {
-    using SpigotLib for SpigotState;
 
-    // Stakeholder variables
+contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
+    using SpigotLib for SpigotState;
 
     SpigotState private state;
 
-    /**
-     * @notice          - Configure data for Spigot stakeholders
-     *                  - Owner/operator/treasury can all be the same address when setting up a Spigot
-     * @param _owner    - An address that controls the Spigot and owns rights to some or all tokens earned by owned revenue contracts
-     * @param _operator - An active address for non-Owner that can execute whitelisted functions to manage and maintain product operations
-     *                  - on revenue generating contracts controlled by the Spigot.
-     */
-    constructor(address _owner, address _operator) {
-        state.owner = _owner;
-        state.operator = _operator;
+    uint128 constant MAX_BENEFICIARIES = 5;
+    uint128 constant MIN_BENEFICIARIES = 2;
+    uint256 constant FULL_ALLOC = 100000;
+
+
+    modifier onlyAdmin {
+        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Unauthorised");
+        _;
     }
 
-    function owner() external view returns (address) {
-        return state.owner;
+    constructor(
+        address[] memory _startingBeneficiaries,
+        uint256[] memory _startingAllocations,
+        uint256[] memory _debtOwed,
+        address[] memory _repaymentToken,
+        address _adminMultisig
+        ) {
+        require(_startingBeneficiaries.length == _startingAllocations.length, "Beneficiaries and allocations must be equal length");
+        require(_startingAllocations[0] == 0, "operator must always have 0% allocation. Their split is determined by the rev contracts");
+        require(_startingBeneficiaries.length <= MAX_BENEFICIARIES, "Max beneficiaries");
+        require(_startingBeneficiaries.length == _debtOwed.length, "Debt owed array and beneficiaries must be equal length");
+        require(_startingBeneficiaries.length == _repaymentToken.length, "Repayment token and beneficiaries must be equal length");
+        require(_startingBeneficiaries.length >= MIN_BENEFICIARIES, "Must have at least 2 beneficiaries");
+
+        uint256 sum=0;
+        for (uint256 i=0; i<_startingAllocations.length; i++) {
+            sum = sum + _startingAllocations[i];
+        }
+
+        require(sum == FULL_ALLOC, "Ratio does not equal 100000");
+
+        // setup multisig as admin that has signers from the borrower and lenders.
+        // _setRoleAdmin(DEFAULT_ADMIN_ROLE, _adminMultisig); 
+
+        for (uint256 i = 0; i < _startingBeneficiaries.length; i++) {
+            state.beneficiaries[i] = _startingBeneficiaries[i];
+            state.beneficiaryInfo[_startingBeneficiaries[i]].allocation = _startingAllocations[i];
+            state.beneficiaryInfo[_startingBeneficiaries[i]].debtOwed = _debtOwed[i];
+            state.beneficiaryInfo[_startingBeneficiaries[i]].desiredRepaymentToken = _repaymentToken[i];
+        }
+
+        state.operator = _startingBeneficiaries[0];
+        state.ccLoc = _startingBeneficiaries[1];
+    }
+
+    function lineAddress() external view returns (address) {
+        return state.ccLoc;
     }
 
     function operator() external view returns (address) {
@@ -67,17 +99,6 @@ contract Spigot is ISpigot, ReentrancyGuard {
         return state.claimRevenue(revenueContract, token, data);
     }
 
-    /**
-     * @notice  - Allows Spigot Owner to claim escrowed revenue tokens
-     * @dev     - callable by `owner`
-     * @param token     - address of revenue token that is being escrowed by spigot
-     * @return claimed  -  The amount of tokens claimed by the `owner`
-     */
-
-     // Claim position 0
-    function claimOwnerTokens(address token) external nonReentrant returns (uint256 claimed) {
-        return state.claimOwnerTokens(token);
-    }
 
     /**
      * @notice - Allows Spigot Operqtor to claim escrowed revenue tokens
@@ -88,10 +109,99 @@ contract Spigot is ISpigot, ReentrancyGuard {
 
      // claim position 1
     function claimOperatorTokens(address token) external nonReentrant returns (uint256 claimed) {
-        return state.claimOperatorTokens(token);
+        return state.claimOperatorTokens(token); // maybe need to pass in token
     }
 
-    // ##########################
+    ///////////////////////// OUSTANDING QUESTIONS //////////////////////////
+    /**
+        - do we allow differet beneficiaries to to pull our allocations at different times?
+            - maybe a struct? Tracks address, amount owed, amout repaid?
+            - have a check to subract amount repaid anytime there is distribution
+    
+    
+    
+     */
+
+
+    // Split up functions for library: 
+    //  - make a beneficiary library 
+    //  - and spigot func library (existing spigot functions) 
+    //  - and then an abstract for the actual customer implementation
+    /*//////////////////////////////////////////////////////
+                    BENEFCIARY/ALLOCATION WINDOW
+    //////////////////////////////////////////////////////*/
+
+    // do we need a window to add beneficiaries?
+
+
+
+    /*//////////////////////////////////////////////////////
+                        TRACK DEBT
+    //////////////////////////////////////////////////////*/
+
+    // For non CC lenders, we need to track debt as to not overpay. 
+
+    /**  maybe CC is position 0, borrower is position 1, other lenders are 2,3,4 
+    and then we can track the debt of the other lenders in the mapping */
+ 
+    
+    // map beneficiary to outstanding debt
+
+    /*//////////////////////////////////////////////////////
+                        PUBLIC FUNCTIONS
+    //////////////////////////////////////////////////////*/
+
+    function distributeFunds(address token) external returns (uint256[] memory) {
+        return state._distributeFunds(token);
+    }
+
+    /**
+        @notice These will differ for every use case. ideally we can make this a library/abstract 
+        contract and implement a new one for each use case/borrower
+    */
+
+    // Perhaps this contract can hold the 1155 tokens? Kazim asked about this in our original call. 
+
+    // Function to record when 'Request' 721 is minted
+    
+    // Function to associate 'Claims' 721 to beneficiaries and set the split allocation
+
+    // When 'Credit' 721 is minted, add to 'creditExtended' variable
+
+    // When 'Repayment' 721 is minted, subtract from 'creditExtended' variable and distribute funds to beneficiaries
+
+
+    /*//////////////////////////////////////////////////////
+                       // ADMIN FUNCTIONS //               
+    //////////////////////////////////////////////////////*/
+
+    /**
+        @notice Adds an address as a beneficiary to the claims
+        @dev The new beneficiary will be pushed to the end of the beneficiaries array.
+        The new allocations must include the new beneficiary
+        @dev There is a maximum of 5 beneficiaries which can be registered with the repayments collector
+        @param _newBeneficiary The new beneficiary to add
+        @param _newAllocation The new allocation of repayments including the new beneficiary
+   */
+
+    function addBeneficiaryAddress(address _newBeneficiary, uint256[] calldata _newAllocation) external onlyAdmin() {
+        state.addBeneficiaryAddress(_newBeneficiary, _newAllocation);
+    }
+
+
+    function replaceBeneficiaryAt(uint256 _index, address _newBeneficiary, uint256[] calldata _newAllocation) external onlyAdmin() {
+        state.replaceBeneficiaryAt(_index, _newBeneficiary, _newAllocation);
+    }
+
+    /*//////////////////////////////////////////////////////
+                        I N T E R N A L                    
+    //////////////////////////////////////////////////////*/
+
+    
+
+
+
+        // ##########################
     // ##### *ring* *ring*  #####
     // #####  OPERATOOOR    #####
     // #####  OPERATOOOR    #####
@@ -136,19 +246,6 @@ contract Spigot is ISpigot, ReentrancyGuard {
     }
 
     /**
-     * @notice  - Changes the revenue split between the Treasury and the Owner based upon the status of the Line of Credit
-     *          - or otherwise if the Owner and Borrower wish to change the split.
-     * @dev     - callable by `owner`
-     * @param revenueContract - Address of spigoted revenue generating contract
-     * @param ownerSplit - new % split to give owner
-     */
-
-     // remove this in favor of updatet allocation
-    function updateOwnerSplit(address revenueContract, uint8 ownerSplit) external returns (bool) {
-        return state.updateOwnerSplit(revenueContract, ownerSplit);
-    }
-
-    /**
      * @notice  - Update Owner role of Spigot contract.
      *          - New Owner receives revenue stream split and can control Spigot
      * @dev     - callable by `owner`
@@ -179,17 +276,16 @@ contract Spigot is ISpigot, ReentrancyGuard {
     function updateWhitelistedFunction(bytes4 func, bool allowed) external returns (bool) {
         return state.updateWhitelistedFunction(func, allowed);
     }
-
-    // ##########################
-    // #####   GETTOOOORS   #####
-    // ##########################
-
-    /**
-     * @notice  - Retrieve amount of revenue tokens escrowed waiting for claim
-     * @param token - Revenue token that is being garnished from spigots
+     /**
+     * @notice  - Changes the revenue split between the Treasury and the Owner based upon the status of the Line of Credit
+     *          - or otherwise if the Owner and Borrower wish to change the split.
+     * @dev     - callable by `owner`
+     * @param revenueContract - Address of spigoted revenue generating contract
+     * @param ownerSplit - new % split to give owner
      */
-    function getOwnerTokens(address token) external view returns (uint256) {
-        return state.ownerTokens[token];
+
+    function updateOwnerSplit(address revenueContract, uint8 ownerSplit) external returns (bool) {
+        return state.updateOwnerSplit(revenueContract, ownerSplit);
     }
 
     /**
@@ -200,7 +296,7 @@ contract Spigot is ISpigot, ReentrancyGuard {
         return state.operatorTokens[token];
     }
 
-    /**
+        /**
      * @notice - Returns if the function is whitelisted for an Operator to call
                - on the spigoted revenue generating smart contracts.
      * @param func - Function signature to check on whitelist
@@ -216,4 +312,15 @@ contract Spigot is ISpigot, ReentrancyGuard {
     receive() external payable {
         return;
     }
+ 
+    
+
+ ///////////////////////// VIEW FUNCS //////////////////////////
+
+    function getBeneficiaries() public view returns (address[] memory) { return (state.beneficiaries); }
+
+    function getLendertokens(address token, address lender) external view returns (uint256) { 
+        return state.getLenderTokens(token, lender);
+    }
+    // function getSplitAllocation() public view returns (uint256[] memory) { return (allocations); }   
 }

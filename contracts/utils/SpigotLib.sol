@@ -6,6 +6,8 @@
 import {ReentrancyGuard} from "openzeppelin/utils/ReentrancyGuard.sol";
 import {LineLib} from "../utils/LineLib.sol";
 import {ISpigot} from "../interfaces/ISpigot.sol";
+import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
+import {SafeERC20} from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 
 struct SpigotState {
     address[] beneficiaries; // Claims on the repayment
@@ -24,6 +26,7 @@ struct SpigotState {
  * @dev see Spigot docs
  */
 library SpigotLib {
+    using SafeERC20 for IERC20;
     // Maximum numerator for Setting.ownerSplit param to ensure that the Owner can't claim more than 100% of revenue
     uint8 constant MAX_SPLIT = 100;
     // cap revenue per claim to avoid overflows on multiplication when calculating percentages
@@ -149,7 +152,7 @@ library SpigotLib {
         address revenueContract,
         ISpigot.Setting memory setting
     ) external returns (bool) {
-        if (msg.sender != self.owner) {
+        if (msg.sender != self.ccLoc) {
             revert CallerAccessDenied();
         }
 
@@ -178,7 +181,7 @@ library SpigotLib {
 
     /** see Spigot.removeSpigot */
     function removeSpigot(SpigotState storage self, address revenueContract) external returns (bool) {
-        if (msg.sender != self.owner) {
+        if (msg.sender != self.ccLoc) {
             revert CallerAccessDenied();
         }
 
@@ -202,7 +205,7 @@ library SpigotLib {
         address revenueContract,
         uint8 ownerSplit
     ) external returns (bool) {
-        if (msg.sender != self.owner) {
+        if (msg.sender != self.ccLoc) {
             revert CallerAccessDenied();
         }
         if (ownerSplit > MAX_SPLIT) {
@@ -217,18 +220,18 @@ library SpigotLib {
 
     /** see Spigot.updateOwner */
     function updateOwner(SpigotState storage self, address newOwner) external returns (bool) {
-        if (msg.sender != self.owner) {
+        if (msg.sender != self.ccLoc) {
             revert CallerAccessDenied();
         }
         require(newOwner != address(0));
-        self.owner = newOwner;
+        self.ccLoc = newOwner;
         emit UpdateOwner(newOwner);
         return true;
     }
 
     /** see Spigot.updateOperator */
     function updateOperator(SpigotState storage self, address newOperator) external returns (bool) {
-        if (msg.sender != self.operator && msg.sender != self.owner) {
+        if (msg.sender != self.operator && msg.sender != self.ccLoc) {
             revert CallerAccessDenied();
         }
         require(newOperator != address(0));
@@ -239,7 +242,7 @@ library SpigotLib {
 
     /** see Spigot.updateWhitelistedFunction*/
     function updateWhitelistedFunction(SpigotState storage self, bytes4 func, bool allowed) external returns (bool) {
-        if (msg.sender != self.owner) {
+        if (msg.sender != self.ccLoc) {
             revert CallerAccessDenied();
         }
         self.whitelistedFunctions[func] = allowed;
@@ -267,22 +270,31 @@ library SpigotLib {
     /**
     @dev needs tt
      */
-    function _distributeFunds(address revToken) internal {
+    function _distributeFunds(SpigotState storage self, address revToken) internal returns (uint256[] memory feeBalances) {
 
         uint256 _currentBalance;
+        uint256[] memory feeBalances = new uint256[](self.beneficiaries.length);
 
         _currentBalance = IERC20(revToken).balanceOf(address(this)) - self.operatorTokens[revToken];
 
         if (_currentBalance > 0){
+
+            uint256[] memory allocations = new uint256[](self.beneficiaries.length);
+
+            for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+                allocations[i] = self.beneficiaryInfo[self.beneficiaries[i]].allocation;
+            }
             // feeBalances[0] is fee sent to smartTreasury
-            uint256[] memory feeBalances = _amountsFromAllocations(allocations, _currentBalance);
+            feeBalances = _amountsFromAllocations(allocations, _currentBalance);
     
-            for (uint256 a_index = 0; a_index < allocations.length; a_index++){
+            for (uint256 a_index = 0; a_index < self.beneficiaries.length; a_index++){
+
                 // check if revtoken is the same as beneficiary desired token
                 // if so, call the spigotTrade function, charge fee??
-                IERC20(revToken).safeTransfer(beneficiaries[a_index], feeBalances[a_index]);
+                IERC20(revToken).safeTransfer(self.beneficiaries[a_index], feeBalances[a_index]);
             }
         }
+        return feeBalances;
     }
 
         /**
@@ -291,17 +303,17 @@ library SpigotLib {
   @dev smartTreasury must be set for this to be called.
   @param _allocations The updated split ratio.
    */
-    function _setSplitAllocation(uint256[] memory _allocations) internal {
-        require(_allocations.length == beneficiaries.length, "Invalid length");
+    function _setSplitAllocation(SpigotState storage self, uint256[] memory _allocations) internal {
+        require(_allocations.length == self.beneficiaries.length, "Invalid length");
         require(_allocations[0] == 0, "operator must always have 0% allocation. Their split is determined by the rev contracts");
         uint256 sum=0;
         for (uint256 i=0; i<_allocations.length; i++) {
             sum = sum + _allocations[i];
         }
-        require(sum == FULL_ALLOC, "Ratio does not equal 100000");
+        require(sum == 100000, "Ratio does not equal 100000");
 
-        for (uint256 i = 0; i < _startingBeneficiaries.length; i++) {
-            state.beneficiaryInfo[i].allocation = _allocations[i];
+        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+            self.beneficiaryInfo[self.beneficiaries[i]].allocation = _allocations[i];
         }
     }
 
@@ -314,7 +326,7 @@ library SpigotLib {
             if (i == _allocations.length - 1) {
                 newAmounts[i] = total - allocatedBalance;
             } else {
-                currBalance = (total * _allocations[i]) / (FULL_ALLOC);
+                currBalance = (total * _allocations[i]) / (100000);
                 allocatedBalance = allocatedBalance + currBalance;
                 newAmounts[i] = currBalance;
             }
@@ -322,49 +334,57 @@ library SpigotLib {
         return newAmounts;
     }
 
-    function addBeneficiaryAddress(address _newBeneficiary, uint256[] calldata _newAllocation) external onlyAdmin() {
-        require(beneficiaries.length < MAX_BENEFICIARIES, "Max beneficiaries");
+    function addBeneficiaryAddress(SpigotState storage self, address _newBeneficiary, uint256[] calldata _newAllocation) external {
+        require(self.beneficiaries.length < 5, "Max beneficiaries");
         require(_newBeneficiary!=address(0), "beneficiary cannot be 0 address");
 
-        for (uint256 i = 0; i < beneficiaries.length; i++) {
-            require(beneficiaries[i] != _newBeneficiary, "Duplicate beneficiary");
+        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+            require(self.beneficiaries[i] != _newBeneficiary, "Duplicate beneficiary");
         }
 
-        beneficiaries.push(_newBeneficiary);
+        self.beneficiaries.push(_newBeneficiary);
 
-        _setSplitAllocation(_newAllocation);
+        _setSplitAllocation(self, _newAllocation);
     }
 
 
-    function replaceBeneficiaryAt(uint256 _index, address _newBeneficiary, uint256[] calldata _newAllocation) external onlyAdmin() {
+    function replaceBeneficiaryAt(SpigotState storage self, uint256 _index, address _newBeneficiary, uint256[] calldata _newAllocation) external {
         require(_index >= 1, "Invalid beneficiary to remove");
         require(_newBeneficiary!=address(0), "Beneficiary cannot be 0 address");
 
-        for (uint256 i = 0; i < beneficiaries.length; i++) {
-            require(beneficiaries[i] != _newBeneficiary, "Duplicate beneficiary");
+        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+            require(self.beneficiaries[i] != _newBeneficiary, "Duplicate beneficiary");
         }
     
-        beneficiaries[_index] = _newBeneficiary;
+        self.beneficiaries[_index] = _newBeneficiary;
 
-        _setSplitAllocation(_newAllocation);
+        _setSplitAllocation(self, _newAllocation);
     }
 
-    function resetAllocation(uint256[] calldata _newAllocation) external onlyAdmin() {
-        _setSplitAllocation(_newAllocation);
+    function resetAllocation(SpigotState storage self, uint256[] calldata _newAllocation) external {
+        _setSplitAllocation(self, _newAllocation);
     }
 
-    function resetDebtOwed(uint256[] calldata _newDebtOwed) external onlyAdmin() {
-        require(_newDebtOwed.length == beneficiaries.length, "Invalid length");
-        for (uint256 i = 0; i < beneficiaries.length; i++) {
-            state.beneficiaryInfo[i].debtOwed = _newDebtOwed[i];
+    function resetDebtOwed(SpigotState storage self, uint256[] calldata _newDebtOwed) external {
+        require(_newDebtOwed.length == self.beneficiaries.length, "Invalid length");
+        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+            self.beneficiaryInfo[self.beneficiaries[i]].debtOwed = _newDebtOwed[i];
         }
     }
 
-    function updateDesiredRepaymentToken(address[] calldata _newToken) external onlyAdmin() {
-        require(_newToken != address(0), "Invalid token");
-        for (uint256 i = 0; i < beneficiaries.length; i++) {
-            state.beneficiaryInfo[i].desiredRepaymentToken = _newToken;
+    function updateDesiredRepaymentToken(SpigotState storage self, address[] calldata _newToken) external {
+        
+        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+            require(_newToken[i] != address(0), "Invalid token");
+            self.beneficiaryInfo[self.beneficiaries[i]].desiredRepaymentToken = _newToken[i];
         }
+    }
+
+    function getLenderTokens(SpigotState storage self, address token, address lender) external view returns (uint256) {
+        uint256 total;
+        total = IERC20(token).balanceOf(address(this)) - self.operatorTokens[token];
+
+        return total * self.beneficiaryInfo[lender].allocation / 100000; 
     }
 
     // Spigot Events
@@ -413,4 +433,6 @@ library SpigotLib {
     error InvalidRevenueContract();
 
     error SpigotSettingsExist();
+
+    error PushPayment();
 }
