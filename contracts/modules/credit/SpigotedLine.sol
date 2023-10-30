@@ -269,7 +269,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
 
     /// see ILineOfCredit.tradeable
     function tradeable(address token) external view returns (uint256) {
-        return unusedTokens[token] + spigot.getLendertokens(token, spigot.lineAddress());
+        return unusedTokens[token] + spigot.getLenderTokens(token, spigot.lineAddress());
     }
 
     /// see ILineOfCredit.unused

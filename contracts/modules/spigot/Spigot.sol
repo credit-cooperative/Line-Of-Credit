@@ -32,6 +32,7 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
     }
 
     constructor(
+        address owner,
         address[] memory _startingBeneficiaries,
         uint256[] memory _startingAllocations,
         uint256[] memory _debtOwed,
@@ -111,42 +112,6 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
     function claimOperatorTokens(address token) external nonReentrant returns (uint256 claimed) {
         return state.claimOperatorTokens(token); // maybe need to pass in token
     }
-
-    ///////////////////////// OUSTANDING QUESTIONS //////////////////////////
-    /**
-        - do we allow differet beneficiaries to to pull our allocations at different times?
-            - maybe a struct? Tracks address, amount owed, amout repaid?
-            - have a check to subract amount repaid anytime there is distribution
-    
-    
-    
-     */
-
-
-    // Split up functions for library: 
-    //  - make a beneficiary library 
-    //  - and spigot func library (existing spigot functions) 
-    //  - and then an abstract for the actual customer implementation
-    /*//////////////////////////////////////////////////////
-                    BENEFCIARY/ALLOCATION WINDOW
-    //////////////////////////////////////////////////////*/
-
-    // do we need a window to add beneficiaries?
-
-
-
-    /*//////////////////////////////////////////////////////
-                        TRACK DEBT
-    //////////////////////////////////////////////////////*/
-
-    // For non CC lenders, we need to track debt as to not overpay. 
-
-    /**  maybe CC is position 0, borrower is position 1, other lenders are 2,3,4 
-    and then we can track the debt of the other lenders in the mapping */
- 
-    
-    // map beneficiary to outstanding debt
-
     /*//////////////////////////////////////////////////////
                         PUBLIC FUNCTIONS
     //////////////////////////////////////////////////////*/
@@ -154,21 +119,6 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
     function distributeFunds(address token) external returns (uint256[] memory) {
         return state._distributeFunds(token);
     }
-
-    /**
-        @notice These will differ for every use case. ideally we can make this a library/abstract 
-        contract and implement a new one for each use case/borrower
-    */
-
-    // Perhaps this contract can hold the 1155 tokens? Kazim asked about this in our original call. 
-
-    // Function to record when 'Request' 721 is minted
-    
-    // Function to associate 'Claims' 721 to beneficiaries and set the split allocation
-
-    // When 'Credit' 721 is minted, add to 'creditExtended' variable
-
-    // When 'Repayment' 721 is minted, subtract from 'creditExtended' variable and distribute funds to beneficiaries
 
 
     /*//////////////////////////////////////////////////////
@@ -319,7 +269,7 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
 
     function getBeneficiaries() public view returns (address[] memory) { return (state.beneficiaries); }
 
-    function getLendertokens(address token, address lender) external view returns (uint256) { 
+    function getLenderTokens(address token, address lender) external view returns (uint256) { 
         return state.getLenderTokens(token, lender);
     }
     // function getSplitAllocation() public view returns (uint256[] memory) { return (allocations); }   

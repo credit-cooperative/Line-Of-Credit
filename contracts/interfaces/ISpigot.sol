@@ -97,7 +97,7 @@ interface ISpigot {
 
     function isWhitelisted(bytes4 func) external view returns (bool);
 
-    function getLendertokens(address token, address lender) external view returns (uint256);
+    function getLenderTokens(address token, address lender) external view returns (uint256);
 
     function getOperatorTokens(address token) external view returns (uint256);
 
