@@ -100,18 +100,17 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
      * @dev - callable by `borrower`
      * @dev - requires line to not have open, active credit positions
      * @param ttlExtension The amount of time to extend the line by
-     * @param defaultSplit The default revenue split percentage for the line
      * @param minimumCollateralRatio The minimum collateral ratio required for the line
      * @param revenueContracts The list of revenue contracts to update with new owner splits
      * @param ownerSplits The corresponding list of new owner splits for each revenue contract
      * @return true is line is amended, extended, and set to ACTIVE status
      */
-    function amendAndExtend(address newBorrower, uint256 ttlExtension, uint8 defaultSplit, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) external onlyBorrower returns (bool) {
+    function amendAndExtend(address newBorrower, uint256 ttlExtension, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) external onlyBorrower returns (bool) {
         if (count == 0){
             if (proposalCount > 0) {
                 _clearProposals();
             }
-            _amend(newBorrower, defaultSplit, minimumCollateralRatio, revenueContracts, ownerSplits);
+            _amend(newBorrower, minimumCollateralRatio, revenueContracts, ownerSplits);
             _extend(ttlExtension);
             return true;
         }
@@ -122,19 +121,18 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
      * @notice - Allows borrower to update the default revenue split and minimum c ratio percentages, and the owner splits for each revenue contract attached to the Spigot.
      * @dev - callable by `borrower`
      * @dev - requires line to not have open, active credit positions
-     * @param defaultSplit The default revenue split percentage for the line
      * @param minimumCollateralRatio The minimum collateral ratio required for the line
      * @param revenueContracts The list of revenue contracts to update with new owner splits
      * @param ownerSplits The corresponding list of new owner splits for each revenue contract
      * @return true is line is amended
      */
     // TODO: add beneficiaries array and corresponding splits
-    function amend(address newBorrower, uint8 defaultSplit, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) external onlyBorrower returns (bool) {
+    function amend(address newBorrower, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) external onlyBorrower returns (bool) {
         if (count == 0) {
             if (proposalCount > 0) {
                 _clearProposals();
             }
-            bool isAmended = _amend(newBorrower, defaultSplit, minimumCollateralRatio, revenueContracts, ownerSplits);
+            bool isAmended = _amend(newBorrower, minimumCollateralRatio, revenueContracts, ownerSplits);
             return isAmended;
         }
         revert CannotAmendLine();
@@ -143,22 +141,22 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
 
     // TODO: implement this function
     // TODO: add beneficiaries array and corresponding splits
-    function _amend(address newBorrower, uint8 defaultSplit, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) internal returns (bool) {
+    // TODO: revise how beneficiaries and revenue contracts are amended
+    function _amend(address newBorrower, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata beneficiaries) internal returns (bool) {
         // TODO: check if SecuredLine owns Spigot address (otherwise should fail)
         // TODO: check if SecuredLine owns Escrow (otherwise should fail)
         // TODO: what happens if line is repaid and Spigot is transferred to borrower/operator?
         updateBorrower(newBorrower);
-        defaultRevenueSplit = defaultSplit;
         // TODO: check that msg.sender is the Escrow State line address
         escrow.updateMinimumCollateralRatio(minimumCollateralRatio);
         for (uint256 i = 0; i < revenueContracts.length; i++) {
-            spigot.updateOwnerSplit(revenueContracts[i], ownerSplits[i]);
+            spigot.updateOwnerSplit(revenueContracts[i], beneficiaries[i]);
         }
         emit AmendLine(address(this), borrower, deadline);
         // TODO: add events
         // emit AmendSpigot(address(this), spigot, defaultRevenueSplit);
         // emit AmendEscrow(address(this), escrow, minimumCollateralRatio);
-        // emit AmendRevenueContracts(address(this), spigot, revenueContracts, ownerSplits);
+        // emit AmendRevenueContracts(address(this), spigot, revenueContracts, beneficiaries);
         // emit AmendBeneficiaries(address(this), spigot, beneficiaries);
         return true;
     }

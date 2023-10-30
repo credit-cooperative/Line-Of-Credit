@@ -29,7 +29,7 @@ interface ILineOfCredit {
     event AmendLine(address indexed line, address indexed borrower, uint256 indexed deadline);
     event AmendSpigot(address indexed line, address indexed spigot, uint8 defaultRevenueSplit);
     event AmendEscrow(address indexed line, address indexed escrow, uint32 indexed minimumCollateralRatio);
-    event AmendRevenueContracts(address indexed line, address indexed spigot, address[] indexed revenueContracts, uint8[] ownerSplits);
+    event AmendRevenueContracts(address indexed line, address indexed spigot, address[] indexed revenueContracts, uint8[] beneficiaries);
 
     event SortedIntoQ(bytes32 indexed id, uint256 indexed newIdx, uint256 indexed oldIdx, bytes32 oldId);
 

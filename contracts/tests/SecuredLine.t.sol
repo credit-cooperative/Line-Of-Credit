@@ -547,27 +547,27 @@ contract SecuredLineTest is Test {
 
     function test_only_borrower_can_amend_and_extend() public {
         address[] memory revenueContracts;
-        uint8[] memory ownerSplits;
+        uint8[] memory beneficiaries;
 
         vm.startPrank(lender);
         vm.expectRevert(ILineOfCredit.CallerAccessDenied.selector);
-        line.amendAndExtend(borrower, 1, 0, 0, revenueContracts, ownerSplits);
+        line.amendAndExtend(borrower, 1, 0, revenueContracts, beneficiaries);
         vm.stopPrank();
 
         vm.startPrank(arbiter);
         vm.expectRevert(ILineOfCredit.CallerAccessDenied.selector);
-        line.amendAndExtend(borrower, 1, 0, 0, revenueContracts, ownerSplits);
+        line.amendAndExtend(borrower, 1, 0, revenueContracts, beneficiaries);
         vm.stopPrank();
     }
 
     function test_cannot_amend_and_extend_if_active_positions() public {
         _addCredit(address(supportedToken1), 1 ether);
         address[] memory revenueContracts;
-        uint8[] memory ownerSplits;
+        uint8[] memory beneficiaries;
 
         vm.startPrank(borrower);
         vm.expectRevert(ISecuredLine.CannotAmendAndExtendLine.selector);
-        line.amendAndExtend(borrower, 1, 0, 0, revenueContracts, ownerSplits);
+        line.amendAndExtend(borrower, 1, 0, revenueContracts, beneficiaries);
         vm.stopPrank();
     }
 
@@ -576,7 +576,7 @@ contract SecuredLineTest is Test {
     // TODO: end-to-end test where user has accepted positions in the past and repaid the line and positions
     function test_amend_and_extend_clears_credit_proposals() public {
         address[] memory revenueContracts;
-        uint8[] memory ownerSplits;
+        uint8[] memory beneficiaries;
 
         _addCredit(address(supportedToken1), 1 ether);
         bytes32 id = line.ids(0);
@@ -595,7 +595,7 @@ contract SecuredLineTest is Test {
         // TODO: add back expectEmit
         // vm.expectEmit(line, borrower, deadline + 1);
         // emit Events.AmendAndExtendLine(line, borrower, deadline + 1);
-        line.amendAndExtend(borrower, 1, 0, 0, revenueContracts, ownerSplits);
+        line.amendAndExtend(borrower, 1, 0, revenueContracts, beneficiaries);
         assertEq(line.proposalCount(), 0);
         // assertEq(line.mutualConsentProposals(proposalId), address(0));
         // TODO: add test that line status is active
@@ -617,7 +617,7 @@ contract SecuredLineTest is Test {
         // TODO: add back expectEmit
         // vm.expectEmit(line, borrower, deadline + 1);
         // emit Events.AmendAndExtendLine(line, borrower, deadline + 1);
-        line.amendAndExtend(borrower, 1, 0, 0, revenueContracts, ownerSplits);
+        line.amendAndExtend(borrower, 1, 0, revenueContracts, beneficiaries);
         emit log_named_uint("Total Mutual Consent Proposal Ids: ", line.proposalCount());
         assertEq(line.proposalCount(), 0);
         assertEq(line.mutualConsentProposals(proposalId), address(0));
@@ -634,24 +634,24 @@ contract SecuredLineTest is Test {
         emit log_named_uint("# active positions 1", line.count());
         uint256 deadline1 = line.deadline();
         address[] memory revenueContracts;
-        uint8[] memory ownerSplits;
+        uint8[] memory beneficiaries;
 
         vm.startPrank(borrower);
-        line.amendAndExtend(borrower, 1, 10, 0, revenueContracts, ownerSplits);
+        line.amendAndExtend(borrower, 1, 0, revenueContracts, beneficiaries);
         assertEq(uint(line.count()), 0);
         assertEq(uint(line.deadline()), deadline1 + 1);
-        assertEq(line.defaultRevenueSplit(), 10);
+        // assertEq(line.defaultRevenueSplit(), 10);
         assertEq(escrow.minimumCollateralRatio(), 0);
         vm.stopPrank();
 
         emit log_named_uint("\nstatus 2", uint(line.status()));
         emit log_named_uint("ttl 2", line.deadline());
-        emit log_named_uint("defaultSplit 2", uint(line.defaultRevenueSplit()));
+        // emit log_named_uint("defaultSplit 2", uint(line.defaultRevenueSplit()));
         emit log_named_uint("minCRatio 2", uint(escrow.minimumCollateralRatio()));
         emit log_named_uint("# active positions 2", line.count());
 
         vm.startPrank(borrower);
-        line.amendAndExtend(borrower, 1, 50, 100, revenueContracts, ownerSplits);
+        line.amendAndExtend(borrower, 1, 100, revenueContracts, beneficiaries);
         vm.stopPrank();
 
         emit log_named_uint("\nstatus 3", uint(line.status()));
@@ -669,11 +669,11 @@ contract SecuredLineTest is Test {
         // emit log_named_uint("# active positions", uint(line.ids().length));
 
         address[] memory revenueContracts;
-        uint8[] memory ownerSplits;
+        uint8[] memory beneficiaries;
 
         vm.startPrank(borrower);
         // vm.expectRevert(ISecuredLine.CannotAmendAndExtendLine.selector);
-        line.amendAndExtend(borrower, 1, 0, 0, revenueContracts, ownerSplits);
+        line.amendAndExtend(borrower, 1, 0, revenueContracts, beneficiaries);
         vm.stopPrank();
 
         emit log_named_uint("status 2", uint(line.status()));
@@ -683,7 +683,7 @@ contract SecuredLineTest is Test {
 
         vm.startPrank(borrower);
         // vm.expectRevert(ISecuredLine.CannotAmendAndExtendLine.selector);
-        line.amendAndExtend(borrower, 1, 0, 0, revenueContracts, ownerSplits);
+        line.amendAndExtend(borrower, 1, 0, revenueContracts, beneficiaries);
         vm.stopPrank();
 
         emit log_named_uint("status 3", uint(line.status()));
