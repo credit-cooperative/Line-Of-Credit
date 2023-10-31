@@ -85,7 +85,7 @@ contract IndexRe7Sim is Test {
 
     // Credit Coop Addresses
     address constant arbiterAddress = 0xeb0566b1EF38B95da2ed631eBB8114f3ac7b9a8a ; // Credit Coop MultiSig
-    address public securedLineAddress; // Line address, to be defined in setUp()
+    address public securedowner; // Line address, to be defined in setUp()
 
     // Asset Addresses
     address constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
@@ -150,12 +150,12 @@ contract IndexRe7Sim is Test {
         // Borrower Deploys Line of Credit
         vm.startPrank(indexCoopLiquidityOperations);
         emit log_named_string("\n \u2713 Borrower Deploys Line of Credit", "");
-        securedLineAddress = _deployLoCWithConfig();
+        securedowner = _deployLoCWithConfig();
 
         // Define interfaces for all CC modules
-        securedLine = ISecuredLine(securedLineAddress);
-        line = ILineOfCredit(securedLineAddress);
-        spigotedLine = ISpigotedLine(securedLineAddress);
+        securedLine = ISecuredLine(securedowner);
+        line = ILineOfCredit(securedowner);
+        spigotedLine = ISpigotedLine(securedowner);
         escrow = IEscrow(address(securedLine.escrow()));
         spigot = ISpigot(address(securedLine.spigot()));
 
@@ -238,7 +238,7 @@ contract IndexRe7Sim is Test {
         bytes32 positionId =  _lenderFundLoan();
 
         // check that the line position has the credit funds
-        uint256 balance = IERC20(WETH).balanceOf(securedLineAddress);
+        uint256 balance = IERC20(WETH).balanceOf(securedowner);
         emit log_named_uint("- balance of Line of Credit (WETH): ", balance);
         assertEq(balance, loanSizeInWETH);
 
@@ -289,7 +289,7 @@ contract IndexRe7Sim is Test {
 
         vm.startPrank(indexCoopLiquidityOperations);
         emit log_named_string("\n \u2713 Borrower Calls depositAndClose to Fully Repay and Close Line of Credit", "");
-        IERC20(WETH).approve(securedLineAddress, MAX_INT);
+        IERC20(WETH).approve(securedowner, MAX_INT);
         line.depositAndClose();
 
         // Check status == REPAID after position is repaid and closed
@@ -428,8 +428,8 @@ contract IndexRe7Sim is Test {
             revenueSplit: revenueSplit // uint8(revenueSplit) - 100% to spigot
         });
 
-        securedLineAddress = lineFactory.deploySecuredLineWithConfig(coreParams);
-        return securedLineAddress;
+        securedowner = lineFactory.deploySecuredLineWithConfig(coreParams);
+        return securedowner;
     }
 
     function _borrowerDepositsCollateral() internal {
@@ -570,7 +570,7 @@ contract IndexRe7Sim is Test {
 
     function test_borrower_can_deploy_LoC() public {
         vm.startPrank(indexCoopLiquidityOperations);
-        securedLineAddress = _deployLoCWithConfig();
+        securedowner = _deployLoCWithConfig();
 
         assertEq(indexCoopLiquidityOperations, line.borrower());
         assertEq(arbiterAddress, line.arbiter());

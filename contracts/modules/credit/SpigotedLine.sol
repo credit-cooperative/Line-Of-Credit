@@ -192,7 +192,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
     ) internal returns (uint256) {
         if (claimToken == targetToken) {
             // same asset. dont trade
-            return spigot.claimOwnerTokens(claimToken);
+            return spigot.distributeFunds(claimToken)[1];
         } else {
             // trade revenue token for debt obligation
             (uint256 tokensBought, uint256 totalUnused) = SpigotedLineLib.claimAndTrade(
@@ -269,7 +269,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
 
     /// see ILineOfCredit.tradeable
     function tradeable(address token) external view returns (uint256) {
-        return unusedTokens[token] + spigot.getOwnerTokens(token);
+        return unusedTokens[token] + spigot.getLenderTokens(token, spigot.owner());
     }
 
     /// see ILineOfCredit.unused

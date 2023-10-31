@@ -6,16 +6,16 @@
 import {ReentrancyGuard} from "openzeppelin/utils/ReentrancyGuard.sol";
 import {LineLib} from "../utils/LineLib.sol";
 import {ISpigot} from "../interfaces/ISpigot.sol";
+import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
+import {SafeERC20} from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 
 struct SpigotState {
-    /// @notice Economic owner of Spigot revenue streams
-    address owner;
-    /// @notice account in charge of running onchain ops of spigoted contracts on behalf of owner
+    address[] beneficiaries; // Claims on the repayment
+    mapping(address => ISpigot.Beneficiary)  beneficiaryInfo; // beneficiary -> info
     address operator;
-    /// @notice Total amount of revenue tokens help by the Spigot and available to be claimed by owner
-    mapping(address => uint256) ownerTokens; // token -> claimable
-    /// @notice Total amount of revenue tokens help by the Spigot and available to be claimed by operator
-    mapping(address => uint256) operatorTokens; // token -> claimable
+    address owner; // aka the owner
+    address admin;
+    mapping(address => uint256) operatorTokens; 
     /// @notice Functions that the operator is allowed to run on all revenue contracts controlled by the Spigot
     mapping(bytes4 => bool) whitelistedFunctions; // function -> allowed
     /// @notice Configurations for revenue contracts related to the split of revenue, access control to claiming revenue tokens and transfer of Spigot ownership
@@ -27,6 +27,7 @@ struct SpigotState {
  * @dev see Spigot docs
  */
 library SpigotLib {
+    using SafeERC20 for IERC20;
     // Maximum numerator for Setting.ownerSplit param to ensure that the Owner can't claim more than 100% of revenue
     uint8 constant MAX_SPLIT = 100;
     // cap revenue per claim to avoid overflows on multiplication when calculating percentages
@@ -46,9 +47,7 @@ library SpigotLib {
 
         if (self.settings[revenueContract].claimFunction == bytes4(0)) {
             // push payments
-
-            // claimed = total balance - already accounted for balance
-            claimed = existingBalance - self.ownerTokens[token] - self.operatorTokens[token];
+            revert PushPayment();
 
             // underflow revert ensures we have more tokens than we started with and actually claimed revenue
         } else {
@@ -87,16 +86,32 @@ library SpigotLib {
         claimed = _claimRevenue(self, revenueContract, token, data);
 
         // splits revenue stream according to Spigot settings
-        uint256 ownerTokens = (claimed * self.settings[revenueContract].ownerSplit) / 100;
+        uint256 operatorTokens = claimed - ((claimed * self.settings[revenueContract].ownerSplit) / 100);
         // update escrowed balance
-        self.ownerTokens[token] = self.ownerTokens[token] + ownerTokens;
+        self.operatorTokens[token] = self.operatorTokens[token] + operatorTokens;
 
-        // update operator amount
-        if (claimed > ownerTokens) {
-            self.operatorTokens[token] = self.operatorTokens[token] + (claimed - ownerTokens);
+        emit ClaimRevenue(token, claimed, operatorTokens, revenueContract);
+
+        return claimed;
+    }
+
+    /** see Spigot.claimOperatorTokens */
+    function claimOperatorTokens(SpigotState storage self, address token) external returns (uint256 claimed) {
+        if (msg.sender != self.operator) {
+            revert CallerAccessDenied();
         }
 
-        emit ClaimRevenue(token, claimed, ownerTokens, revenueContract);
+        claimed = self.operatorTokens[token];
+
+        if (claimed == 0) {
+            revert ClaimFailed();
+        }
+
+        self.operatorTokens[token] = 0; // reset before send to prevent reentrancy
+
+        LineLib.sendOutTokenOrETH(token, self.operator, claimed);
+
+        emit ClaimOperatorTokens(token, claimed, self.operator);
 
         return claimed;
     }
@@ -131,47 +146,6 @@ library SpigotLib {
         return true;
     }
 
-    /** see Spigot.claimOwnerTokens */
-    function claimOwnerTokens(SpigotState storage self, address token) external returns (uint256 claimed) {
-        if (msg.sender != self.owner) {
-            revert CallerAccessDenied();
-        }
-
-        claimed = self.ownerTokens[token];
-
-        if (claimed == 0) {
-            revert ClaimFailed();
-        }
-
-        self.ownerTokens[token] = 0; // reset before send to prevent reentrancy
-
-        LineLib.sendOutTokenOrETH(token, self.owner, claimed);
-
-        emit ClaimOwnerTokens(token, claimed, self.owner);
-
-        return claimed;
-    }
-
-    /** see Spigot.claimOperatorTokens */
-    function claimOperatorTokens(SpigotState storage self, address token) external returns (uint256 claimed) {
-        if (msg.sender != self.operator) {
-            revert CallerAccessDenied();
-        }
-
-        claimed = self.operatorTokens[token];
-
-        if (claimed == 0) {
-            revert ClaimFailed();
-        }
-
-        self.operatorTokens[token] = 0; // reset before send to prevent reentrancy
-
-        LineLib.sendOutTokenOrETH(token, self.operator, claimed);
-
-        emit ClaimOperatorTokens(token, claimed, self.operator);
-
-        return claimed;
-    }
 
     /** see Spigot.addSpigot */
     function addSpigot(
@@ -294,6 +268,126 @@ library SpigotLib {
         );
     }
 
+    /**
+    @dev needs tt
+     */
+    function _distributeFunds(SpigotState storage self, address revToken) internal returns (uint256[] memory feeBalances) {
+
+        uint256 _currentBalance;
+        uint256[] memory feeBalances = new uint256[](self.beneficiaries.length);
+
+        _currentBalance = IERC20(revToken).balanceOf(address(this)) - self.operatorTokens[revToken];
+
+        if (_currentBalance > 0){
+
+            uint256[] memory allocations = new uint256[](self.beneficiaries.length);
+
+            for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+                allocations[i] = self.beneficiaryInfo[self.beneficiaries[i]].allocation;
+            }
+            // feeBalances[0] is fee sent to smartTreasury
+            feeBalances = _amountsFromAllocations(allocations, _currentBalance);
+    
+            for (uint256 a_index = 0; a_index < self.beneficiaries.length; a_index++){
+
+                // check if revtoken is the same as beneficiary desired token
+                // if so, call the spigotTrade function, charge fee??
+                IERC20(revToken).safeTransfer(self.beneficiaries[a_index], feeBalances[a_index]);
+            }
+        }
+        return feeBalances;
+    }
+
+        /**
+  @notice Internal function to sets the split allocations of fees to send to fee beneficiaries
+  @dev The split allocations must sum to 100000.
+  @dev smartTreasury must be set for this to be called.
+  @param _allocations The updated split ratio.
+   */
+    function _setSplitAllocation(SpigotState storage self, uint256[] memory _allocations) internal {
+        require(_allocations.length == self.beneficiaries.length, "Invalid length");
+        require(_allocations[0] == 0, "operator must always have 0% allocation. Their split is determined by the rev contracts");
+        uint256 sum=0;
+        for (uint256 i=0; i<_allocations.length; i++) {
+            sum = sum + _allocations[i];
+        }
+        require(sum == 100000, "Ratio does not equal 100000");
+
+        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+            self.beneficiaryInfo[self.beneficiaries[i]].allocation = _allocations[i];
+        }
+    }
+
+    function _amountsFromAllocations(uint256[] memory _allocations, uint256 total) internal pure returns (uint256[] memory newAmounts) {
+        newAmounts = new uint256[](_allocations.length);
+        uint256 currBalance;
+        uint256 allocatedBalance;
+
+        for (uint256 i = 0; i < _allocations.length; i++) {
+            if (i == _allocations.length - 1) {
+                newAmounts[i] = total - allocatedBalance;
+            } else {
+                currBalance = (total * _allocations[i]) / (100000);
+                allocatedBalance = allocatedBalance + currBalance;
+                newAmounts[i] = currBalance;
+            }
+        }
+        return newAmounts;
+    }
+
+    function addBeneficiaryAddress(SpigotState storage self, address _newBeneficiary, uint256[] calldata _newAllocation) external {
+        require(self.beneficiaries.length < 5, "Max beneficiaries");
+        require(_newBeneficiary!=address(0), "beneficiary cannot be 0 address");
+
+        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+            require(self.beneficiaries[i] != _newBeneficiary, "Duplicate beneficiary");
+        }
+
+        self.beneficiaries.push(_newBeneficiary);
+
+        _setSplitAllocation(self, _newAllocation);
+    }
+
+
+    function replaceBeneficiaryAt(SpigotState storage self, uint256 _index, address _newBeneficiary, uint256[] calldata _newAllocation) external {
+        require(_index >= 1, "Invalid beneficiary to remove");
+        require(_newBeneficiary!=address(0), "Beneficiary cannot be 0 address");
+
+        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+            require(self.beneficiaries[i] != _newBeneficiary, "Duplicate beneficiary");
+        }
+    
+        self.beneficiaries[_index] = _newBeneficiary;
+
+        _setSplitAllocation(self, _newAllocation);
+    }
+
+    function resetAllocation(SpigotState storage self, uint256[] calldata _newAllocation) external {
+        _setSplitAllocation(self, _newAllocation);
+    }
+
+    function resetDebtOwed(SpigotState storage self, uint256[] calldata _newDebtOwed) external {
+        require(_newDebtOwed.length == self.beneficiaries.length, "Invalid length");
+        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+            self.beneficiaryInfo[self.beneficiaries[i]].debtOwed = _newDebtOwed[i];
+        }
+    }
+
+    function updateDesiredRepaymentToken(SpigotState storage self, address[] calldata _newToken) external {
+        
+        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+            require(_newToken[i] != address(0), "Invalid token");
+            self.beneficiaryInfo[self.beneficiaries[i]].desiredRepaymentToken = _newToken[i];
+        }
+    }
+
+    function getLenderTokens(SpigotState storage self, address token, address lender) external view returns (uint256) {
+        uint256 total;
+        total = IERC20(token).balanceOf(address(this)) - self.operatorTokens[token];
+
+        return total * self.beneficiaryInfo[lender].allocation / 100000; 
+    }
+
     // Spigot Events
     event AddSpigot(address indexed revenueContract, uint256 ownerSplit, bytes4 claimFnSig, bytes4 trsfrFnSig);
 
@@ -340,4 +434,6 @@ library SpigotLib {
     error InvalidRevenueContract();
 
     error SpigotSettingsExist();
+
+    error PushPayment();
 }
