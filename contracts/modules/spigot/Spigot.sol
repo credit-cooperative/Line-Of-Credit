@@ -26,11 +26,6 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
     uint256 constant FULL_ALLOC = 100000;
 
 
-    modifier onlyAdmin {
-        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Unauthorised");
-        _;
-    }
-
     constructor(
         address owner,
         address[] memory _startingBeneficiaries,
@@ -65,6 +60,7 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
 
         state.operator = _startingBeneficiaries[0];
         state.owner = _startingBeneficiaries[1];
+        state.admin = _adminMultisig;
     }
 
     function owner() external view returns (address) {

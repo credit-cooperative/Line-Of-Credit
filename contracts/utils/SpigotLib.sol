@@ -14,6 +14,7 @@ struct SpigotState {
     mapping(address => ISpigot.Beneficiary)  beneficiaryInfo; // beneficiary -> info
     address operator;
     address owner; // aka the owner
+    address admin;
     mapping(address => uint256) operatorTokens; 
     /// @notice Functions that the operator is allowed to run on all revenue contracts controlled by the Spigot
     mapping(bytes4 => bool) whitelistedFunctions; // function -> allowed
