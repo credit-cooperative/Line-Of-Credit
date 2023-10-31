@@ -70,6 +70,10 @@ contract Spigot is ISpigot, ReentrancyGuard {
         return state.operator;
     }
 
+    function admin() external view returns (address) {
+        return state.admin;
+    }
+
     // ##########################
     // #####   Claimoooor   #####
     // ##########################
