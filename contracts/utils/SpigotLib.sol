@@ -15,6 +15,7 @@ struct SpigotState {
     address operator;
     address owner; // aka the owner
     address admin;
+    address swapTarget;
     mapping(address => uint256) operatorTokens; 
     /// @notice Functions that the operator is allowed to run on all revenue contracts controlled by the Spigot
     mapping(bytes4 => bool) whitelistedFunctions; // function -> allowed
@@ -115,6 +116,8 @@ library SpigotLib {
 
         return claimed;
     }
+
+    
 
     /** see Spigot.operate */
     function operate(SpigotState storage self, address revenueContract, bytes calldata data) external returns (bool) {
@@ -269,9 +272,41 @@ library SpigotLib {
     }
 
     /**
+     * @dev                     - priviliged internal function!
+     * @notice                  - dumb func that executes arbitry code against a target contract
+     * @param amount            - amount of revenue tokens to sell
+     * @param sellToken         - revenue token being sold
+     * @param swapTarget        - exchange aggregator to trade against
+     * @param zeroExTradeData   - Trade data to execute against exchange for target token/amount
+     * @return bool             - if trade was successful
+     */
+    function trade(
+        uint256 amount,
+        address sellToken,
+        address payable swapTarget,
+        bytes calldata zeroExTradeData
+    ) public returns (bool) {
+        if (sellToken == Denominations.ETH) {
+            // if claiming/trading eth send as msg.value to dex
+            (bool success, ) = swapTarget.call{value: amount}(zeroExTradeData); // TODO: test with 0x api data on mainnet fork
+            if (!success) {
+                revert TradeFailed();
+            }
+        } else {
+            IERC20(sellToken).approve(swapTarget, amount);
+            (bool success, ) = swapTarget.call(zeroExTradeData);
+            if (!success) {
+                revert TradeFailed();
+            }
+        }
+
+        return true;
+    }
+
+    /**
     @dev needs tt
      */
-    function _distributeFunds(SpigotState storage self, address revToken) internal returns (uint256[] memory feeBalances) {
+    function _distributeFunds(SpigotState storage self, address revToken, bytes calldata zeroExTradeData) internal returns (uint256[] memory feeBalances) {
 
         uint256 _currentBalance;
         uint256[] memory feeBalances = new uint256[](self.beneficiaries.length);
@@ -291,6 +326,9 @@ library SpigotLib {
             for (uint256 a_index = 0; a_index < self.beneficiaries.length; a_index++){
 
                 // check if revtoken is the same as beneficiary desired token
+                if (self.beneficiaries[i].desiredRepaymentToken != revToken){
+                    trade(amount, sellToken, swapTarget, zeroExTradeData);  
+                }
                 // if so, call the spigotTrade function, charge fee??
                 IERC20(revToken).safeTransfer(self.beneficiaries[a_index], feeBalances[a_index]);
             }

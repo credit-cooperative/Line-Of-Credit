@@ -11,10 +11,11 @@ interface ISpigot {
     }
 
     struct Beneficiary {
-        // address bennyOperator; // do we want this?
+        address bennyOperator; // designated address that can swap bennyTokens
         uint256 allocation; // should this be set based on debt repaid?
         address desiredRepaymentToken; // do we want this?
         uint256 debtOwed;
+        mapping(address => uint256) bennyTokens;
     }
 
     // Spigot Events
