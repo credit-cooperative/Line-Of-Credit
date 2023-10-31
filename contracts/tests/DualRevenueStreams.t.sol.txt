@@ -51,7 +51,7 @@ contract DualRevenueStreamsTest is Test {
     address borrower;
     address arbiter;
     address lender;
-    address lineAddress;
+    address owner;
 
     uint256 mainnetFork;
 
@@ -130,10 +130,10 @@ contract DualRevenueStreamsTest is Test {
             });
 
         vm.startPrank(borrower);
-        lineAddress = lineFactory.deploySecuredLineWithConfig(coreParams);
+        owner = lineFactory.deploySecuredLineWithConfig(coreParams);
         vm.stopPrank();
 
-        line = SecuredLine(payable(lineAddress));
+        line = SecuredLine(payable(owner));
         escrow = line.escrow();
         spigot = line.spigot();
 
@@ -188,7 +188,7 @@ contract DualRevenueStreamsTest is Test {
 
         // accept position
         vm.startPrank(lender);
-        IERC20(DAI).approve(lineAddress, MAX_INT);
+        IERC20(DAI).approve(owner, MAX_INT);
         line.addCredit(
             dRate,
             fRate,
@@ -224,7 +224,7 @@ contract DualRevenueStreamsTest is Test {
         spigotOperatorTokens = spigot.getOperatorTokens(USDC);
         emit log_named_uint("[$USDC] owner tokens after PUSH claimeRevenue", spigotOwnerTokens);
         emit log_named_uint("[$USDC] operator tokens after PUSH claimeRevenue", spigotOperatorTokens);
-        emit log_named_uint("[$USDC] line balance after PUSH claimeRevenue", IERC20(USDC).balanceOf(lineAddress));
+        emit log_named_uint("[$USDC] line balance after PUSH claimeRevenue", IERC20(USDC).balanceOf(owner));
         emit log_named_uint("[$USDC] spigot balance after PUSH claimeRevenue", IERC20(USDC).balanceOf(address(spigot)));
 
         emit log_string("=> claiming PULL revenue");
@@ -234,7 +234,7 @@ contract DualRevenueStreamsTest is Test {
         spigotOperatorTokens = spigot.getOperatorTokens(USDC);
         emit log_named_uint("[$USDC] owner tokens after PULL claimeRevenue", spigotOwnerTokens);
         emit log_named_uint("[$USDC] operator tokens after PULL claimeRevenue", spigotOperatorTokens);
-        emit log_named_uint("[$USDC] line balance after PULL claimeRevenue", IERC20(USDC).balanceOf(lineAddress));
+        emit log_named_uint("[$USDC] line balance after PULL claimeRevenue", IERC20(USDC).balanceOf(owner));
         emit log_named_uint("[$USDC] spigot balance after PULL claimeRevenue", IERC20(USDC).balanceOf(address(spigot)));
         vm.stopPrank();
 
@@ -249,7 +249,7 @@ contract DualRevenueStreamsTest is Test {
         spigotOperatorTokens = spigot.getOperatorTokens(USDC);
         emit log_named_uint("[$USDC] owner tokens after PUSH claimeRevenue", spigotOwnerTokens);
         emit log_named_uint("[$USDC] operator tokens after PUSH claimeRevenue", spigotOperatorTokens);
-        emit log_named_uint("[$USDC] line balance after PUSH claimeRevenue", IERC20(USDC).balanceOf(lineAddress));
+        emit log_named_uint("[$USDC] line balance after PUSH claimeRevenue", IERC20(USDC).balanceOf(owner));
         emit log_named_uint("[$USDC] spigot balance after PUSH claimeRevenue", IERC20(USDC).balanceOf(address(spigot)));
         vm.stopPrank();
 
@@ -273,7 +273,7 @@ contract DualRevenueStreamsTest is Test {
         spigotOperatorTokens = spigot.getOperatorTokens(USDC);
 
         assertEq(IERC20(USDC).balanceOf(address(spigot)), spigotOperatorTokens, "spigot operator token mismatch");
-        assertEq(IERC20(USDC).balanceOf(lineAddress), 0, "Non-Zero line balance");
+        assertEq(IERC20(USDC).balanceOf(owner), 0, "Non-Zero line balance");
 
         (, principal, interest, interestRepaid,,,,) = line.credits(line.ids(0));
         emit log_named_uint("principal post payment", principal);
@@ -281,7 +281,7 @@ contract DualRevenueStreamsTest is Test {
         emit log_named_uint("interestRepaid post payment", interestRepaid);
         emit log_named_uint("[$USDC] owner tokens after PUSH claimeRevenue", spigotOwnerTokens);
         emit log_named_uint("[$USDC] operator tokens after PUSH claimeRevenue", spigotOperatorTokens);
-        emit log_named_uint("[$USDC] line balance after PUSH claimeRevenue", IERC20(USDC).balanceOf(lineAddress));
+        emit log_named_uint("[$USDC] line balance after PUSH claimeRevenue", IERC20(USDC).balanceOf(owner));
         emit log_named_uint("[$USDC] spigot balance after PUSH claimeRevenue", IERC20(USDC).balanceOf(address(spigot)));
 
     }
@@ -365,7 +365,7 @@ contract DualRevenueStreamsTest is Test {
             assertEq(spigotOwnerTokens, 0, "non-zero owner tokens");
 
             assertEq(IERC20(USDC).balanceOf(address(spigot)), spigotOperatorTokens, "spigot operator token mismatch");
-            assertEq(IERC20(USDC).balanceOf(lineAddress), 0, "Non-Zero line balance");
+            assertEq(IERC20(USDC).balanceOf(owner), 0, "Non-Zero line balance");
 
             (, principal, interest, interestRepaid,,,,) = line.credits(line.ids(0));
         }

@@ -40,15 +40,48 @@ contract SpigotTest is Test {
     ISpigot.Setting[] private s;
 
     // Spigot Controller access control vars
-    address private owner;
-    address private operator;
+    address owner;
+    address borrower;
+    address operator;
+    address arbiter;
+    address lender;
+    address _multisigAdmin;
+
+    address[] beneficiaries;
+    uint256[] allocations;
+    uint256[] debtOwed;
+    address[] repaymentToken;
 
 
     function setUp() public {
         owner = address(this);
         operator = address(10);
 
+        // make an array of addresses using the owner var, operator var and 3rd new address
+        beneficiaries = new address[](3);
+        beneficiaries[0] = operator;
+        beneficiaries[1] = owner;
+        beneficiaries[2] = address(20);
+
         token = new RevenueToken();
+
+        /// make an array of length 3 and type uint256 where all 3 amounts add up to 100000
+        allocations = new uint256[](3);
+        allocations[0] = 10000;
+        allocations[1] = 10000;
+        allocations[2] = 80000;
+
+        // make an array of length 3 and type uint256 with random amounts for each member. name it debtOwed
+        debtOwed = new uint256[](3);
+        debtOwed[0] = 10000;
+        debtOwed[1] = 10000;
+        debtOwed[2] = 80000;
+
+        // make an array of length 3 and type address where each member is se to supportedToken1
+        repaymentToken = new address[](3);
+        repaymentToken[0] = address(token);
+        repaymentToken[1] = address(token);
+        repaymentToken[2] = address(token);
 
         _initSpigot(
             address(token),
@@ -76,7 +109,7 @@ contract SpigotTest is Test {
 
         settings = ISpigot.Setting(split, claimFunc, newOwnerFunc);
 
-        spigot = new Spigot(owner, operator);
+        spigot = new Spigot(address(this), beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
 
         // add spigot for revenue contract
         require(
@@ -205,7 +238,7 @@ contract SpigotTest is Test {
 
         assertEq(roundingFix > 1, false);
         assertEq(
-            spigot.getOwnerTokens(_token),
+            spigot.getLenderTokens(_token, beneficiaries[2]),
             ownerTokens,
             'Invalid escrow amount for spigot revenue'
         );
@@ -389,7 +422,7 @@ contract SpigotTest is Test {
         spigot.claimRevenue(revenueContract, address(token), claimData);
         assertSpigotSplits(address(token), totalRevenue);
 
-        uint256 claimed = spigot.claimOwnerTokens(address(token));
+        uint256 claimed = spigot.distributeFunds(address(token))[1];
         (uint256 maxRevenue,) = getMaxRevenue(totalRevenue);
 
         assertEq(
@@ -414,7 +447,7 @@ contract SpigotTest is Test {
         vm.expectRevert(ISpigot.CallerAccessDenied.selector);
 
         // claim fails
-        spigot.claimOwnerTokens(address(token));
+        spigot.distributeFunds(address(token))[1];
     }
 
     function test_claimOperatorTokens_AsOperator(uint256 totalRevenue, uint8 _split) public {
@@ -486,7 +519,7 @@ contract SpigotTest is Test {
         spigot.claimRevenue(revenueContract, address(token), claimData); // collect majority of revenue
         spigot.claimRevenue(revenueContract, address(token), claimData); // collect remained
 
-        spigot.claimOwnerTokens(address(token));       // should pass bc no unlciamed revenue
+        spigot.distributeFunds(address(token))[1];       // should pass bc no unlciamed revenue
     }
 
     function test_claimEscrow_UnregisteredToken() public {
@@ -814,7 +847,7 @@ contract SpigotTest is Test {
 
         settings = ISpigot.Setting(10, bytes4(""), bytes4("1234"));
 
-        spigot = new Spigot(owner, operator);
+        spigot = new Spigot(address(this), beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
 
         vm.expectRevert(SpigotLib.InvalidRevenueContract.selector);
         spigot.addSpigot(address(spigot), settings);
@@ -825,7 +858,7 @@ contract SpigotTest is Test {
 
         settings = ISpigot.Setting(10, bytes4(""), bytes4("1234"));
 
-        spigot = new Spigot(owner, operator);
+        spigot = new Spigot(address(this), beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
 
         spigot.addSpigot(address(revenueContract), settings);
 

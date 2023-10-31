@@ -132,7 +132,7 @@ contract RainRe7SimPolygon is Test {
 
     // Credit Coop Addresses
     address constant arbiterAddress = 0xFE002526dEc5B3e4b5134b75b20c065178323343; // Credit Coop MultiSig
-    address public securedLineAddress; // Line address, to be defined in setUp()
+    address public securedowner; // Line address, to be defined in setUp()
 
     // Asset Addresses
     address constant USDC = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
@@ -208,10 +208,10 @@ contract RainRe7SimPolygon is Test {
 
         // Borrower Deploys Line of Credit
         emit log_named_string("\n \u2713 Borrower Deploys Line of Credit", "");
-        securedLineAddress = _deployLoCWithConfig(lineFactory);
+        securedowner = _deployLoCWithConfig(lineFactory);
 
         // Define interfaces for all CC modules
-        line = ILineOfCredit(securedLineAddress);
+        line = ILineOfCredit(securedowner);
 
         // Check status == ACTIVE after LOC is deployed
         uint256 status = uint256(line.status());
@@ -289,7 +289,7 @@ contract RainRe7SimPolygon is Test {
         emit log_named_bytes32("- positionId ", positionId);
 
         // check that the line position has the credit funds
-        uint256 balance = IERC20(USDC).balanceOf(securedLineAddress);
+        uint256 balance = IERC20(USDC).balanceOf(securedowner);
         emit log_named_uint("- balance of Line of Credit (USDC): ", balance);
         assertEq(balance, loanSizeInUSDC);
 
@@ -546,21 +546,27 @@ contract RainRe7SimPolygon is Test {
         );
         vm.stopPrank();
 
-        // Borrower Rolls Over to new LoC
-
-
+        // Borrower Releases Spigot
         vm.startPrank(rainBorrower);
-        emit log_named_string("\n \u2713 Borrower rolls over Spigot and Escrow modules to a new LoC", "");
-        newLine = new LineOfCredit(
-            address(oracle),
-            arbiterAddress,
-            rainBorrower,
-            ttl
-        );
 
-        securedLine.rollover(address(newLine));
+        emit log_named_string("\n \u2713 Borrower Releases Spigot to Rain Collateral Controller Owner Address", "");
+        securedLine.releaseSpigot(rainControllerOwnerAddress);
+        vm.stopPrank();
+
+        vm.startPrank(rainControllerOwnerAddress);
+        emit log_named_string("\n \u2713 Borrower Removes Rain Collateral Controller from Spigot", "");
+        spigot.removeSpigot(rainCollateralControllerAddress);
+        spigot.removeSpigot(rainCollateralBeaconAddress);
+        spigot.removeSpigot(rainCollateralFactoryAddress);
+
+        assertEq(rainControllerOwnerAddress, rainCollateralController.owner());
+        assertEq(rainControllerOwnerAddress, rainCollateralBeacon.owner());
+        assertEq(rainControllerOwnerAddress, rainCollateralFactory.owner());
 
         vm.stopPrank();
+
+        // // OPTIONAL - Joint Multisig Transfers Ownership of Rain Collateral Factory Back to Rain Collateral Factory Owner Address
+        // // TODO
 
     }
 

@@ -38,16 +38,49 @@ contract SecuredLineTest is Test {
     address borrower;
     address arbiter;
     address lender;
+    address _multisigAdmin;
+
+    address[] beneficiaries;
+    uint256[] allocations;
+    uint256[] debtOwed;
+    address[] repaymentToken;
 
     function setUp() public {
         borrower = address(20);
         lender = address(10);
         arbiter = address(this);
+        _multisigAdmin = address(0xdead);
+
+
+        beneficiaries = new address[](3);
+        beneficiaries[0] = borrower;
+        beneficiaries[1] = address(this);
+        beneficiaries[2] = lender;
+
         supportedToken1 = new RevenueToken();
         supportedToken2 = new RevenueToken();
         unsupportedToken = new RevenueToken();
 
-        spigot = new Spigot(arbiter, borrower);
+        /// make an array of length 3 and type uint256 where all 3 amounts add up to 100000
+        allocations = new uint256[](3);
+        allocations[0] = 10000;
+        allocations[1] = 10000;
+        allocations[2] = 80000;
+
+        // make an array of length 3 and type uint256 with random amounts for each member. name it debtOwed
+        debtOwed = new uint256[](3);
+        debtOwed[0] = 10000;
+        debtOwed[1] = 10000;
+        debtOwed[2] = 80000;
+
+        // make an array of length 3 and type address where each member is se to supportedToken1
+        repaymentToken = new address[](3);
+        repaymentToken[0] = address(supportedToken1);
+        repaymentToken[1] = address(supportedToken1);
+        repaymentToken[2] = address(supportedToken1);
+
+
+        spigot = new Spigot(address(this), beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
         oracle = new SimpleOracle(address(supportedToken1), address(supportedToken2));
 
         escrow = new Escrow(minCollateralRatio, address(oracle), arbiter, borrower);
@@ -137,7 +170,7 @@ contract SecuredLineTest is Test {
     }
 
     function test_line_is_uninitilized_on_deployment() public {
-        Spigot s = new Spigot(arbiter, borrower);
+        Spigot s = new Spigot(address(this), beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
         Escrow e = new Escrow(minCollateralRatio, address(oracle), arbiter, borrower);
         SecuredLine l = new SecuredLine(
             address(oracle),
@@ -168,7 +201,7 @@ contract SecuredLineTest is Test {
 
     function test_line_is_uninitilized_if_escrow_not_owned() public {
         address mock = address(new MockLine(0, address(3)));
-        Spigot s = new Spigot(arbiter, borrower);
+        Spigot s = new Spigot(address(this), beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
         Escrow e = new Escrow(minCollateralRatio, address(oracle), mock, borrower);
         SecuredLine l = new SecuredLine(
             address(oracle),
@@ -190,7 +223,7 @@ contract SecuredLineTest is Test {
     }
 
     function test_line_is_uninitilized_if_spigot_not_owned() public {
-        Spigot s = new Spigot(arbiter, borrower);
+        Spigot s = new Spigot(address(this),  beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
         Escrow e = new Escrow(minCollateralRatio, address(oracle), address(this), borrower);
         SecuredLine l = new SecuredLine(
             address(oracle),
@@ -581,7 +614,7 @@ contract SecuredLineTest is Test {
       line.depositAndClose();
       vm.stopPrank();
       // create and init new line with new modules
-      Spigot s = new Spigot(arbiter, borrower);
+      Spigot s = new Spigot(address(this), beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
       Escrow e = new Escrow(minCollateralRatio, address(oracle), arbiter, borrower);
       SecuredLine l = new SecuredLine(
         address(oracle),
@@ -627,7 +660,7 @@ contract SecuredLineTest is Test {
       line.depositAndClose();
 
       // create and init new line with new modules
-      Spigot s = new Spigot(arbiter, borrower);
+      Spigot s = new Spigot(address(this), beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
       Escrow e = new Escrow(minCollateralRatio, address(oracle), arbiter, borrower);
       SecuredLine l = new SecuredLine(
         address(oracle),

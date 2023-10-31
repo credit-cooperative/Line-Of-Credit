@@ -368,7 +368,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
     /**
      * @notice - Generates position id and stores lender's position
-     * @dev - positions have unique composite-index on [lineAddress, lenderAddress, tokenAddress]
+     * @dev - positions have unique composite-index on [owner, lenderAddress, tokenAddress]
      * @dev - privileged internal function. MUST check params and logic flow before calling
      * @param lender - address that will own and manage position
      * @param token - ERC20 token that is being lent and borrower

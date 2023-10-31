@@ -85,8 +85,8 @@ echo $SpigotAddress
 SecuredLine=$(forge create --rpc-url $POLYGON_RPC_URL \
 --constructor-args $oracle_address $arbiter_address $borrower_address $swap_target_address $SpigotAddress $EscrowAddress $ttl $default_split \
 --private-key $POLYGON_PRIVATE_KEY --etherscan-api-key $POLYGON_ETHERSCAN_API_KEY contracts/modules/credit/SecuredLine.sol:SecuredLine --verify --json)
-SecuredLineAddress=$(echo "$SecuredLine" | jq -r '.deployedTo')
-echo $SecuredLineAddress
+Securedowner=$(echo "$SecuredLine" | jq -r '.deployedTo')
+echo $Securedowner
 
 # After deployement, transfer ownership of both Spigot and Escrow to Line of Credit, and the init() on Line of Credit, register on Line Factory
 # transfer ownership of spigot: updateOwner
