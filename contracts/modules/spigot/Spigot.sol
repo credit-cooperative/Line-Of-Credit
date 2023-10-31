@@ -3,7 +3,6 @@
 
 pragma solidity ^0.8.16;
 import {MutualConsent} from "../../utils/MutualConsent.sol";
-import {AccessControl} from "openzeppelin/access/AccessControl.sol";
 import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
 import {Ownable} from "openzeppelin/access/Ownable.sol";
 import {ERC1155} from "openzeppelin/token/ERC1155/ERC1155.sol";
@@ -16,7 +15,7 @@ import {SpigotState, SpigotLib} from "../../utils/SpigotLib.sol";
 import {ISpigot} from "../../interfaces/ISpigot.sol";
 
 
-contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
+contract Spigot is ISpigot, ReentrancyGuard {
     using SpigotLib for SpigotState;
 
     SpigotState private state;
@@ -130,12 +129,12 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
         @param _newAllocation The new allocation of repayments including the new beneficiary
    */
 
-    function addBeneficiaryAddress(address _newBeneficiary, uint256[] calldata _newAllocation) external onlyAdmin() {
+    function addBeneficiaryAddress(address _newBeneficiary, uint256[] calldata _newAllocation) external {
         state.addBeneficiaryAddress(_newBeneficiary, _newAllocation);
     }
 
 
-    function replaceBeneficiaryAt(uint256 _index, address _newBeneficiary, uint256[] calldata _newAllocation) external onlyAdmin() {
+    function replaceBeneficiaryAt(uint256 _index, address _newBeneficiary, uint256[] calldata _newAllocation) external {
         state.replaceBeneficiaryAt(_index, _newBeneficiary, _newAllocation);
     }
 
