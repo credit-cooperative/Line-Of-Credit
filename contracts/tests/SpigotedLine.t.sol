@@ -55,20 +55,55 @@ contract SpigotedLineTest is Test, Events {
     uint MAX_REVENUE = MAX_INT / 10**18;
 
     // Line access control vars
-    address private arbiter = address(this);
-    address private borrower = address(10);
-    address private lender = address(20);
+    address borrower;
+    address arbiter;
+    address lender;
+    address _multisigAdmin;
+
+    address[] beneficiaries;
+    uint256[] allocations;
+    uint256[] debtOwed;
+    address[] repaymentToken;
 
     address private testaddr = makeAddr("test");
     SimpleOracle private oracle;
 
     function setUp() public {
+
+        borrower = address(20);
+        lender = address(10);
+        arbiter = address(this);
+        _multisigAdmin = address(0xdead);
+
+        beneficiaries = new address[](3);
+        beneficiaries[0] = borrower;
+        beneficiaries[1] = address(this);
+        beneficiaries[2] = lender;
+
         dex = new ZeroEx();
         creditToken = new RevenueToken();
         revenueToken = new RevenueToken();
 
+        /// make an array of length 3 and type uint256 where all 3 amounts add up to 100000
+        allocations = new uint256[](3);
+        allocations[0] = 10000;
+        allocations[1] = 10000;
+        allocations[2] = 80000;
+
+        // make an array of length 3 and type uint256 with random amounts for each member. name it debtOwed
+        debtOwed = new uint256[](3);
+        debtOwed[0] = 10000;
+        debtOwed[1] = 10000;
+        debtOwed[2] = 80000;
+
+        // make an array of length 3 and type address where each member is se to supportedToken1
+        repaymentToken = new address[](3);
+        repaymentToken[0] = address(revenueToken);
+        repaymentToken[1] = address(revenueToken);
+        repaymentToken[2] = address(revenueToken);
+
         oracle = new SimpleOracle(address(revenueToken), address(creditToken));
-        spigot = new Spigot(address(this), borrower);
+        spigot = new Spigot(address(this), beneficiaries, allocations, debtOwed, repaymentToken,  _multisigAdmin);
 
         line = new SpigotedLine(
           address(oracle),
@@ -173,7 +208,7 @@ contract SpigotedLineTest is Test, Events {
     function test_can_use_claimed_revenue_to_trade() public {
       _borrow(line.ids(0), lentAmount);
 
-      uint claimable = spigot.getOwnerTokens(address(revenueToken));
+      uint claimable = spigot.distributeFunds(address(revenueToken))[1];
 
       bytes memory tradeData = abi.encodeWithSignature(
         'trade(address,address,uint256,uint256)',
@@ -200,7 +235,7 @@ contract SpigotedLineTest is Test, Events {
     function test_no_unused_revenue_tokens_to_trade() public {
       _borrow(line.ids(0), lentAmount);
 
-      uint claimable = spigot.getOwnerTokens(address(revenueToken));
+      uint claimable = spigot.getLenderTokens(address(revenueToken), beneficiaries[1]);
 
       // no extra tokens besides claimable
       assertEq(line.unused(address(revenueToken)), 0);
@@ -241,7 +276,7 @@ contract SpigotedLineTest is Test, Events {
       deal(creditT, address(spigot), 100 ether);
       spigot.claimRevenue(revenueC, address(creditT),  "");
 
-      uint claimable = spigot.getOwnerTokens(address(revenueToken));
+      uint claimable = spigot.getLenderTokens(address(revenueToken), beneficiaries[1]);
 
       // no extra tokens besides claimable
       assertEq(line.unused(creditT), 0);
@@ -276,7 +311,7 @@ contract SpigotedLineTest is Test, Events {
 
       uint256 spigotBalance = revenueToken.balanceOf(address(spigot));
 
-      uint256 claimable = spigot.getOwnerTokens(address(revenueToken));
+      uint256 claimable = spigot.getLenderTokens(address(revenueToken), beneficiaries[1]);
       uint256 operatorTokens = spigot.getOperatorTokens(address(revenueToken));
 
       assertGt(claimable, 0, "claimable amount is zero");
@@ -284,7 +319,7 @@ contract SpigotedLineTest is Test, Events {
       revenueToken.mint(address(spigot), 1000 ether);
       spigotBalance = revenueToken.balanceOf(address(spigot));
       spigot.claimRevenue(revenueContract, address(revenueToken),  "");
-      claimable = spigot.getOwnerTokens(address(revenueToken));
+      claimable = spigot.getLenderTokens(address(revenueToken), beneficiaries[1]);
       // }
 
       // no extra tokens
@@ -328,7 +363,7 @@ contract SpigotedLineTest is Test, Events {
       // need to have active position so we can buy asset
       _borrow(line.ids(0), lentAmount);
 
-      uint claimable = spigot.getOwnerTokens(address(revenueToken));
+      uint claimable = spigot.getLenderTokens(address(revenueToken), beneficiaries[1]);
 
       bytes memory tradeData = abi.encodeWithSignature(
         'trade(address,address,uint256,uint256)',
@@ -355,7 +390,7 @@ contract SpigotedLineTest is Test, Events {
       // need to have active position so we can buy asset
       _borrow(line.ids(0), lentAmount);
 
-      uint claimable = spigot.getOwnerTokens(address(revenueToken));
+      uint claimable = spigot.getLenderTokens(address(revenueToken), beneficiaries[1]);
 
       bytes memory tradeData = abi.encodeWithSignature(
         'trade(address,address,uint256,uint256)',
@@ -379,7 +414,7 @@ contract SpigotedLineTest is Test, Events {
 
       console.log("unused after", line.unused(address(revenueToken)));
 
-      claimable = spigot.getOwnerTokens(address(revenueToken));
+      claimable = spigot.getLenderTokens(address(revenueToken), beneficiaries[1]);
 
       bytes memory tradeData2 = abi.encodeWithSignature(
         'trade(address,address,uint256,uint256)',
@@ -403,7 +438,7 @@ contract SpigotedLineTest is Test, Events {
       // need to have active position so we can buy asset
       _borrow(line.ids(0), lentAmount);
 
-      uint claimable = spigot.getOwnerTokens(address(revenueToken));
+      uint claimable = spigot.getLenderTokens(address(revenueToken), beneficiaries[1]);
 
       bytes memory tradeData = abi.encodeWithSignature(
         'trade(address,address,uint256,uint256)',
@@ -435,7 +470,7 @@ contract SpigotedLineTest is Test, Events {
       // need to have active position so we can buy asset
       _borrow(line.ids(0), lentAmount);
 
-      uint claimable = spigot.getOwnerTokens(address(revenueToken));
+      uint claimable = spigot.getLenderTokens(address(revenueToken), beneficiaries[1]);
 
       bytes memory tradeData = abi.encodeWithSignature(
         'trade(address,address,uint256,uint256)',
@@ -485,7 +520,7 @@ contract SpigotedLineTest is Test, Events {
       _borrow(line.ids(0), lentAmount);
 
 
-      uint claimable = spigot.getOwnerTokens(address(revenueToken));
+      uint claimable = spigot.getLenderTokens(address(revenueToken), beneficiaries[1]);
 
       uint256 tradable;
       tradable = sellAmount > claimable ? claimable : sellAmount;
@@ -547,7 +582,7 @@ contract SpigotedLineTest is Test, Events {
         buyAmount
       );
 
-      uint claimable = spigot.getOwnerTokens(address(revenueToken));
+      uint claimable = spigot.getLenderTokens(address(revenueToken), beneficiaries[1]);
       vm.expectRevert(ISpigot.CallerAccessDenied.selector);
       vm.prank(borrower);
       line.claimAndTrade(address(revenueToken), tradeData);
@@ -569,7 +604,7 @@ contract SpigotedLineTest is Test, Events {
         buyAmount
       );
 
-      uint claimable = spigot.getOwnerTokens(address(revenueToken));
+      uint claimable = spigot.getLenderTokens(address(revenueToken), beneficiaries[1]);
       vm.expectRevert(ISpigot.CallerAccessDenied.selector);
       vm.prank(lender);
       line.claimAndTrade(address(revenueToken), tradeData);
@@ -609,7 +644,8 @@ contract SpigotedLineTest is Test, Events {
         lentAmount
       );
 
-      uint claimable = spigot.getOwnerTokens(Denominations.ETH);
+      uint claimable = spigot.getLenderTokens(Denominations.ETH, beneficiaries[1]);
+
 
       vm.startPrank(arbiter);
       line.claimAndTrade(Denominations.ETH, tradeData);
@@ -639,7 +675,7 @@ contract SpigotedLineTest is Test, Events {
       // anyone can claim revenue
       spigot.claimRevenue(revenueC, Denominations.ETH, "");
 
-      uint claimable = spigot.getOwnerTokens(Denominations.ETH);
+      uint claimable = spigot.getLenderTokens(Denominations.ETH, beneficiaries[1]);
 
       bytes memory tradeData = abi.encodeWithSignature(
         'trade(address,address,uint256,uint256)',
@@ -670,7 +706,7 @@ contract SpigotedLineTest is Test, Events {
       console.log("unused credit tokens before: ", line.unused(address(creditToken)));
 
       uint256 unusedCreditTokens = line.unused(address(creditToken));
-      uint claimable = spigot.getOwnerTokens(address(revenueToken));
+      uint claimable = spigot.getLenderTokens(address(revenueToken), beneficiaries[1]);
       uint256 tradable;
       uint256 expectedRevenueTokens;
       if ( sellAmount > claimable ) {
@@ -799,7 +835,7 @@ contract SpigotedLineTest is Test, Events {
       uint256 creditTokensPurchased = unusedTokens / 2;
 
       // because the MockZeroEx doesn't account for tokens in vs out, we need to "predict" the number of tokens sent (ie claimed + unused)
-      uint256 claimableRevenue = spigot.getOwnerTokens(address(revenueToken));
+      uint256 claimableRevenue = spigot.getLenderTokens(address(revenueToken), beneficiaries[1]);
       uint256 unusedClaimTokens = line.unused(address(revenueToken));
       uint256 revenue = (claimableRevenue + unusedClaimTokens) / 2;
 
@@ -856,7 +892,7 @@ contract SpigotedLineTest is Test, Events {
       uint256 creditTokensPurchased = 1;
 
       // because the MockZeroEx doesn't account for tokens in vs out, we need to "predict" the number of tokens sent (ie claimed + unused)
-      uint256 claimableRevenue = spigot.getOwnerTokens(address(revenueToken));
+      uint256 claimableRevenue = spigot.getLenderTokens(address(revenueToken), beneficiaries[1]);
       uint256 unusedClaimTokens = line.unused(address(revenueToken));
       uint256 revenue = (claimableRevenue + unusedClaimTokens) / 2;
 
@@ -913,7 +949,7 @@ contract SpigotedLineTest is Test, Events {
       uint256 creditTokensPurchased = unusedTokens;
 
       // because the MockZeroEx doesn't account for tokens in vs out, we need to "predict" the number of tokens sent (ie claimed + unused)
-      uint256 claimableRevenue = spigot.getOwnerTokens(address(revenueToken));
+      uint256 claimableRevenue = spigot.getLenderTokens(address(revenueToken), beneficiaries[1]);
       uint256 unusedClaimTokens = line.unused(address(revenueToken));
       uint256 revenue = (claimableRevenue + unusedClaimTokens) / 2;
 
@@ -956,7 +992,7 @@ contract SpigotedLineTest is Test, Events {
         buyAmount
       );
 
-      uint claimable = spigot.getOwnerTokens(address(revenueToken));
+      uint claimable = spigot.getLenderTokens(address(revenueToken), beneficiaries[1]);
 
       vm.expectRevert(ISpigot.CallerAccessDenied.selector);
       vm.prank(borrower);
@@ -988,7 +1024,7 @@ contract SpigotedLineTest is Test, Events {
         buyAmount
       );
 
-      uint claimable = spigot.getOwnerTokens(address(revenueToken));
+      uint claimable = spigot.getLenderTokens(address(revenueToken), beneficiaries[1]);
 
       vm.expectRevert(ISpigot.CallerAccessDenied.selector);
       vm.prank(lender);
@@ -1119,7 +1155,7 @@ contract SpigotedLineTest is Test, Events {
 
       uint256 preBalance = line.unused(address(creditToken));
       assertEq(preBalance, 0, "prebalance should be 0");
-      uint256 claimable = spigot.getOwnerTokens(address(creditToken));
+      uint256 claimable = spigot.getLenderTokens(address(creditToken), beneficiaries[1]);
       emit log_named_uint("claimable", claimable);
 
       bytes memory tradeData = abi.encodeWithSignature(
@@ -1155,7 +1191,7 @@ contract SpigotedLineTest is Test, Events {
 
       uint256 preBalance = line.unused(address(creditToken));
       assertEq(preBalance, 0, "prebalance should be 0");
-      uint256 claimable = spigot.getOwnerTokens(address(creditToken));
+      uint256 claimable = spigot.getLenderTokens(address(creditToken), beneficiaries[1]);
       emit log_named_uint("claimable", claimable);
 
       bytes memory tradeData = abi.encodeWithSignature(
@@ -1187,7 +1223,7 @@ contract SpigotedLineTest is Test, Events {
       uint256 preBalance = line.unused(address(creditToken));
       assertEq(preBalance, 0, "prebalance should be 0");
 
-      uint256 claimable = spigot.getOwnerTokens(address(creditToken));
+      uint256 claimable = spigot.getLenderTokens(address(creditToken), beneficiaries[1]);
 
       bytes memory tradeData = abi.encodeWithSignature(
         'trade(address,address,uint256,uint256)',

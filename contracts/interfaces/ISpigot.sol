@@ -10,6 +10,13 @@ interface ISpigot {
         bytes4 transferOwnerFunction; // function signature on contract to call and transfer ownership
     }
 
+    struct Beneficiary {
+        // address bennyOperator; // do we want this?
+        uint256 allocation; // should this be set based on debt repaid?
+        address desiredRepaymentToken; // do we want this?
+        uint256 debtOwed;
+    }
+
     // Spigot Events
     event AddSpigot(address indexed revenueContract, uint256 ownerSplit, bytes4 claimFnSig, bytes4 trsfrFnSig);
 
@@ -64,11 +71,9 @@ interface ISpigot {
 
     // owner funcs
 
-    // NOTE: TO BE DEPRECATED!
-    function claimOwnerTokens(address token) external returns (uint256 claimed);
+    function claimOperatorTokens(address token) external returns (uint256);
 
-    // NOTE: TO BE DEPRECATED!
-    function claimOperatorTokens(address token) external returns (uint256 claimed);
+    function distributeFunds(address token) external returns (uint256[] memory);
 
     function addSpigot(address revenueContract, Setting memory setting) external returns (bool);
 
@@ -91,7 +96,7 @@ interface ISpigot {
 
     function isWhitelisted(bytes4 func) external view returns (bool);
 
-    function getOwnerTokens(address token) external view returns (uint256);
+    function getLenderTokens(address token, address lender) external view returns (uint256);
 
     function getOperatorTokens(address token) external view returns (uint256);
 

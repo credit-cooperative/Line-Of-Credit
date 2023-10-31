@@ -64,7 +64,7 @@ contract HotfixForkClaimRevenueTest is Test {
     address borrower;
     address arbiter;
     address lender;
-    address lineAddress;
+    address owner;
 
     uint256 mainnetFork;
 
@@ -105,10 +105,10 @@ contract HotfixForkClaimRevenueTest is Test {
             });
 
         vm.startPrank(borrower);
-        lineAddress = lineFactory.deploySecuredLineWithConfig(coreParams);
+        owner = lineFactory.deploySecuredLineWithConfig(coreParams);
         vm.stopPrank();
 
-        line = SecuredLine(payable(lineAddress));
+        line = SecuredLine(payable(owner));
         escrow = line.escrow();
         spigot = line.spigot();
 
@@ -157,7 +157,7 @@ contract HotfixForkClaimRevenueTest is Test {
 
         // accept position
         vm.startPrank(lender);
-        IERC20(DAI).approve(lineAddress, MAX_INT);
+        IERC20(DAI).approve(owner, MAX_INT);
         line.addCredit(
             dRate,
             fRate,
@@ -198,7 +198,7 @@ contract HotfixForkClaimRevenueTest is Test {
         uint256 spigotOperatorTokens = spigot.getOperatorTokens(USDC);
         emit log_named_uint("owner tokens USDC after useAndRepay", spigotOwnerTokens);
         emit log_named_uint("operator tokens USDC after useAndRepay", spigotOperatorTokens);
-        emit log_named_uint("line USDC balance", IERC20(USDC).balanceOf(lineAddress));
+        emit log_named_uint("line USDC balance", IERC20(USDC).balanceOf(owner));
         emit log_named_uint("spigot USDC balance", IERC20(USDC).balanceOf(address(spigot)));
         vm.stopPrank();
 
@@ -247,7 +247,7 @@ contract HotfixForkClaimRevenueTest is Test {
         assertEq(IERC20(USDC).balanceOf(address(spigot)), spigotOperatorTokens);
         emit log_named_uint("owner tokens USDC after useAndRepay", spigotOwnerTokens);
         emit log_named_uint("operator tokens USDC after useAndRepay", spigotOperatorTokens);
-        emit log_named_uint("line USDC balance", IERC20(USDC).balanceOf(lineAddress));
+        emit log_named_uint("line USDC balance", IERC20(USDC).balanceOf(owner));
         emit log_named_uint("spigot USDC balance", IERC20(USDC).balanceOf(address(spigot)));
 
 
@@ -281,7 +281,7 @@ contract HotfixForkClaimRevenueTest is Test {
         spigotOperatorTokens = spigot.getOperatorTokens(USDC);
         emit log_named_uint("owner tokens USDC after transfer", spigotOwnerTokens);
         emit log_named_uint("operator tokens USDC after transfer", spigotOperatorTokens);
-        emit log_named_uint("line USDC balance", IERC20(USDC).balanceOf(lineAddress));
+        emit log_named_uint("line USDC balance", IERC20(USDC).balanceOf(owner));
         emit log_named_uint("spigot USDC balance", IERC20(USDC).balanceOf(address(spigot)));
         vm.stopPrank();
 
@@ -299,7 +299,7 @@ contract HotfixForkClaimRevenueTest is Test {
         expectedOwnerTokens = (claimed * revenueSplit) / 100;
         emit log_named_uint("owner tokens USDC after claimRevenue", spigotOwnerTokens);
         emit log_named_uint("operator tokens USDC after claimRevenue", spigotOperatorTokens);
-        emit log_named_uint("line USDC balance", IERC20(USDC).balanceOf(lineAddress));
+        emit log_named_uint("line USDC balance", IERC20(USDC).balanceOf(owner));
         emit log_named_uint("spigot USDC balance", IERC20(USDC).balanceOf(address(spigot)));
         assertEq(spigotOwnerTokens, expectedOwnerTokens);
         assertEq(spigotOperatorTokens, claimed - expectedOwnerTokens + previousSpigotOperatorTokens);
@@ -324,7 +324,7 @@ contract HotfixForkClaimRevenueTest is Test {
         spigotOperatorTokens = spigot.getOperatorTokens(USDC);
         emit log_named_uint("owner tokens USDC after claimAndRepay", spigotOwnerTokens);
         emit log_named_uint("operator tokens USDC after claimAndRepay", spigotOperatorTokens);
-        emit log_named_uint("line USDC balance after claimAndRepay", IERC20(USDC).balanceOf(lineAddress));
+        emit log_named_uint("line USDC balance after claimAndRepay", IERC20(USDC).balanceOf(owner));
         emit log_named_uint("spigot USDC balance after claimAndRepay", IERC20(USDC).balanceOf(address(spigot)));
 
         // 16_701_533: transfer 3 USDC to spigot
@@ -337,7 +337,7 @@ contract HotfixForkClaimRevenueTest is Test {
         spigotOperatorTokens = spigot.getOperatorTokens(USDC);
         emit log_named_uint("owner tokens USDC after transfer", spigotOwnerTokens);
         emit log_named_uint("operator tokens USDC after transfer", spigotOperatorTokens);
-        emit log_named_uint("line USDC balance", IERC20(USDC).balanceOf(lineAddress));
+        emit log_named_uint("line USDC balance", IERC20(USDC).balanceOf(owner));
         emit log_named_uint("spigot USDC balance", IERC20(USDC).balanceOf(address(spigot)));
         vm.stopPrank();
 
@@ -350,7 +350,7 @@ contract HotfixForkClaimRevenueTest is Test {
         spigotOperatorTokens = spigot.getOperatorTokens(USDC);
         emit log_named_uint("owner tokens USDC after claimRevenue", spigotOwnerTokens);
         emit log_named_uint("operator tokens USDC after claimRevenue", spigotOperatorTokens);
-        emit log_named_uint("line USDC balance", IERC20(USDC).balanceOf(lineAddress));
+        emit log_named_uint("line USDC balance", IERC20(USDC).balanceOf(owner));
         emit log_named_uint("spigot USDC balance", IERC20(USDC).balanceOf(address(spigot)));
         vm.stopPrank();
 
