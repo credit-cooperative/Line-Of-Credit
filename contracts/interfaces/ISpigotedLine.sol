@@ -105,6 +105,15 @@ interface ISpigotedLine {
     function releaseSpigot(address to) external returns (bool);
 
     /**
+
+     * @notice  - Uses predefined function in revenueContract settings to transfer complete control and ownership from this Spigot to the Operator
+     * @dev     - revenueContract's transfer func MUST only accept one paramteter which is the new owner's address.
+     * @dev     - callable by `owner`
+     * @param revenueContract - smart contract to transfer ownership of
+     */
+    function removeSpigot(address revenueContract) external returns (bool);
+
+    /**
      * @notice   - sends unused tokens to borrower if REPAID or arbiter if LIQUIDATABLE or INSOLVENT
      *           -  does not send tokens out if line is ACTIVE
      * @dev      - callable by `borrower` or `arbiter`

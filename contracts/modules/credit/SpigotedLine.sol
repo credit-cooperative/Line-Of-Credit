@@ -263,6 +263,11 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
         return SpigotedLineLib.releaseSpigot(address(spigot), _updateStatus(_healthcheck()), borrower, arbiter, to);
     }
 
+    /// see ISpigotedLine.removeSpigot
+    function removeSpigot(address revenueContract) external returns (bool) {
+        return SpigotedLineLib.removeSpigot(address(spigot), _updateStatus(_healthcheck()), borrower, revenueContract);
+    }
+
     /// see ISpigotedLine.sweep
     function sweep(address to, address token, uint256 amount) external nonReentrant returns (uint256) {
         uint256 swept = SpigotedLineLib.sweep(

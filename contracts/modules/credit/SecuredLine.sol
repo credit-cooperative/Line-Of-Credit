@@ -106,7 +106,7 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
      * @return true is line is amended, extended, and set to ACTIVE status
      */
     function amendAndExtend(address newBorrower, uint256 ttlExtension, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) external onlyBorrower returns (bool) {
-        if (count == 0){
+        if (count == 0) {
             if (proposalCount > 0) {
                 _clearProposals();
             }
@@ -127,6 +127,7 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
      * @return true is line is amended
      */
     // TODO: add beneficiaries array and corresponding splits
+    // TODO: cannot amend and extend if there is beneficiary debt
     function amend(address newBorrower, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) external onlyBorrower returns (bool) {
         if (count == 0) {
             if (proposalCount > 0) {
@@ -140,7 +141,51 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
     }
 
     // TODO: implement this function
+    // TODO: add tests
+    // TODO: cannot amend and extend if there is beneficiary debt
+    // NOTE: only works for existing revenue contracts for which to change splits
+    function updateRevenueContractSplits(address[] calldata _revenueContracts, uint8[] calldata _ownerSplits) public onlyBorrower {
+        if (count == 0) {
+            if (proposalCount > 0) {
+                _clearProposals();
+            }
+            for (uint256 i = 0; i < _revenueContracts.length; i++) {
+                spigot.updateOwnerSplit(_revenueContracts[i], _ownerSplits[i]);
+            }
+        }
+
+    }
+
+    // TODO: implement this function
+    // NOTE: add/reset new/existing beneficiary agreements
+    // TODO: cannot amend and extend if there is beneficiary debt
+    // NOTES: allocations cannot sum to greater than 100000
+    // function updateBeneficiaries(address[] calldata _beneficiaries, uint256[] calldata _allocations, address[] calldata _repaymentTokens, uint256[] calldata _outstandingDebts) public onlyBorrower {
+    //     if (count == 0) {
+    //         if (proposalCount > 0) {
+    //             _clearProposals();
+    //         }
+    //         for (uint256 i = 0; i < _beneficiaries.length; i++) {
+    //             // does beneficiary exist? if does, do this
+    //             ISpigot.Beneficiary beneficiaryInfo = spigot.getBeneficiaryInfo(_beneficiaries[i]);
+    //             if (beneficiaryInfo) {
+    //                 ISpigot.Beneficiary newBeneficiaryInfo = ISpigot.Beneficiary(_allocations[i], _repaymentTokens[i], outstandingDebts[i]);
+
+
+    //             } else {
+    //                 spigot.addBeneficiaryAddress(_beneficiaries[i], _allocations[i]);
+    //             }
+    //             // otherwise do this
+
+    //         }
+    //     }
+    // }
+
+
+
+    // TODO: implement this function
     // TODO: add beneficiaries array and corresponding splits
+    // TODO: cannot amend and extend if there is beneficiary debt
     // TODO: revise how beneficiaries and revenue contracts are amended
     function _amend(address newBorrower, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata beneficiaries) internal returns (bool) {
         // TODO: check if SecuredLine owns Spigot address (otherwise should fail)

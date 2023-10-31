@@ -372,11 +372,11 @@ library SpigotLib {
         }
     }
 
-    function updateDesiredRepaymentToken(SpigotState storage self, address[] calldata _newToken) external {
+    function updateRepaymentToken(SpigotState storage self, address[] calldata _newToken) external {
 
         for (uint256 i = 0; i < self.beneficiaries.length; i++) {
             require(_newToken[i] != address(0), "Invalid token");
-            self.beneficiaryInfo[self.beneficiaries[i]].desiredRepaymentToken = _newToken[i];
+            self.beneficiaryInfo[self.beneficiaries[i]].repaymentToken = _newToken[i];
         }
     }
 

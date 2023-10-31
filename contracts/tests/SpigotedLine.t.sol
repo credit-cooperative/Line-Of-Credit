@@ -9,6 +9,7 @@ import { Denominations } from "chainlink/Denominations.sol";
 import { ZeroEx } from "../mock/ZeroEx.sol";
 import { SimpleOracle } from "../mock/SimpleOracle.sol";
 import { RevenueToken } from "../mock/RevenueToken.sol";
+import {SimpleRevenueContract} from "../mock/SimpleRevenueContract.sol";
 
 import {MutualConsent} from "../utils/MutualConsent.sol";
 
@@ -1504,6 +1505,51 @@ contract SpigotedLineTest is Test, Events {
 
       assertEq(spigot.owner(), new_owner);
 
+    }
+
+
+    // removeSpigot
+
+    // TODO: test can remove spigot from line
+    // TODO: test only borrower can remove spigot from line only if line is REPAID
+    function test_remove_spigot_to_borrower_when_repaid() public {
+
+      // Define Revenue token
+      RevenueToken _token = new RevenueToken();
+
+      // Define SimpleRevenueContract
+      address testRevenueContract = address(new SimpleRevenueContract(borrower, address(_token)));
+
+      // arbiter addSpigot
+      ISpigot.Setting memory setting = ISpigot.Setting({
+        ownerSplit: ownerSplit,
+        claimFunction: bytes4(0),
+        transferOwnerFunction: bytes4(0xf2fde38b)
+      });
+
+      vm.startPrank(arbiter);
+      line.addSpigot(testRevenueContract, setting);
+      vm.stopPrank();
+
+      // borrower transfer ownership to spigot
+      vm.startPrank(borrower);
+      // TODO: fix this
+      testRevenueContract.call(
+            abi.encodeWithSelector(setting.transferOwnerFunction, address(spigot))
+        );
+
+      assertEq(testRevenueContract.owner(), address(line));
+      vm.stopPrank();
+
+
+      vm.startPrank(borrower);
+      line.close(line.ids(0));
+      vm.stopPrank();
+
+      hoax(borrower);
+      assertTrue(line.removeSpigot(testRevenueContract));
+
+      assertEq(testRevenueContract.owner(), borrower);
     }
 
     // updateOwnerSplit()

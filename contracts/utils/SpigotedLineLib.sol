@@ -42,6 +42,8 @@ library SpigotedLineLib {
         uint256 tokenType // 0 for revenue token, 1 for credit token
     );
 
+    event RemoveSpigot(address indexed revenueContract);
+
     /**
      * @dev                 - priviliged internal function!
      * @notice              - Allows revenue tokens in 'escrowed' to be traded for credit tokens that aren't yet used to repay debt.
@@ -234,6 +236,25 @@ library SpigotedLineLib {
         }
 
         revert CallerAccessDenied();
+    }
+
+    // TODO: fix this function
+    /**
+     * @notice  - Uses predefined function in revenueContract settings to transfer complete control and ownership from this Spigot to the Operator
+     * @dev     - revenueContract's transfer func MUST only accept one paramteter which is the new owner's address.
+     * @dev     - callable by `owner`
+     * @param revenueContract - smart contract to transfer ownership of
+     */
+    function removeSpigot(address spigot,
+        LineLib.STATUS status, address borrower, address revenueContract) external returns (bool) {
+        // TODO: change from REPAID to no active credit positions / outstanding beneficiary debt
+        if (status != LineLib.STATUS.REPAID || msg.sender != borrower) {
+            revert CallerAccessDenied();
+        }
+
+        bool spigotRemoved = ISpigot(spigot).removeSpigot(revenueContract);
+
+        return spigotRemoved;
     }
 
     /**

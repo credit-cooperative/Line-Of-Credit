@@ -54,7 +54,7 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
             state.beneficiaries[i] = _startingBeneficiaries[i];
             state.beneficiaryInfo[_startingBeneficiaries[i]].allocation = _startingAllocations[i];
             state.beneficiaryInfo[_startingBeneficiaries[i]].debtOwed = _debtOwed[i];
-            state.beneficiaryInfo[_startingBeneficiaries[i]].desiredRepaymentToken = _repaymentToken[i];
+            state.beneficiaryInfo[_startingBeneficiaries[i]].repaymentToken = _repaymentToken[i];
         }
 
         state.operator = _startingBeneficiaries[0];
@@ -175,7 +175,7 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
     /**
 
      * @notice  - Uses predefined function in revenueContract settings to transfer complete control and ownership from this Spigot to the Operator
-     * @dev     - revenuContract's transfer func MUST only accept one paramteter which is the new owner's address.
+     * @dev     - revenueContract's transfer func MUST only accept one paramteter which is the new owner's address.
      * @dev     - callable by `owner`
      * @param revenueContract - smart contract to transfer ownership of
      */
@@ -263,6 +263,10 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
  ///////////////////////// VIEW FUNCS //////////////////////////
 
     function getBeneficiaries() public view returns (address[] memory) { return (state.beneficiaries); }
+
+    function getBeneficiaryInfo(address beneficiary) public view returns (ISpigot.Beneficiary memory) {
+        return state.beneficiaryInfo[beneficiary];
+    }
 
     function getLenderTokens(address token, address lender) external view returns (uint256) {
         return state.getLenderTokens(token, lender);
