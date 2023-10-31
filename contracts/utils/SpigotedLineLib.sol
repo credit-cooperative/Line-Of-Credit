@@ -168,7 +168,7 @@ library SpigotedLineLib {
 
     function canDeclareInsolvent(address spigot, address arbiter) external view returns (bool) {
         // Must have called releaseSpigot() and sold off protocol / revenue streams already
-        address owner_ = ISpigot(spigot).lineAddress();
+        address owner_ = ISpigot(spigot).owner();
         if (address(this) == owner_ || arbiter == owner_) {
             revert NotInsolvent(spigot);
         }

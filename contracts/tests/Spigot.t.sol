@@ -781,7 +781,7 @@ contract SpigotTest is Test {
     function test_removeSpigot_AsOperator() public {
         spigot.updateOwner(address(0xdebf)); // random owner
 
-        assertEq(spigot.lineAddress(), address(0xdebf));
+        assertEq(spigot.owner(), address(0xdebf));
         assertEq(spigot.operator(), operator);
 
         vm.expectRevert(ISpigot.CallerAccessDenied.selector);
@@ -805,7 +805,7 @@ contract SpigotTest is Test {
     // Access Control Changes
     function test_updateOwner_AsOwner() public {
         spigot.updateOwner(address(0xdebf));
-        assertEq(spigot.lineAddress(), address(0xdebf));
+        assertEq(spigot.owner(), address(0xdebf));
     }
 
     function test_updateOperator_AsOperator() public {

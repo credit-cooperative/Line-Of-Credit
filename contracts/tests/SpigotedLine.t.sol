@@ -1074,7 +1074,7 @@ contract SpigotedLineTest is Test, Events {
       hoax(borrower);
       assertTrue(line.releaseSpigot(borrower));
 
-      assertEq(spigot.lineAddress(), borrower);
+      assertEq(spigot.owner(), borrower);
     }
 
     function test_cannot_close_with_ETH() public {
@@ -1099,7 +1099,7 @@ contract SpigotedLineTest is Test, Events {
 
       assertTrue(line.releaseSpigot(arbiter));
 
-      assertEq(spigot.lineAddress(), arbiter);
+      assertEq(spigot.owner(), arbiter);
     }
 
 
@@ -1432,7 +1432,7 @@ contract SpigotedLineTest is Test, Events {
       address new_owner = address(30);
       spigot.updateOwner(new_owner);
 
-      assertEq(spigot.lineAddress(), new_owner);
+      assertEq(spigot.owner(), new_owner);
 
     }
 

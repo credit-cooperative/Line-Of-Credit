@@ -64,11 +64,11 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
         }
 
         state.operator = _startingBeneficiaries[0];
-        state.ccLoc = _startingBeneficiaries[1];
+        state.owner = _startingBeneficiaries[1];
     }
 
-    function lineAddress() external view returns (address) {
-        return state.ccLoc;
+    function owner() external view returns (address) {
+        return state.owner;
     }
 
     function operator() external view returns (address) {

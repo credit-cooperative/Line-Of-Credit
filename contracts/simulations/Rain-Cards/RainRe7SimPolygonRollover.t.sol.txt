@@ -132,7 +132,7 @@ contract RainRe7SimPolygon is Test {
 
     // Credit Coop Addresses
     address constant arbiterAddress = 0xFE002526dEc5B3e4b5134b75b20c065178323343; // Credit Coop MultiSig
-    address public securedLineAddress; // Line address, to be defined in setUp()
+    address public securedowner; // Line address, to be defined in setUp()
 
     // Asset Addresses
     address constant USDC = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
@@ -208,10 +208,10 @@ contract RainRe7SimPolygon is Test {
 
         // Borrower Deploys Line of Credit
         emit log_named_string("\n \u2713 Borrower Deploys Line of Credit", "");
-        securedLineAddress = _deployLoCWithConfig(lineFactory);
+        securedowner = _deployLoCWithConfig(lineFactory);
 
         // Define interfaces for all CC modules
-        line = ILineOfCredit(securedLineAddress);
+        line = ILineOfCredit(securedowner);
 
         // Check status == ACTIVE after LOC is deployed
         uint256 status = uint256(line.status());
@@ -289,7 +289,7 @@ contract RainRe7SimPolygon is Test {
         emit log_named_bytes32("- positionId ", positionId);
 
         // check that the line position has the credit funds
-        uint256 balance = IERC20(USDC).balanceOf(securedLineAddress);
+        uint256 balance = IERC20(USDC).balanceOf(securedowner);
         emit log_named_uint("- balance of Line of Credit (USDC): ", balance);
         assertEq(balance, loanSizeInUSDC);
 

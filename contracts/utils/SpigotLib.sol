@@ -13,7 +13,7 @@ struct SpigotState {
     address[] beneficiaries; // Claims on the repayment
     mapping(address => ISpigot.Beneficiary)  beneficiaryInfo; // beneficiary -> info
     address operator;
-    address ccLoc; // aka the owner
+    address owner; // aka the owner
     mapping(address => uint256) operatorTokens; 
     /// @notice Functions that the operator is allowed to run on all revenue contracts controlled by the Spigot
     mapping(bytes4 => bool) whitelistedFunctions; // function -> allowed
@@ -152,7 +152,7 @@ library SpigotLib {
         address revenueContract,
         ISpigot.Setting memory setting
     ) external returns (bool) {
-        if (msg.sender != self.ccLoc) {
+        if (msg.sender != self.owner) {
             revert CallerAccessDenied();
         }
 
@@ -181,7 +181,7 @@ library SpigotLib {
 
     /** see Spigot.removeSpigot */
     function removeSpigot(SpigotState storage self, address revenueContract) external returns (bool) {
-        if (msg.sender != self.ccLoc) {
+        if (msg.sender != self.owner) {
             revert CallerAccessDenied();
         }
 
@@ -205,7 +205,7 @@ library SpigotLib {
         address revenueContract,
         uint8 ownerSplit
     ) external returns (bool) {
-        if (msg.sender != self.ccLoc) {
+        if (msg.sender != self.owner) {
             revert CallerAccessDenied();
         }
         if (ownerSplit > MAX_SPLIT) {
@@ -220,18 +220,18 @@ library SpigotLib {
 
     /** see Spigot.updateOwner */
     function updateOwner(SpigotState storage self, address newOwner) external returns (bool) {
-        if (msg.sender != self.ccLoc) {
+        if (msg.sender != self.owner) {
             revert CallerAccessDenied();
         }
         require(newOwner != address(0));
-        self.ccLoc = newOwner;
+        self.owner = newOwner;
         emit UpdateOwner(newOwner);
         return true;
     }
 
     /** see Spigot.updateOperator */
     function updateOperator(SpigotState storage self, address newOperator) external returns (bool) {
-        if (msg.sender != self.operator && msg.sender != self.ccLoc) {
+        if (msg.sender != self.operator && msg.sender != self.owner) {
             revert CallerAccessDenied();
         }
         require(newOperator != address(0));
@@ -242,7 +242,7 @@ library SpigotLib {
 
     /** see Spigot.updateWhitelistedFunction*/
     function updateWhitelistedFunction(SpigotState storage self, bytes4 func, bool allowed) external returns (bool) {
-        if (msg.sender != self.ccLoc) {
+        if (msg.sender != self.owner) {
             revert CallerAccessDenied();
         }
         self.whitelistedFunctions[func] = allowed;

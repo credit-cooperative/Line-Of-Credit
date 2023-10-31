@@ -74,7 +74,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
      * @notice requires this Line is owner of the Escrowed collateral else Line will not init
      */
     function _init() internal virtual override(LineOfCredit) {
-        if (spigot.lineAddress() != address(this)) revert BadModule(address(spigot));
+        if (spigot.owner() != address(this)) revert BadModule(address(spigot));
     }
 
     /**
@@ -269,7 +269,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
 
     /// see ILineOfCredit.tradeable
     function tradeable(address token) external view returns (uint256) {
-        return unusedTokens[token] + spigot.getLenderTokens(token, spigot.lineAddress());
+        return unusedTokens[token] + spigot.getLenderTokens(token, spigot.owner());
     }
 
     /// see ILineOfCredit.unused

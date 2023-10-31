@@ -91,7 +91,7 @@ interface ISpigot {
     function updateWhitelistedFunction(bytes4 func, bool allowed) external returns (bool);
 
     // Getters
-    function lineAddress() external view returns (address);
+    function owner() external view returns (address);
 
     function operator() external view returns (address);
 
