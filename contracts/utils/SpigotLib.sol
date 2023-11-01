@@ -326,11 +326,22 @@ library SpigotLib {
             for (uint256 a_index = 0; a_index < self.beneficiaries.length; a_index++){
 
                 // check if revtoken is the same as beneficiary desired token
-                if (self.beneficiaries[i].desiredRepaymentToken != revToken){
-                    trade(amount, sellToken, swapTarget, zeroExTradeData);  
+                if (self.beneficiaryInfo[self.beneficiaries[i]].desiredRepaymentToken == revToken){
+                    if (feeBalances[a_index] <= self.beneficiaryInfo[self.beneficiaries[i]].debtOwed){
+                        IERC20(revToken).safeTransfer(self.beneficiaries[a_index], feeBalances[a_index]);
+                        self.beneficiaryInfo[self.beneficiaries[i]].debtOwed = self.beneficiaries[self.beneficiaries[i]].debtOwed - feeBalances[a_index];
+                    } else if (feeBalances[a_index] > self.beneficiaryInfo[self.beneficiaries[i]].debtOwed){
+                        IERC20(revToken).safeTransfer(self.beneficiaries[a_index], self.beneficiaryInfo[self.beneficiaries[i]].debtOwed);
+                        operatorTokens[revToken] = operatorTokens[revToken] + (feeBalances[a_index] - self.beneficiaryInfo[self.beneficiaries[i]].debtOwed);
+                        self.beneficiaryInfo[self.beneficiaries[i]].debtOwed = 0;
+                    }
+                        
+                     
+                } else if (self.beneficiaryInfo[self.beneficiaries[i]].desiredRepaymentToken != revToken){
+                    self.beneficiaryInfo[self.beneficiaries[i]].bennyTokens[revToken] = self.beneficiaryInfo[self.beneficiaries[i]].bennyTokens[revToken] + feeBalances[a_index];
                 }
-                // if so, call the spigotTrade function, charge fee??
-                IERC20(revToken).safeTransfer(self.beneficiaries[a_index], feeBalances[a_index]);
+                
+                
             }
         }
         return feeBalances;

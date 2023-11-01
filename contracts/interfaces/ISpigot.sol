@@ -11,7 +11,7 @@ interface ISpigot {
     }
 
     struct Beneficiary {
-        address bennyOperator; // designated address that can swap bennyTokens
+        address bennyOperator; // designated address that can swap benn
         uint256 allocation; // should this be set based on debt repaid?
         address desiredRepaymentToken; // do we want this?
         uint256 debtOwed;
