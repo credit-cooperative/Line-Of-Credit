@@ -17,6 +17,8 @@ interface IEscrow {
 
     event EnableCollateral(address indexed token);
 
+    event UpdateMinimumCollateralRatio(uint256 indexed ratio);
+
     error InvalidCollateral();
 
     error CallerAccessDenied();

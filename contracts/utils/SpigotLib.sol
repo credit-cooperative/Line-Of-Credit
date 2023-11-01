@@ -334,6 +334,7 @@ library SpigotLib {
         return newAmounts;
     }
 
+    // TODO: add docuementation
     function addBeneficiaryAddress(SpigotState storage self, address _newBeneficiary, uint256[] calldata _newAllocation) external {
         require(self.beneficiaries.length < 5, "Max beneficiaries");
         require(_newBeneficiary!=address(0), "beneficiary cannot be 0 address");
@@ -347,7 +348,7 @@ library SpigotLib {
         _setSplitAllocation(self, _newAllocation);
     }
 
-
+    // TODO: add docuementation
     function replaceBeneficiaryAt(SpigotState storage self, uint256 _index, address _newBeneficiary, uint256[] calldata _newAllocation) external {
         require(_index >= 1, "Invalid beneficiary to remove");
         require(_newBeneficiary!=address(0), "Beneficiary cannot be 0 address");
@@ -361,10 +362,14 @@ library SpigotLib {
         _setSplitAllocation(self, _newAllocation);
     }
 
+    // TODO: add docuementation
+    // TODO: needs restrictions on who/when can be called
     function resetAllocation(SpigotState storage self, uint256[] calldata _newAllocation) external {
         _setSplitAllocation(self, _newAllocation);
     }
 
+    // TODO: add docuementation
+    // TODO: needs restrictions on who/when can be called
     function resetDebtOwed(SpigotState storage self, uint256[] calldata _newDebtOwed) external {
         require(_newDebtOwed.length == self.beneficiaries.length, "Invalid length");
         for (uint256 i = 0; i < self.beneficiaries.length; i++) {
@@ -372,6 +377,8 @@ library SpigotLib {
         }
     }
 
+    // TODO: add docuementation
+    // TODO: needs restrictions on who/when can be called
     function updateRepaymentToken(SpigotState storage self, address[] calldata _newToken) external {
 
         for (uint256 i = 0; i < self.beneficiaries.length; i++) {
@@ -379,6 +386,22 @@ library SpigotLib {
             self.beneficiaryInfo[self.beneficiaries[i]].repaymentToken = _newToken[i];
         }
     }
+
+    // TODO: add documentation
+    // TODO: needs restrictions on who/when can be called
+    function updateBeneficiaryInfo(SpigotState storage self, address beneficiary, address newOperator, uint256 newAllocation, address newRepaymentToken, uint256 newOutstandingDebt) external {
+
+        // Delete the existing Beneficiary to reset bennyTokens mapping
+        delete self.beneficiaryInfo[beneficiary];
+
+        // update variables
+        self.beneficiaryInfo[beneficiary].bennyOperator = newOperator;
+        self.beneficiaryInfo[beneficiary].allocation = newAllocation;
+        self.beneficiaryInfo[beneficiary].repaymentToken = newRepaymentToken;
+        self.beneficiaryInfo[beneficiary].debtOwed = newOutstandingDebt;
+
+    }
+
 
     function getLenderTokens(SpigotState storage self, address token, address lender) external view returns (uint256) {
         uint256 total;

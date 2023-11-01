@@ -143,6 +143,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
      * @return true is line is extended and set to ACTIVE status.
      */
     function extend(uint256 ttlExtension) external onlyBorrower returns (bool) {
+        // TODO: needs to check that outstanding debt to beneficiaries is 0
         if (count == 0) {
             if (proposalCount > 0) {
                 _clearProposals();
@@ -162,6 +163,12 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         return true;
     }
 
+    /**
+     * @notice - Allows borrower to update their address.
+     * @dev - callable by `borrower`
+     * @dev - cannot be called if new borrower is zero address
+     * @param newBorrower The new address of the borrower
+     */
     function updateBorrower(address newBorrower) public onlyBorrower {
         if (newBorrower == address(0)) {
             revert InvalidBorrower();

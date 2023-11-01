@@ -268,6 +268,45 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
         return SpigotedLineLib.removeSpigot(address(spigot), _updateStatus(_healthcheck()), borrower, revenueContract);
     }
 
+
+    // TODO: add documentation
+    // TODO: add tests
+    // NOTE: only works for existing revenue contracts for which to change splits
+    function updateRevenueContractSplits(address[] calldata _revenueContracts, uint8[] calldata _ownerSplits) public onlyBorrower {
+        // TODO: needs to check that outstanding debt to beneficiaries is 0
+        if (count == 0) {
+            if (proposalCount > 0) {
+                _clearProposals();
+            }
+            for (uint256 i = 0; i < _revenueContracts.length; i++) {
+                spigot.updateOwnerSplit(_revenueContracts[i], _ownerSplits[i]);
+            }
+        }
+
+    }
+
+    // TODO: implement this function
+    // NOTE: add/reset new/existing beneficiary agreements
+    // TODO: cannot amend and extend if there is beneficiary debt
+    // NOTES: allocations cannot sum to greater than 100000
+    // TODO: emit AmendBeneficiaries(address(this), spigot, beneficiaries);
+    // NOTE: only works with existing beneificiaries. Need to add/remove beneficiares before calling this function
+    function updateBeneficiarySettings(address[] calldata _beneficiaries, address[] calldata _operators, uint256[] calldata _allocations, address[] calldata _repaymentTokens, uint256[] calldata _outstandingDebts) external onlyBorrower {
+        // TODO: needs to check that outstanding debt to beneficiaries is 0
+        if (count == 0) {
+            if (proposalCount > 0) {
+                _clearProposals();
+            }
+
+            // start at index 1 to skip the Line of Credit
+            for (uint256 i = 1; i < _beneficiaries.length; i++) {
+
+                spigot.updateBeneficiaryInfo(_beneficiaries[i], _operators[i], _allocations[i], _repaymentTokens[i], _outstandingDebts[i]);
+
+            }
+        }
+    }
+
     /// see ISpigotedLine.sweep
     function sweep(address to, address token, uint256 amount) external nonReentrant returns (uint256) {
         uint256 swept = SpigotedLineLib.sweep(

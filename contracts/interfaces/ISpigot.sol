@@ -11,10 +11,11 @@ interface ISpigot {
     }
 
     struct Beneficiary {
-        // address bennyOperator; // do we want this?
+        address bennyOperator;
         uint256 allocation;
         address repaymentToken;
         uint256 debtOwed;
+        mapping(address => uint256) bennyTokens;
     }
 
     // Spigot Events
@@ -78,6 +79,8 @@ interface ISpigot {
     function addSpigot(address revenueContract, Setting memory setting) external returns (bool);
 
     function removeSpigot(address revenueContract) external returns (bool);
+
+    function updateBeneficiaryInfo(address beneficiary, address newOperator, uint256 newAllocation, address newRepaymentToken, uint256 newOutstandingDebt) external;
 
     // stakeholder funcs
 

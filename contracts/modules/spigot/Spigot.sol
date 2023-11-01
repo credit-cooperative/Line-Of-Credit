@@ -136,6 +136,13 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
         state.replaceBeneficiaryAt(_index, _newBeneficiary, _newAllocation);
     }
 
+    // TODO: add documentation
+    // TODO: add limits to when/who can call this function
+    function updateBeneficiaryInfo(address beneficiary, address newOperator, uint256 newAllocation, address newRepaymentToken, uint256 newOutstandingDebt) external {
+        state.updateBeneficiaryInfo(beneficiary, newOperator, newAllocation, newRepaymentToken, newOutstandingDebt);
+    }
+
+
     /*//////////////////////////////////////////////////////
                         I N T E R N A L
     //////////////////////////////////////////////////////*/
@@ -264,9 +271,10 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
 
     function getBeneficiaries() public view returns (address[] memory) { return (state.beneficiaries); }
 
-    function getBeneficiaryInfo(address beneficiary) public view returns (ISpigot.Beneficiary memory) {
-        return state.beneficiaryInfo[beneficiary];
-    }
+    // TODO: add this back
+    // function getBeneficiaryInfo(address beneficiary) public view returns (ISpigot.Beneficiary memory) {
+    //     return state.beneficiaryInfo[beneficiary];
+    // }
 
     function getLenderTokens(address token, address lender) external view returns (uint256) {
         return state.getLenderTokens(token, lender);
