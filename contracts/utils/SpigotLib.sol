@@ -437,6 +437,14 @@ library SpigotLib {
         return total * self.beneficiaryInfo[lender].allocation / 100000; 
     }
 
+    function getDebt() external view returns (uint256) {
+        uint256 debt = 0;
+        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+            debt = debt + self.beneficiaryInfo[self.beneficiaries[i]].debtOwed;
+        }
+        return debt;
+    }
+
     // Spigot Events
     event AddSpigot(address indexed revenueContract, uint256 ownerSplit, bytes4 claimFnSig, bytes4 trsfrFnSig);
 
