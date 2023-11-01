@@ -303,10 +303,26 @@ library SpigotLib {
         return true;
     }
 
+    // function that calls trade. pass in a lender address and it will trade their tokens for the desired token
+    function tradeAndClaim(address lender, address sellToken, address payable swapTarget, bytes calldata zeroExTradeData) external returns (bool) {
+        // called from 
+        uint256 amount = self.beneficiaryInfo[lender].bennyTokens[sellToken];
+        uint256 oldTokens = IERC20(self.beneficiaryInfo[lender].desiredRepaymentToken).balanceOf(address(this));
+
+        trade(amount, sellToken, swapTarget, zeroExTradeData);
+
+        uint256 boughtTokens = IERC20(self.beneficiaryInfo[lender].desiredRepaymentToken).balanceOf(address(this)) - oldTokens;
+        IERC20(self.beneficiaryInfo[lender].desiredRepaymentToken).safeTransfer(lender, boughtTokens);
+
+        self.beneficiaryInfo[lender].debtOwed -= boughtTokens;
+        self.beneficiaryInfo[lender].bennyTokens[sellToken] = 0;
+        return true;
+    }
+
     /**
     @dev needs tt
      */
-    function _distributeFunds(SpigotState storage self, address revToken, bytes calldata zeroExTradeData) internal returns (uint256[] memory feeBalances) {
+    function _distributeFunds(SpigotState storage self, address revToken) internal returns (uint256[] memory feeBalances) {
 
         uint256 _currentBalance;
         uint256[] memory feeBalances = new uint256[](self.beneficiaries.length);
@@ -323,22 +339,25 @@ library SpigotLib {
             // feeBalances[0] is fee sent to smartTreasury
             feeBalances = _amountsFromAllocations(allocations, _currentBalance);
     
-            for (uint256 a_index = 0; a_index < self.beneficiaries.length; a_index++){
+            for (uint256 i = 0; i < self.beneficiaries.length; i++){
+                uint256 debt = self.beneficiaryInfo[self.beneficiaries[i]].debtOwed;
 
+                if (i = 1){
+                    IERC20(revToken).safeTransfer(self.beneficiaries[i], feeBalances[i]);
+                }
                 // check if revtoken is the same as beneficiary desired token
                 if (self.beneficiaryInfo[self.beneficiaries[i]].desiredRepaymentToken == revToken){
-                    if (feeBalances[a_index] <= self.beneficiaryInfo[self.beneficiaries[i]].debtOwed){
-                        IERC20(revToken).safeTransfer(self.beneficiaries[a_index], feeBalances[a_index]);
-                        self.beneficiaryInfo[self.beneficiaries[i]].debtOwed = self.beneficiaries[self.beneficiaries[i]].debtOwed - feeBalances[a_index];
-                    } else if (feeBalances[a_index] > self.beneficiaryInfo[self.beneficiaries[i]].debtOwed){
-                        IERC20(revToken).safeTransfer(self.beneficiaries[a_index], self.beneficiaryInfo[self.beneficiaries[i]].debtOwed);
-                        operatorTokens[revToken] = operatorTokens[revToken] + (feeBalances[a_index] - self.beneficiaryInfo[self.beneficiaries[i]].debtOwed);
+                    if (feeBalances[i] <= debt){
+                        IERC20(revToken).safeTransfer(self.beneficiaries[i], feeBalances[i]);
+                        self.beneficiaryInfo[self.beneficiaries[i]].debtOwed -= feeBalances[i];
+                    } else if (feeBalances[i] > debt){
+                        IERC20(revToken).safeTransfer(self.beneficiaries[i], debt);
+                        operatorTokens[revToken] = operatorTokens[revToken] + (feeBalances[i] - debt);
                         self.beneficiaryInfo[self.beneficiaries[i]].debtOwed = 0;
                     }
                         
-                     
                 } else if (self.beneficiaryInfo[self.beneficiaries[i]].desiredRepaymentToken != revToken){
-                    self.beneficiaryInfo[self.beneficiaries[i]].bennyTokens[revToken] = self.beneficiaryInfo[self.beneficiaries[i]].bennyTokens[revToken] + feeBalances[a_index];
+                    self.beneficiaryInfo[self.beneficiaries[i]].bennyTokens[revToken] = self.beneficiaryInfo[self.beneficiaries[i]].bennyTokens[revToken] + feeBalances[i];
                 }
                 
                 
