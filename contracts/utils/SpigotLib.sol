@@ -348,7 +348,7 @@ library SpigotLib {
         _setSplitAllocation(self, _newAllocation);
     }
 
-    // TODO: add docuementation
+    // TODO: add documentation
     function replaceBeneficiaryAt(SpigotState storage self, uint256 _index, address _newBeneficiary, uint256[] calldata _newAllocation) external {
         require(_index >= 1, "Invalid beneficiary to remove");
         require(_newBeneficiary!=address(0), "Beneficiary cannot be 0 address");

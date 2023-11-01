@@ -15,6 +15,10 @@ interface ISpigotedLine {
 
     error ReservesOverdrawn(address token, uint256 amountAvailable);
 
+    error LineMustBeFirstBeneficiary(address beneficiary);
+
+    error LineBeneficiaryDebtMustBeZero(uint256 debt);
+
     /**
      * @notice - Log how many revenue tokens were traded for credit tokens.
      *         - Differs from RevenuePayment because we trade revenue at different times from repaying with revenue

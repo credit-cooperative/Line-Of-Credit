@@ -287,7 +287,6 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
 
     // TODO: implement this function
     // NOTE: add/reset new/existing beneficiary agreements
-    // TODO: cannot amend and extend if there is beneficiary debt
     // NOTES: allocations cannot sum to greater than 100000
     // TODO: emit AmendBeneficiaries(address(this), spigot, beneficiaries);
     // NOTE: only works with existing beneificiaries. Need to add/remove beneficiares before calling this function
@@ -298,14 +297,25 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
                 _clearProposals();
             }
 
-            // start at index 1 to skip the Line of Credit
-            for (uint256 i = 1; i < _beneficiaries.length; i++) {
+            if (_beneficiaries[0] != address(this)) {
+                revert LineMustBeFirstBeneficiary(_beneficiaries[0]);
+            }
+
+            if (_outstandingDebts[0] > 0) {
+                revert LineBeneficiaryDebtMustBeZero(_outstandingDebts[0]);
+            }
+
+            for (uint256 i = 0; i < _beneficiaries.length; i++) {
 
                 spigot.updateBeneficiaryInfo(_beneficiaries[i], _operators[i], _allocations[i], _repaymentTokens[i], _outstandingDebts[i]);
 
             }
         }
     }
+
+    // function updateBeneficiaryOperator(address beneficiary, address newOperator) external {
+
+    // }
 
     /// see ISpigotedLine.sweep
     function sweep(address to, address token, uint256 amount) external nonReentrant returns (uint256) {
