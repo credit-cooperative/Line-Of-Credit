@@ -437,12 +437,14 @@ library SpigotLib {
         return total * self.beneficiaryInfo[lender].allocation / 100000; 
     }
 
-    function getDebt() external view returns (uint256) {
-        uint256 debt = 0;
+    function isDebt() external view returns (bool) {
+        bool isDebt = true;
         for (uint256 i = 0; i < self.beneficiaries.length; i++) {
-            debt = debt + self.beneficiaryInfo[self.beneficiaries[i]].debtOwed;
+            if (self.beneficiaryInfo[self.beneficiaries[i]].debtOwed == 0){
+                isDebt = false;
+            }
         }
-        return debt;
+        return isDebt;
     }
 
     // Spigot Events
