@@ -1518,7 +1518,9 @@ contract SpigotedLineTest is Test, Events {
       RevenueToken _token = new RevenueToken();
 
       // Define SimpleRevenueContract
-      address testRevenueContract = address(new SimpleRevenueContract(borrower, address(_token)));
+      SimpleRevenueContract testRevenueContract = new SimpleRevenueContract(borrower, address(_token));
+
+      address testRevenueContractAddress = address(testRevenueContract);
 
       // arbiter addSpigot
       ISpigot.Setting memory setting = ISpigot.Setting({
@@ -1528,13 +1530,13 @@ contract SpigotedLineTest is Test, Events {
       });
 
       vm.startPrank(arbiter);
-      line.addSpigot(testRevenueContract, setting);
+      line.addSpigot(testRevenueContractAddress, setting);
       vm.stopPrank();
 
       // borrower transfer ownership to spigot
       vm.startPrank(borrower);
       // TODO: fix this
-      testRevenueContract.call(
+      testRevenueContractAddress.call(
             abi.encodeWithSelector(setting.transferOwnerFunction, address(spigot))
         );
 
@@ -1547,7 +1549,7 @@ contract SpigotedLineTest is Test, Events {
       vm.stopPrank();
 
       hoax(borrower);
-      assertTrue(line.removeSpigot(testRevenueContract));
+      assertTrue(line.removeSpigot(testRevenueContractAddress));
 
       assertEq(testRevenueContract.owner(), borrower);
     }
