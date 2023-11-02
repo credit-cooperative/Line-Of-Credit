@@ -325,15 +325,10 @@ library SpigotLib {
         return true;
     }
 
-    /**
-    @dev needs tt
-     */
     function _distributeFunds(SpigotState storage self, address revToken) internal returns (uint256[] memory feeBalances) {
 
         uint256 _currentBalance;
         uint256[] memory feeBalances = new uint256[](self.beneficiaries.length);
-
-
 
         _currentBalance = IERC20(revToken).balanceOf(address(this)) - self.operatorTokens[revToken] - getEscrowedTokens(revToken);
 
@@ -355,6 +350,7 @@ library SpigotLib {
                 }
                 // check if revtoken is the same as beneficiary desired token
                 if (self.beneficiaryInfo[self.beneficiaries[i]].desiredRepaymentToken == revToken){
+                    // TODO: I think this can be a helper
                     if (feeBalances[i] <= debt){
                         IERC20(revToken).safeTransfer(self.beneficiaries[i], feeBalances[i]);
                         self.beneficiaryInfo[self.beneficiaries[i]].debtOwed -= feeBalances[i];
@@ -373,6 +369,57 @@ library SpigotLib {
         }
         return feeBalances;
     }
+
+    function _amountsFromAllocations(uint256[] memory _allocations, uint256 total) internal pure returns (uint256[] memory newAmounts) {
+        newAmounts = new uint256[](_allocations.length);
+        uint256 currBalance;
+        uint256 allocatedBalance;
+
+        for (uint256 i = 0; i < _allocations.length; i++) {
+            if (i == _allocations.length - 1) {
+                newAmounts[i] = total - allocatedBalance;
+            } else {
+                currBalance = (total * _allocations[i]) / (100000);
+                allocatedBalance = allocatedBalance + currBalance;
+                newAmounts[i] = currBalance;
+            }
+        }
+        return newAmounts;
+    }
+
+    function getLenderTokens(SpigotState storage self, address token, address lender) external view returns (uint256) {
+        uint256 total;
+        total = IERC20(token).balanceOf(address(this)) - self.operatorTokens[token];
+
+        total += total * self.beneficiaryInfo[lender].allocation / 100000; 
+        total -= getEscrowedTokens(token);
+        total += self.beneficiaryInfo[lender].bennyTokens[token];
+        return total;
+    }
+
+    function isDebt() external view returns (bool) {
+        bool isDebt = true;
+        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+            if (self.beneficiaryInfo[self.beneficiaries[i]].debtOwed == 0){
+                isDebt = false;
+            }
+        }
+        return isDebt;
+    }
+
+    function getEscrowedTokens(address token) external view returns (uint256) {
+        uint256 totalBennyTokens = 0;
+        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+            totalBennyTokens += self.beneficiaryInfo[self.beneficiaries[i]].bennyTokens[token];
+        }
+
+        return totalBennyTokens;
+    }
+
+////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////// TODO: NEED TO REDO THESE WITH THOMAS ///////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+
 
         /**
   @notice Internal function to sets the split allocations of fees to send to fee beneficiaries
@@ -394,22 +441,7 @@ library SpigotLib {
         }
     }
 
-    function _amountsFromAllocations(uint256[] memory _allocations, uint256 total) internal pure returns (uint256[] memory newAmounts) {
-        newAmounts = new uint256[](_allocations.length);
-        uint256 currBalance;
-        uint256 allocatedBalance;
-
-        for (uint256 i = 0; i < _allocations.length; i++) {
-            if (i == _allocations.length - 1) {
-                newAmounts[i] = total - allocatedBalance;
-            } else {
-                currBalance = (total * _allocations[i]) / (100000);
-                allocatedBalance = allocatedBalance + currBalance;
-                newAmounts[i] = currBalance;
-            }
-        }
-        return newAmounts;
-    }
+    
 
     function addBeneficiaryAddress(SpigotState storage self, address _newBeneficiary, uint256[] calldata _newAllocation) external {
         require(self.beneficiaries.length < 5, "Max beneficiaries");
@@ -457,34 +489,9 @@ library SpigotLib {
         }
     }
 
-    function getLenderTokens(SpigotState storage self, address token, address lender) external view returns (uint256) {
-        uint256 total;
-        total = IERC20(token).balanceOf(address(this)) - self.operatorTokens[token];
-
-        total += total * self.beneficiaryInfo[lender].allocation / 100000; 
-        total -= getEscrowedTokens(token);
-        total += self.beneficiaryInfo[lender].bennyTokens[token];
-        return total;
-    }
-
-    function isDebt() external view returns (bool) {
-        bool isDebt = true;
-        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
-            if (self.beneficiaryInfo[self.beneficiaries[i]].debtOwed == 0){
-                isDebt = false;
-            }
-        }
-        return isDebt;
-    }
-
-    function getEscrowedTokens(address token) external view returns (uint256) {
-        uint256 totalBennyTokens = 0;
-        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
-            totalBennyTokens += self.beneficiaryInfo[self.beneficiaries[i]].bennyTokens[token];
-        }
-
-        return totalBennyTokens;
-    }
+    ////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////
 
     // Spigot Events
     event AddSpigot(address indexed revenueContract, uint256 ownerSplit, bytes4 claimFnSig, bytes4 trsfrFnSig);
