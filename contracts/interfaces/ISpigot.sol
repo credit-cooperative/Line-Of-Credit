@@ -106,4 +106,6 @@ interface ISpigot {
     function getSetting(
         address revenueContract
     ) external view returns (uint8 split, bytes4 claimFunc, bytes4 transferFunc);
+
+    function hasBeneficiaryDebtOutstanding() external view returns (bool);
 }

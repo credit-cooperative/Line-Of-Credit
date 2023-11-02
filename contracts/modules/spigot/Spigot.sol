@@ -3,7 +3,6 @@
 
 pragma solidity ^0.8.16;
 import {MutualConsent} from "../../utils/MutualConsent.sol";
-import {AccessControl} from "openzeppelin/access/AccessControl.sol";
 import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
 import {Ownable} from "openzeppelin/access/Ownable.sol";
 import {ERC1155} from "openzeppelin/token/ERC1155/ERC1155.sol";
@@ -16,7 +15,7 @@ import {SpigotState, SpigotLib} from "../../utils/SpigotLib.sol";
 import {ISpigot} from "../../interfaces/ISpigot.sol";
 
 
-contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
+contract Spigot is ISpigot, ReentrancyGuard {
     using SpigotLib for SpigotState;
 
     SpigotState private state;
@@ -68,6 +67,10 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
 
     function operator() external view returns (address) {
         return state.operator;
+    }
+
+    function admin() external view returns (address) {
+        return state.admin;
     }
 
     // ##########################
@@ -263,6 +266,10 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
 
     function getSetting(address revenueContract) external view returns (uint8, bytes4, bytes4) {
         return state.getSetting(revenueContract);
+    }
+
+    function hasBeneficiaryDebtOutstanding() external view returns (bool) {
+        return state.hasBeneficiaryDebtOutstanding();
     }
 
     receive() external payable {

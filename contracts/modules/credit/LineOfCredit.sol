@@ -142,8 +142,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
      * @param ttlExtension The amount of time to extend the line by
      * @return true is line is extended and set to ACTIVE status.
      */
-    function extend(uint256 ttlExtension) external onlyBorrower returns (bool) {
-        // TODO: needs to check that outstanding debt to beneficiaries is 0
+    function extend(uint256 ttlExtension) external onlyBorrower virtual returns (bool) {
         if (count == 0) {
             if (proposalCount > 0) {
                 _clearProposals();

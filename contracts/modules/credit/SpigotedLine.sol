@@ -289,6 +289,27 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
 
     }
 
+    /**
+     * @notice - Allows borrower to extend the deadline of the line.
+     * @dev - callable by `borrower`
+     * @dev - requires line to not have open, active credit positions or outstanding debt to beneficiaries
+     * @param ttlExtension The amount of time to extend the line by
+     * @return true is line is extended and set to ACTIVE status.
+     */
+    function extend(uint256 ttlExtension) external onlyBorrower override returns (bool) {
+        bool hasBeneficiaryDebtOutstanding = spigot.hasBeneficiaryDebtOutstanding();
+
+        if (count == 0 && hasBeneficiaryDebtOutstanding) {
+            if (proposalCount > 0) {
+                _clearProposals();
+            }
+            bool isExtended = _extend(ttlExtension);
+            return isExtended;
+        }
+        revert CannotExtendLine();
+    }
+
+
     // TODO: implement this function
     // NOTE: add/reset new/existing beneficiary agreements
     // NOTES: allocations cannot sum to greater than 100000
