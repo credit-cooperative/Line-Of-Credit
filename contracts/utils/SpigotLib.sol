@@ -443,14 +443,14 @@ library SpigotLib {
         return total;
     }
 
-    function isDebt(SpigotState storage self) external view returns (bool) {
-        bool isDebt = true;
+    function hasBeneficiaryDebtOutstanding(SpigotState storage self) external view returns (bool) {
+        bool hasDebtOwed = true;
         for (uint256 i = 0; i < self.beneficiaries.length; i++) {
             if (self.beneficiaryInfo[self.beneficiaries[i]].debtOwed == 0){
-                isDebt = false;
+                hasDebtOwed = false;
             }
         }
-        return isDebt;
+        return hasDebtOwed;
     }
 
     function getEscrowedTokens(SpigotState storage self, address token) public view returns (uint256) {
@@ -560,23 +560,11 @@ library SpigotLib {
 
     // }
 
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////
 
-    function getLenderTokens(SpigotState storage self, address token, address lender) external view returns (uint256) {
-        uint256 total;
-        total = IERC20(token).balanceOf(address(this)) - self.operatorTokens[token];
-
-        return total * self.beneficiaryInfo[lender].allocation / 100000;
-    }
-
-    function hasBeneficiaryDebtOutstanding(SpigotState storage self) external view returns (bool) {
-        bool hasDebtOwed = true;
-        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
-            if (self.beneficiaryInfo[self.beneficiaries[i]].debtOwed == 0){
-                hasDebtOwed = false;
-            }
-        }
-        return hasDebtOwed;
-    }
+    
 
     // Spigot Events
     event AddSpigot(address indexed revenueContract, uint256 ownerSplit, bytes4 claimFnSig, bytes4 trsfrFnSig);
