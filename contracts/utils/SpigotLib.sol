@@ -29,9 +29,6 @@ struct SpigotState {
  * @dev see Spigot docs
  */
 library SpigotLib {
-
-    error TradeFailed();
-
     using SafeERC20 for IERC20;
     // Maximum numerator for Setting.ownerSplit param to ensure that the Owner can't claim more than 100% of revenue
     uint8 constant MAX_SPLIT = 100;
@@ -309,62 +306,20 @@ library SpigotLib {
 
     // function that calls trade. pass in a lender address and it will trade their tokens for the desired token
     function tradeAndClaim(SpigotState storage self, address lender, address sellToken, address payable swapTarget, bytes calldata zeroExTradeData) external returns (bool) {
-        // called from
+        // called from 
         uint256 amount = self.beneficiaryInfo[lender].bennyTokens[sellToken];
         uint256 oldTokens = IERC20(self.beneficiaryInfo[lender].repaymentToken).balanceOf(address(this));
 
         trade(amount, sellToken, swapTarget, zeroExTradeData);
 
         uint256 boughtTokens = IERC20(self.beneficiaryInfo[lender].repaymentToken).balanceOf(address(this)) - oldTokens;
-        IERC20(self.beneficiaryInfo[lender].repaymentToken).safeTransfer(lender, boughtTokens);
-
-        self.beneficiaryInfo[lender].debtOwed -= boughtTokens;
-        self.beneficiaryInfo[lender].bennyTokens[sellToken] = 0;
-        return true;
-    }
-
-    /**
-    @dev needs tt
-     */
-    function trade(
-        uint256 amount,
-        address sellToken,
-        address payable swapTarget,
-        bytes calldata zeroExTradeData
-    ) public returns (bool) {
-        if (sellToken == Denominations.ETH) {
-            // if claiming/trading eth send as msg.value to dex
-            (bool success, ) = swapTarget.call{value: amount}(zeroExTradeData); // TODO: test with 0x api data on mainnet fork
-            if (!success) {
-                revert TradeFailed();
-            }
-        } else {
-            IERC20(sellToken).approve(swapTarget, amount);
-            (bool success, ) = swapTarget.call(zeroExTradeData);
-            if (!success) {
-                revert TradeFailed();
-            }
-        }
-
-        return true;
-    }
-
-    // function that calls trade. pass in a lender address and it will trade their tokens for the desired token
-    function tradeAndClaim(SpigotState storage self, address lender, address sellToken, address payable swapTarget, bytes calldata zeroExTradeData) external returns (bool) {
-        // called from 
-        uint256 amount = self.beneficiaryInfo[lender].bennyTokens[sellToken];
-        uint256 oldTokens = IERC20(self.beneficiaryInfo[lender].desiredRepaymentToken).balanceOf(address(this));
-
-        trade(amount, sellToken, swapTarget, zeroExTradeData);
-
-        uint256 boughtTokens = IERC20(self.beneficiaryInfo[lender].desiredRepaymentToken).balanceOf(address(this)) - oldTokens;
         
         if (boughtTokens <= self.beneficiaryInfo[lender].debtOwed){
             self.beneficiaryInfo[lender].debtOwed -= boughtTokens;
-            IERC20(self.beneficiaryInfo[lender].desiredRepaymentToken).safeTransfer(lender, boughtTokens);
+            IERC20(self.beneficiaryInfo[lender].repaymentToken).safeTransfer(lender, boughtTokens);
         } else if (boughtTokens > self.beneficiaryInfo[lender].debtOwed){
-            IERC20(self.beneficiaryInfo[lender].desiredRepaymentToken).safeTransfer(lender, self.beneficiaryInfo[lender].debtOwed);
-            self.operatorTokens[self.beneficiaryInfo[lender].desiredRepaymentToken] = self.operatorTokens[self.beneficiaryInfo[lender].desiredRepaymentToken] + (boughtTokens - self.beneficiaryInfo[lender].debtOwed);
+            IERC20(self.beneficiaryInfo[lender].repaymentToken).safeTransfer(lender, self.beneficiaryInfo[lender].debtOwed);
+            self.operatorTokens[self.beneficiaryInfo[lender].repaymentToken] = self.operatorTokens[self.beneficiaryInfo[lender].repaymentToken] + (boughtTokens - self.beneficiaryInfo[lender].debtOwed);
             self.beneficiaryInfo[lender].debtOwed = 0;
         }
         
@@ -395,7 +350,7 @@ library SpigotLib {
                     IERC20(revToken).safeTransfer(self.beneficiaries[i], feeBalances[i]);
                 }
                 // check if revtoken is the same as beneficiary desired token
-                if (self.beneficiaryInfo[self.beneficiaries[i]].desiredRepaymentToken == revToken){
+                if (self.beneficiaryInfo[self.beneficiaries[i]].repaymentToken == revToken){
                     // TODO: I think this can be a helper
                     if (feeBalances[i] <= debt){
                         IERC20(revToken).safeTransfer(self.beneficiaries[i], feeBalances[i]);
