@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 // Copyright: https://github.com/credit-cooperative/Line-Of-Credit/blob/master/COPYRIGHT.md
 
-//TODO rm for deployement
-import "forge-std/console.sol";
+ // TODO: Imports for development purpose only
+ import "forge-std/console.sol";
 
 import {Denominations} from "chainlink/Denominations.sol";
 import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
@@ -117,7 +117,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     }
 
     modifier onlyBorrowerOrArbiter() {
-        if (msg.sender != borrower || msg.sender != arbiter) {
+        if (msg.sender != borrower && msg.sender != arbiter) {
             revert CallerAccessDenied();
         }
         _;
@@ -193,6 +193,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         }
         // reset the array of proposal ids to length 0
         delete mutualConsentProposalIds;
+        proposalCount = 0;
     }
 
     /**

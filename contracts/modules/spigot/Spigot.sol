@@ -14,6 +14,7 @@ import {SpigotState, SpigotLib} from "../../utils/SpigotLib.sol";
 
 import {ISpigot} from "../../interfaces/ISpigot.sol";
 
+import "forge-std/console.sol";
 
 contract Spigot is ISpigot, ReentrancyGuard {
     using SpigotLib for SpigotState;
@@ -48,9 +49,8 @@ contract Spigot is ISpigot, ReentrancyGuard {
 
         // setup multisig as admin that has signers from the borrower and lenders.
         // _setRoleAdmin(DEFAULT_ADMIN_ROLE, _adminMultisig);
-
         for (uint256 i = 0; i < _startingBeneficiaries.length; i++) {
-            state.beneficiaries[i] = _startingBeneficiaries[i];
+            state.beneficiaries.push(_startingBeneficiaries[i]);
             state.beneficiaryInfo[_startingBeneficiaries[i]].allocation = _startingAllocations[i];
             state.beneficiaryInfo[_startingBeneficiaries[i]].debtOwed = _debtOwed[i];
             state.beneficiaryInfo[_startingBeneficiaries[i]].repaymentToken = _repaymentToken[i];

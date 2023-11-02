@@ -306,14 +306,14 @@ library SpigotLib {
 
     // function that calls trade. pass in a lender address and it will trade their tokens for the desired token
     function tradeAndClaim(SpigotState storage self, address lender, address sellToken, address payable swapTarget, bytes calldata zeroExTradeData) external returns (bool) {
-        // called from 
+        // called from
         uint256 amount = self.beneficiaryInfo[lender].bennyTokens[sellToken];
         uint256 oldTokens = IERC20(self.beneficiaryInfo[lender].repaymentToken).balanceOf(address(this));
 
         trade(amount, sellToken, swapTarget, zeroExTradeData);
 
         uint256 boughtTokens = IERC20(self.beneficiaryInfo[lender].repaymentToken).balanceOf(address(this)) - oldTokens;
-        
+
         if (boughtTokens <= self.beneficiaryInfo[lender].debtOwed){
             self.beneficiaryInfo[lender].debtOwed -= boughtTokens;
             IERC20(self.beneficiaryInfo[lender].repaymentToken).safeTransfer(lender, boughtTokens);
@@ -322,7 +322,7 @@ library SpigotLib {
             self.operatorTokens[self.beneficiaryInfo[lender].repaymentToken] = self.operatorTokens[self.beneficiaryInfo[lender].repaymentToken] + (boughtTokens - self.beneficiaryInfo[lender].debtOwed);
             self.beneficiaryInfo[lender].debtOwed = 0;
         }
-        
+
         return true;
     }
 
@@ -392,7 +392,7 @@ library SpigotLib {
         uint256 total;
         total = IERC20(token).balanceOf(address(this)) - self.operatorTokens[token];
 
-        total += total * self.beneficiaryInfo[lender].allocation / 100000; 
+        total += total * self.beneficiaryInfo[lender].allocation / 100000;
         total -= getEscrowedTokens(self, token);
         total += self.beneficiaryInfo[lender].bennyTokens[token];
         return total;
@@ -442,7 +442,7 @@ library SpigotLib {
         }
     }
 
-    
+
 
     // TODO: add docuementation
     function addBeneficiaryAddress(SpigotState storage self, address _newBeneficiary, uint256[] calldata _newAllocation) external {
@@ -519,7 +519,7 @@ library SpigotLib {
 ////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////
 
-    
+
 
     // Spigot Events
     event AddSpigot(address indexed revenueContract, uint256 ownerSplit, bytes4 claimFnSig, bytes4 trsfrFnSig);
