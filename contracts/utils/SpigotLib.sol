@@ -312,10 +312,16 @@ library SpigotLib {
         trade(amount, sellToken, swapTarget, zeroExTradeData);
 
         uint256 boughtTokens = IERC20(self.beneficiaryInfo[lender].desiredRepaymentToken).balanceOf(address(this)) - oldTokens;
-        IERC20(self.beneficiaryInfo[lender].desiredRepaymentToken).safeTransfer(lender, boughtTokens);
-
-        self.beneficiaryInfo[lender].debtOwed -= boughtTokens;
-        self.beneficiaryInfo[lender].bennyTokens[sellToken] = 0;
+        
+        if (boughtTokens <= self.beneficiaryInfo[lender].debtOwed){
+            self.beneficiaryInfo[lender].debtOwed -= boughtTokens;
+            IERC20(self.beneficiaryInfo[lender].desiredRepaymentToken).safeTransfer(lender, boughtTokens);
+        } else if (boughtTokens > self.beneficiaryInfo[lender].debtOwed){
+            IERC20(self.beneficiaryInfo[lender].desiredRepaymentToken).safeTransfer(lender, self.beneficiaryInfo[lender].debtOwed);
+            operatorTokens[revToken] = operatorTokens[revToken] + (feeBalances[i] - self.beneficiaryInfo[lender].debtOwed);
+            self.beneficiaryInfo[lender].debtOwed = 0;
+        }
+        
         return true;
     }
 
@@ -327,7 +333,9 @@ library SpigotLib {
         uint256 _currentBalance;
         uint256[] memory feeBalances = new uint256[](self.beneficiaries.length);
 
-        _currentBalance = IERC20(revToken).balanceOf(address(this)) - self.operatorTokens[revToken];
+
+
+        _currentBalance = IERC20(revToken).balanceOf(address(this)) - self.operatorTokens[revToken] - getEscrowedTokens(revToken);
 
         if (_currentBalance > 0){
 
@@ -453,7 +461,10 @@ library SpigotLib {
         uint256 total;
         total = IERC20(token).balanceOf(address(this)) - self.operatorTokens[token];
 
-        return total * self.beneficiaryInfo[lender].allocation / 100000; 
+        total += total * self.beneficiaryInfo[lender].allocation / 100000; 
+        total -= getEscrowedTokens(token);
+        total += self.beneficiaryInfo[lender].bennyTokens[token];
+        return total;
     }
 
     function isDebt() external view returns (bool) {
@@ -464,6 +475,15 @@ library SpigotLib {
             }
         }
         return isDebt;
+    }
+
+    function getEscrowedTokens(address token) external view returns (uint256) {
+        uint256 totalBennyTokens = 0;
+        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+            totalBennyTokens += self.beneficiaryInfo[self.beneficiaries[i]].bennyTokens[token];
+        }
+
+        return totalBennyTokens;
     }
 
     // Spigot Events
