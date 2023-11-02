@@ -80,7 +80,7 @@ interface ISpigot {
 
     function removeSpigot(address revenueContract) external returns (bool);
 
-    function updateBeneficiaryInfo(address beneficiary, address newOperator, uint256 newAllocation, address newRepaymentToken, uint256 newOutstandingDebt) external;
+    // function updateBeneficiaryInfo(address beneficiary, address newOperator, uint256 newAllocation, address newRepaymentToken, uint256 newOutstandingDebt) external;
 
     // stakeholder funcs
 

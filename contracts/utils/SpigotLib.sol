@@ -351,6 +351,9 @@ library SpigotLib {
     // TODO: add documentation
     function replaceBeneficiaryAt(SpigotState storage self, uint256 _index, address _newBeneficiary, uint256[] calldata _newAllocation) external {
         require(_index >= 1, "Invalid beneficiary to remove");
+
+        // TODO: we need a way to remove beneficiaries. easiest way to do this would be to
+        // replace the beneficiares in the array
         require(_newBeneficiary!=address(0), "Beneficiary cannot be 0 address");
 
         for (uint256 i = 0; i < self.beneficiaries.length; i++) {
@@ -379,28 +382,28 @@ library SpigotLib {
 
     // TODO: add docuementation
     // TODO: needs restrictions on who/when can be called
-    function updateRepaymentToken(SpigotState storage self, address[] calldata _newToken) external {
+    // function updateRepaymentToken(SpigotState storage self, address[] calldata _newToken) external {
 
-        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
-            require(_newToken[i] != address(0), "Invalid token");
-            self.beneficiaryInfo[self.beneficiaries[i]].repaymentToken = _newToken[i];
-        }
-    }
+    //     for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+    //         require(_newToken[i] != address(0), "Invalid token");
+    //         self.beneficiaryInfo[self.beneficiaries[i]].repaymentToken = _newToken[i];
+    //     }
+    // }
 
     // TODO: add documentation
     // TODO: needs restrictions on who/when can be called
-    function updateBeneficiaryInfo(SpigotState storage self, address beneficiary, address newOperator, uint256 newAllocation, address newRepaymentToken, uint256 newOutstandingDebt) external {
+    // function updateBeneficiaryInfo(SpigotState storage self, address beneficiary, address newOperator, uint256 newAllocation, address newRepaymentToken, uint256 newOutstandingDebt) external {
 
-        // Delete the existing Beneficiary to reset bennyTokens mapping
-        delete self.beneficiaryInfo[beneficiary];
+    //     // Delete the existing Beneficiary to reset bennyTokens mapping
+    //     delete self.beneficiaryInfo[beneficiary];
 
-        // update variables
-        self.beneficiaryInfo[beneficiary].bennyOperator = newOperator;
-        self.beneficiaryInfo[beneficiary].allocation = newAllocation;
-        self.beneficiaryInfo[beneficiary].repaymentToken = newRepaymentToken;
-        self.beneficiaryInfo[beneficiary].debtOwed = newOutstandingDebt;
+    //     // update variables
+    //     self.beneficiaryInfo[beneficiary].bennyOperator = newOperator;
+    //     self.beneficiaryInfo[beneficiary].allocation = newAllocation;
+    //     self.beneficiaryInfo[beneficiary].repaymentToken = newRepaymentToken;
+    //     self.beneficiaryInfo[beneficiary].debtOwed = newOutstandingDebt;
 
-    }
+    // }
 
 
     function getLenderTokens(SpigotState storage self, address token, address lender) external view returns (uint256) {

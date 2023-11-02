@@ -126,7 +126,6 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
      * @param ownerSplits The corresponding list of new owner splits for each revenue contract
      * @return true is line is amended
      */
-    // TODO: add beneficiaries array and corresponding splits
     function amend(address newBorrower, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) external onlyBorrower returns (bool) {
         // TODO: needs to check that outstanding debt to beneficiaries is 0
         if (count == 0) {
@@ -140,11 +139,11 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
 
     }
 
+    // TODO: check if SecuredLine owns Spigot address (otherwise should fail)
+    // TODO: check if SecuredLine owns Escrow (otherwise should fail)
+    // TODO: what happens if line is repaid and Spigot is transferred to borrower/operator?
+    // TODO: check that msg.sender is the Escrow State line address
     function _amend(address newBorrower, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) internal returns (bool) {
-        // TODO: check if SecuredLine owns Spigot address (otherwise should fail)
-        // TODO: check if SecuredLine owns Escrow (otherwise should fail)
-        // TODO: what happens if line is repaid and Spigot is transferred to borrower/operator?
-        // TODO: check that msg.sender is the Escrow State line address
         updateBorrower(newBorrower);
         escrow.updateMinimumCollateralRatio(minimumCollateralRatio);
         emit AmendEscrow(address(this), address(escrow), minimumCollateralRatio);

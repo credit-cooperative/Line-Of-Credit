@@ -268,10 +268,14 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
         return SpigotedLineLib.removeSpigot(address(spigot), _updateStatus(_healthcheck()), borrower, revenueContract);
     }
 
-
-    // TODO: add documentation
-    // TODO: add tests
-    // NOTE: only works for existing revenue contracts for which to change splits
+    /**
+     * @notice  - Changes the revenue split based upon the status of the Line of Credit
+     *          - or otherwise if the Owner and Borrower wish to change the split.
+     * @dev     - callable by `borrower`
+     * @dev     - only callable if there is no outstanding debt
+     * @param _revenueContracts[] - Array of addresses of spigoted revenue generating contracts
+     * @param _ownerSplits[] - Array of new % split to give owner for each contract
+     */
     function updateRevenueContractSplits(address[] calldata _revenueContracts, uint8[] calldata _ownerSplits) public onlyBorrower {
         // TODO: needs to check that outstanding debt to beneficiaries is 0
         if (count == 0) {
@@ -290,28 +294,29 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
     // NOTES: allocations cannot sum to greater than 100000
     // TODO: emit AmendBeneficiaries(address(this), spigot, beneficiaries);
     // NOTE: only works with existing beneificiaries. Need to add/remove beneficiares before calling this function
-    function updateBeneficiarySettings(address[] calldata _beneficiaries, address[] calldata _operators, uint256[] calldata _allocations, address[] calldata _repaymentTokens, uint256[] calldata _outstandingDebts) external onlyBorrower {
-        // TODO: needs to check that outstanding debt to beneficiaries is 0
-        if (count == 0) {
-            if (proposalCount > 0) {
-                _clearProposals();
-            }
+    // function updateBeneficiarySettings(address[] calldata _beneficiaries, address[] calldata _operators, uint256[] calldata _allocations, address[] calldata _repaymentTokens, uint256[] calldata _outstandingDebts) external onlyBorrower {
 
-            if (_beneficiaries[0] != address(this)) {
-                revert LineMustBeFirstBeneficiary(_beneficiaries[0]);
-            }
+    //     if (_beneficiaries[0] != address(this)) {
+    //         revert LineMustBeFirstBeneficiary(_beneficiaries[0]);
+    //     }
 
-            if (_outstandingDebts[0] > 0) {
-                revert LineBeneficiaryDebtMustBeZero(_outstandingDebts[0]);
-            }
+    //     if (_outstandingDebts[0] > 0) {
+    //         revert LineBeneficiaryDebtMustBeZero(_outstandingDebts[0]);
+    //     }
 
-            for (uint256 i = 0; i < _beneficiaries.length; i++) {
+    //     // TODO: needs to check that outstanding debt to beneficiaries is 0
+    //     if (count == 0) {
+    //         if (proposalCount > 0) {
+    //             _clearProposals();
+    //         }
 
-                spigot.updateBeneficiaryInfo(_beneficiaries[i], _operators[i], _allocations[i], _repaymentTokens[i], _outstandingDebts[i]);
+    //         for (uint256 i = 0; i < _beneficiaries.length; i++) {
 
-            }
-        }
-    }
+    //             spigot.updateBeneficiaryInfo(_beneficiaries[i], _operators[i], _allocations[i], _repaymentTokens[i], _outstandingDebts[i]);
+
+    //         }
+    //     }
+    // }
 
     // function updateBeneficiaryOperator(address beneficiary, address newOperator) external {
 

@@ -127,20 +127,24 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
         @param _newAllocation The new allocation of repayments including the new beneficiary
    */
 
+    // TODO: add documentation
+    // TODO: add limits to when/who can call this function
     function addBeneficiaryAddress(address _newBeneficiary, uint256[] calldata _newAllocation) external {
         state.addBeneficiaryAddress(_newBeneficiary, _newAllocation);
     }
 
 
+    // TODO: add documentation
+    // TODO: add limits to when/who can call this function
     function replaceBeneficiaryAt(uint256 _index, address _newBeneficiary, uint256[] calldata _newAllocation) external {
         state.replaceBeneficiaryAt(_index, _newBeneficiary, _newAllocation);
     }
 
     // TODO: add documentation
     // TODO: add limits to when/who can call this function
-    function updateBeneficiaryInfo(address beneficiary, address newOperator, uint256 newAllocation, address newRepaymentToken, uint256 newOutstandingDebt) external {
-        state.updateBeneficiaryInfo(beneficiary, newOperator, newAllocation, newRepaymentToken, newOutstandingDebt);
-    }
+    // function updateBeneficiaryInfo(address beneficiary, address newOperator, uint256 allocation, address repaymentToken, uint256 outstandingDebt) external {
+    //     state.updateBeneficiaryInfo(beneficiary, newOperator, allocation, repaymentToken, outstandingDebt);
+    // }
 
 
     /*//////////////////////////////////////////////////////
