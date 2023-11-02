@@ -8,6 +8,7 @@ import {LineLib} from "../utils/LineLib.sol";
 import {ISpigot} from "../interfaces/ISpigot.sol";
 import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
 import {SafeERC20} from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
+import {Denominations} from "chainlink/Denominations.sol";
 
 struct SpigotState {
     address[] beneficiaries; // Claims on the repayment
@@ -28,6 +29,9 @@ struct SpigotState {
  * @dev see Spigot docs
  */
 library SpigotLib {
+
+    error TradeFailed();
+
     using SafeERC20 for IERC20;
     // Maximum numerator for Setting.ownerSplit param to ensure that the Owner can't claim more than 100% of revenue
     uint8 constant MAX_SPLIT = 100;
@@ -304,7 +308,7 @@ library SpigotLib {
     }
 
     // function that calls trade. pass in a lender address and it will trade their tokens for the desired token
-    function tradeAndClaim(address lender, address sellToken, address payable swapTarget, bytes calldata zeroExTradeData) external returns (bool) {
+    function tradeAndClaim(SpigotState storage self, address lender, address sellToken, address payable swapTarget, bytes calldata zeroExTradeData) external returns (bool) {
         // called from 
         uint256 amount = self.beneficiaryInfo[lender].bennyTokens[sellToken];
         uint256 oldTokens = IERC20(self.beneficiaryInfo[lender].desiredRepaymentToken).balanceOf(address(this));
@@ -318,7 +322,7 @@ library SpigotLib {
             IERC20(self.beneficiaryInfo[lender].desiredRepaymentToken).safeTransfer(lender, boughtTokens);
         } else if (boughtTokens > self.beneficiaryInfo[lender].debtOwed){
             IERC20(self.beneficiaryInfo[lender].desiredRepaymentToken).safeTransfer(lender, self.beneficiaryInfo[lender].debtOwed);
-            operatorTokens[revToken] = operatorTokens[revToken] + (feeBalances[i] - self.beneficiaryInfo[lender].debtOwed);
+            self.operatorTokens[self.beneficiaryInfo[lender].desiredRepaymentToken] = self.operatorTokens[self.beneficiaryInfo[lender].desiredRepaymentToken] + (boughtTokens - self.beneficiaryInfo[lender].debtOwed);
             self.beneficiaryInfo[lender].debtOwed = 0;
         }
         
@@ -330,7 +334,7 @@ library SpigotLib {
         uint256 _currentBalance;
         uint256[] memory feeBalances = new uint256[](self.beneficiaries.length);
 
-        _currentBalance = IERC20(revToken).balanceOf(address(this)) - self.operatorTokens[revToken] - getEscrowedTokens(revToken);
+        _currentBalance = IERC20(revToken).balanceOf(address(this)) - self.operatorTokens[revToken] - getEscrowedTokens(self, revToken);
 
         if (_currentBalance > 0){
 
@@ -345,7 +349,7 @@ library SpigotLib {
             for (uint256 i = 0; i < self.beneficiaries.length; i++){
                 uint256 debt = self.beneficiaryInfo[self.beneficiaries[i]].debtOwed;
 
-                if (i = 1){
+                if (i == 1){
                     IERC20(revToken).safeTransfer(self.beneficiaries[i], feeBalances[i]);
                 }
                 // check if revtoken is the same as beneficiary desired token
@@ -356,7 +360,7 @@ library SpigotLib {
                         self.beneficiaryInfo[self.beneficiaries[i]].debtOwed -= feeBalances[i];
                     } else if (feeBalances[i] > debt){
                         IERC20(revToken).safeTransfer(self.beneficiaries[i], debt);
-                        operatorTokens[revToken] = operatorTokens[revToken] + (feeBalances[i] - debt);
+                        self.operatorTokens[revToken] = self.operatorTokens[revToken] + (feeBalances[i] - debt);
                         self.beneficiaryInfo[self.beneficiaries[i]].debtOwed = 0;
                     }
                         
@@ -392,12 +396,12 @@ library SpigotLib {
         total = IERC20(token).balanceOf(address(this)) - self.operatorTokens[token];
 
         total += total * self.beneficiaryInfo[lender].allocation / 100000; 
-        total -= getEscrowedTokens(token);
+        total -= getEscrowedTokens(self, token);
         total += self.beneficiaryInfo[lender].bennyTokens[token];
         return total;
     }
 
-    function isDebt() external view returns (bool) {
+    function isDebt(SpigotState storage self) external view returns (bool) {
         bool isDebt = true;
         for (uint256 i = 0; i < self.beneficiaries.length; i++) {
             if (self.beneficiaryInfo[self.beneficiaries[i]].debtOwed == 0){
@@ -407,7 +411,7 @@ library SpigotLib {
         return isDebt;
     }
 
-    function getEscrowedTokens(address token) external view returns (uint256) {
+    function getEscrowedTokens(SpigotState storage self, address token) public view returns (uint256) {
         uint256 totalBennyTokens = 0;
         for (uint256 i = 0; i < self.beneficiaries.length; i++) {
             totalBennyTokens += self.beneficiaryInfo[self.beneficiaries[i]].bennyTokens[token];

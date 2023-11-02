@@ -258,7 +258,7 @@ contract Spigot is ISpigot, ReentrancyGuard {
         return state.getSetting(revenueContract);
     }
 
-    function isDebt() exernal view returns (bool) {
+    function isDebt() external view returns (bool) {
         return state.isDebt();
     }
 
