@@ -11,9 +11,9 @@ interface ISpigot {
     }
 
     struct Beneficiary {
-        address bennyOperator; // designated address that can swap benn
-        uint256 allocation; // should this be set based on debt repaid?
-        address desiredRepaymentToken; // do we want this?
+        address bennyOperator;
+        uint256 allocation;
+        address repaymentToken;
         uint256 debtOwed;
         mapping(address => uint256) bennyTokens;
     }
@@ -72,7 +72,6 @@ interface ISpigot {
 
     // owner funcs
 
-
     function claimOperatorTokens(address token) external returns (uint256);
 
     function distributeFunds(address token) external returns (uint256[] memory);
@@ -80,6 +79,8 @@ interface ISpigot {
     function addSpigot(address revenueContract, Setting memory setting) external returns (bool);
 
     function removeSpigot(address revenueContract) external returns (bool);
+
+    // function updateBeneficiaryInfo(address beneficiary, address newOperator, uint256 newAllocation, address newRepaymentToken, uint256 newOutstandingDebt) external;
 
     // stakeholder funcs
 
@@ -105,4 +106,6 @@ interface ISpigot {
     function getSetting(
         address revenueContract
     ) external view returns (uint8 split, bytes4 claimFunc, bytes4 transferFunc);
+
+    function hasBeneficiaryDebtOutstanding() external view returns (bool);
 }

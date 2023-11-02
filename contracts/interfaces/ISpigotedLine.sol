@@ -15,6 +15,10 @@ interface ISpigotedLine {
 
     error ReservesOverdrawn(address token, uint256 amountAvailable);
 
+    error LineMustBeFirstBeneficiary(address beneficiary);
+
+    error LineBeneficiaryDebtMustBeZero(uint256 debt);
+
     /**
      * @notice - Log how many revenue tokens were traded for credit tokens.
      *         - Differs from RevenuePayment because we trade revenue at different times from repaying with revenue
@@ -103,6 +107,15 @@ interface ISpigotedLine {
      * @return bool       - whether or not a Spigot was released
      */
     function releaseSpigot(address to) external returns (bool);
+
+    /**
+
+     * @notice  - Uses predefined function in revenueContract settings to transfer complete control and ownership from this Spigot to the Operator
+     * @dev     - revenueContract's transfer func MUST only accept one paramteter which is the new owner's address.
+     * @dev     - callable by `owner`
+     * @param revenueContract - smart contract to transfer ownership of
+     */
+    function removeSpigot(address revenueContract) external returns (bool);
 
     /**
      * @notice   - sends unused tokens to borrower if REPAID or arbiter if LIQUIDATABLE or INSOLVENT

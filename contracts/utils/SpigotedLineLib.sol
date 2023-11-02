@@ -42,6 +42,8 @@ library SpigotedLineLib {
         uint256 tokenType // 0 for revenue token, 1 for credit token
     );
 
+    event RemoveSpigot(address indexed revenueContract);
+
     /**
      * @dev                 - priviliged internal function!
      * @notice              - Allows revenue tokens in 'escrowed' to be traded for credit tokens that aren't yet used to repay debt.
@@ -219,7 +221,7 @@ library SpigotedLineLib {
         address arbiter,
         address to
     ) external returns (bool) {
-        if (status == LineLib.STATUS.REPAID && msg.sender == borrower) {
+        if (status == LineLib.STATUS.REPAID && (msg.sender == borrower || (msg.sender == arbiter && to == borrower))) {
             if (!ISpigot(spigot).updateOwner(to)) {
                 revert ReleaseSpigotFailed();
             }
@@ -236,12 +238,34 @@ library SpigotedLineLib {
         revert CallerAccessDenied();
     }
 
+    // TODO: fix this function
     /**
-      * @notice -  Sends any remaining tokens (revenue or credit tokens) in the Spigot to the Borrower after the loan has been repaid.
-                  -  In case of a Borrower default (loan status = liquidatable), this is a fallback mechanism to withdraw all the tokens and send them to the Arbiter
+     * @notice  - Uses predefined function in revenueContract settings to transfer complete control and ownership from this Spigot to the Operator
+     * @dev     - revenueContract's transfer func MUST only accept one paramteter which is the new owner's address.
+     * @dev     - callable by `owner`
+     * @param revenueContract - smart contract to transfer ownership of
+     */
+    function removeSpigot(address spigot,
+        LineLib.STATUS status, address borrower, address revenueContract) external returns (bool) {
+        // TODO: change from REPAID to no active credit positions / outstanding beneficiary debt
+        if (status != LineLib.STATUS.REPAID || msg.sender != borrower) {
+            revert CallerAccessDenied();
+        }
+
+        bool spigotRemoved = ISpigot(spigot).removeSpigot(revenueContract);
+
+        return spigotRemoved;
+    }
+
+    /**
+      * @notice -  Sends unused tokens in the Line to the Borrower after the loan has been repaid.
+                  - Can be used after borrower has repaid the loan to withdraw any unused tokens from the Line
+                  -  In case of a Borrower default (loan status = liquidatable), this can be used as fallback mechanism to withdraw all the tokens and send them to the Arbiter
                   -  Does not transfer anything if line is healthy
+                  - `arbiter` can only withdraw unused tokens to the `borrower`
+                  - `borrower` can withdraw unused tokens to any address
       * @dev    - callable by `borrower` or `arbiter`
-      * @return - whether or not spigot was released
+      * @return - amount that is swept
     */
     function sweep(
         address to,
@@ -264,7 +288,7 @@ library SpigotedLineLib {
             }
         }
 
-        if (status == LineLib.STATUS.REPAID && msg.sender == borrower) {
+        if (status == LineLib.STATUS.REPAID && ((msg.sender == borrower) || (msg.sender == arbiter && to == borrower))) {
             LineLib.sendOutTokenOrETH(token, to, amount);
             return amount;
         }

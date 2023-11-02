@@ -14,10 +14,10 @@ struct SpigotState {
     address[] beneficiaries; // Claims on the repayment
     mapping(address => ISpigot.Beneficiary)  beneficiaryInfo; // beneficiary -> info
     address operator;
-    address owner; // aka the owner
+    address owner;
     address admin;
     address swapTarget;
-    mapping(address => uint256) operatorTokens; 
+    mapping(address => uint256) operatorTokens;
     /// @notice Functions that the operator is allowed to run on all revenue contracts controlled by the Spigot
     mapping(bytes4 => bool) whitelistedFunctions; // function -> allowed
     /// @notice Configurations for revenue contracts related to the split of revenue, access control to claiming revenue tokens and transfer of Spigot ownership
@@ -37,6 +37,8 @@ library SpigotLib {
     uint8 constant MAX_SPLIT = 100;
     // cap revenue per claim to avoid overflows on multiplication when calculating percentages
     uint256 constant MAX_REVENUE = type(uint256).max / MAX_SPLIT;
+
+    error TradeFailed();
 
     function _claimRevenue(
         SpigotState storage self,
@@ -121,7 +123,6 @@ library SpigotLib {
         return claimed;
     }
 
-    
 
     /** see Spigot.operate */
     function operate(SpigotState storage self, address revenueContract, bytes calldata data) external returns (bool) {
@@ -152,7 +153,6 @@ library SpigotLib {
 
         return true;
     }
-
 
     /** see Spigot.addSpigot */
     function addSpigot(
@@ -309,6 +309,48 @@ library SpigotLib {
 
     // function that calls trade. pass in a lender address and it will trade their tokens for the desired token
     function tradeAndClaim(SpigotState storage self, address lender, address sellToken, address payable swapTarget, bytes calldata zeroExTradeData) external returns (bool) {
+        // called from
+        uint256 amount = self.beneficiaryInfo[lender].bennyTokens[sellToken];
+        uint256 oldTokens = IERC20(self.beneficiaryInfo[lender].repaymentToken).balanceOf(address(this));
+
+        trade(amount, sellToken, swapTarget, zeroExTradeData);
+
+        uint256 boughtTokens = IERC20(self.beneficiaryInfo[lender].repaymentToken).balanceOf(address(this)) - oldTokens;
+        IERC20(self.beneficiaryInfo[lender].repaymentToken).safeTransfer(lender, boughtTokens);
+
+        self.beneficiaryInfo[lender].debtOwed -= boughtTokens;
+        self.beneficiaryInfo[lender].bennyTokens[sellToken] = 0;
+        return true;
+    }
+
+    /**
+    @dev needs tt
+     */
+    function trade(
+        uint256 amount,
+        address sellToken,
+        address payable swapTarget,
+        bytes calldata zeroExTradeData
+    ) public returns (bool) {
+        if (sellToken == Denominations.ETH) {
+            // if claiming/trading eth send as msg.value to dex
+            (bool success, ) = swapTarget.call{value: amount}(zeroExTradeData); // TODO: test with 0x api data on mainnet fork
+            if (!success) {
+                revert TradeFailed();
+            }
+        } else {
+            IERC20(sellToken).approve(swapTarget, amount);
+            (bool success, ) = swapTarget.call(zeroExTradeData);
+            if (!success) {
+                revert TradeFailed();
+            }
+        }
+
+        return true;
+    }
+
+    // function that calls trade. pass in a lender address and it will trade their tokens for the desired token
+    function tradeAndClaim(SpigotState storage self, address lender, address sellToken, address payable swapTarget, bytes calldata zeroExTradeData) external returns (bool) {
         // called from 
         uint256 amount = self.beneficiaryInfo[lender].bennyTokens[sellToken];
         uint256 oldTokens = IERC20(self.beneficiaryInfo[lender].desiredRepaymentToken).balanceOf(address(this));
@@ -345,7 +387,7 @@ library SpigotLib {
             }
             // feeBalances[0] is fee sent to smartTreasury
             feeBalances = _amountsFromAllocations(allocations, _currentBalance);
-    
+
             for (uint256 i = 0; i < self.beneficiaries.length; i++){
                 uint256 debt = self.beneficiaryInfo[self.beneficiaries[i]].debtOwed;
 
@@ -360,15 +402,15 @@ library SpigotLib {
                         self.beneficiaryInfo[self.beneficiaries[i]].debtOwed -= feeBalances[i];
                     } else if (feeBalances[i] > debt){
                         IERC20(revToken).safeTransfer(self.beneficiaries[i], debt);
-                        self.operatorTokens[revToken] = self.operatorTokens[revToken] + (feeBalances[i] - debt);
+                        self.operatorTokens[revToken] += (feeBalances[i] - debt);
                         self.beneficiaryInfo[self.beneficiaries[i]].debtOwed = 0;
                     }
-                        
-                } else if (self.beneficiaryInfo[self.beneficiaries[i]].desiredRepaymentToken != revToken){
+
+                } else if (self.beneficiaryInfo[self.beneficiaries[i]].repaymentToken != revToken){
                     self.beneficiaryInfo[self.beneficiaries[i]].bennyTokens[revToken] = self.beneficiaryInfo[self.beneficiaries[i]].bennyTokens[revToken] + feeBalances[i];
                 }
-                
-                
+
+
             }
         }
         return feeBalances;
@@ -447,6 +489,7 @@ library SpigotLib {
 
     
 
+    // TODO: add docuementation
     function addBeneficiaryAddress(SpigotState storage self, address _newBeneficiary, uint256[] calldata _newAllocation) external {
         require(self.beneficiaries.length < 5, "Max beneficiaries");
         require(_newBeneficiary!=address(0), "beneficiary cannot be 0 address");
@@ -460,24 +503,31 @@ library SpigotLib {
         _setSplitAllocation(self, _newAllocation);
     }
 
-
+    // TODO: add documentation
     function replaceBeneficiaryAt(SpigotState storage self, uint256 _index, address _newBeneficiary, uint256[] calldata _newAllocation) external {
         require(_index >= 1, "Invalid beneficiary to remove");
+
+        // TODO: we need a way to remove beneficiaries. easiest way to do this would be to
+        // replace the beneficiares in the array
         require(_newBeneficiary!=address(0), "Beneficiary cannot be 0 address");
 
         for (uint256 i = 0; i < self.beneficiaries.length; i++) {
             require(self.beneficiaries[i] != _newBeneficiary, "Duplicate beneficiary");
         }
-    
+
         self.beneficiaries[_index] = _newBeneficiary;
 
         _setSplitAllocation(self, _newAllocation);
     }
 
+    // TODO: add docuementation
+    // TODO: needs restrictions on who/when can be called
     function resetAllocation(SpigotState storage self, uint256[] calldata _newAllocation) external {
         _setSplitAllocation(self, _newAllocation);
     }
 
+    // TODO: add docuementation
+    // TODO: needs restrictions on who/when can be called
     function resetDebtOwed(SpigotState storage self, uint256[] calldata _newDebtOwed) external {
         require(_newDebtOwed.length == self.beneficiaries.length, "Invalid length");
         for (uint256 i = 0; i < self.beneficiaries.length; i++) {
@@ -485,17 +535,48 @@ library SpigotLib {
         }
     }
 
-    function updateDesiredRepaymentToken(SpigotState storage self, address[] calldata _newToken) external {
-        
-        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
-            require(_newToken[i] != address(0), "Invalid token");
-            self.beneficiaryInfo[self.beneficiaries[i]].desiredRepaymentToken = _newToken[i];
-        }
+    // TODO: add docuementation
+    // TODO: needs restrictions on who/when can be called
+    // function updateRepaymentToken(SpigotState storage self, address[] calldata _newToken) external {
+
+    //     for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+    //         require(_newToken[i] != address(0), "Invalid token");
+    //         self.beneficiaryInfo[self.beneficiaries[i]].repaymentToken = _newToken[i];
+    //     }
+    // }
+
+    // TODO: add documentation
+    // TODO: needs restrictions on who/when can be called
+    // function updateBeneficiaryInfo(SpigotState storage self, address beneficiary, address newOperator, uint256 newAllocation, address newRepaymentToken, uint256 newOutstandingDebt) external {
+
+    //     // Delete the existing Beneficiary to reset bennyTokens mapping
+    //     delete self.beneficiaryInfo[beneficiary];
+
+    //     // update variables
+    //     self.beneficiaryInfo[beneficiary].bennyOperator = newOperator;
+    //     self.beneficiaryInfo[beneficiary].allocation = newAllocation;
+    //     self.beneficiaryInfo[beneficiary].repaymentToken = newRepaymentToken;
+    //     self.beneficiaryInfo[beneficiary].debtOwed = newOutstandingDebt;
+
+    // }
+
+
+    function getLenderTokens(SpigotState storage self, address token, address lender) external view returns (uint256) {
+        uint256 total;
+        total = IERC20(token).balanceOf(address(this)) - self.operatorTokens[token];
+
+        return total * self.beneficiaryInfo[lender].allocation / 100000;
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////
+    function hasBeneficiaryDebtOutstanding(SpigotState storage self) external view returns (bool) {
+        bool hasDebtOwed = true;
+        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+            if (self.beneficiaryInfo[self.beneficiaries[i]].debtOwed == 0){
+                hasDebtOwed = false;
+            }
+        }
+        return hasDebtOwed;
+    }
 
     // Spigot Events
     event AddSpigot(address indexed revenueContract, uint256 ownerSplit, bytes4 claimFnSig, bytes4 trsfrFnSig);
@@ -508,9 +589,9 @@ library SpigotLib {
 
     event ClaimRevenue(address indexed token, uint256 indexed amount, uint256 ownerTokens, address revenueContract);
 
-    event ClaimOwnerTokens(address indexed token, uint256 indexed amount, address owner);
+    event ClaimLenderTokens(address indexed token, uint256 indexed amount, address lender);
 
-    event ClaimOperatorTokens(address indexed token, uint256 indexed amount, address ooperator);
+    event ClaimOperatorTokens(address indexed token, uint256 indexed amount, address operator);
 
     // Stakeholder Events
 

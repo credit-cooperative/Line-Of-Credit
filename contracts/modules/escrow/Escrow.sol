@@ -24,7 +24,7 @@ contract Escrow is IEscrow, ReentrancyGuard {
     using EscrowLib for EscrowState;
 
     /// @notice the minimum value of the collateral in relation to the outstanding debt e.g. 10% of outstanding debt
-    uint32 public immutable minimumCollateralRatio;
+    uint32 public minimumCollateralRatio;
 
     /// @notice Stakeholders and contracts used in Escrow
     address public immutable oracle;
@@ -32,8 +32,18 @@ contract Escrow is IEscrow, ReentrancyGuard {
     /// @notice borrower on line contract
     address public immutable borrower;
 
+    /// @notice arbiter on line contract
+    address public immutable arbiter;
+
     /// @notice all data around terms for collateral and current deposits
     EscrowState private state;
+
+
+    ///////////  MODIFIERS  ///////////
+    modifier onlyLineContract() {
+        require(msg.sender == state.line, "Escrow: only line address.");
+        _;
+    }
 
     /**
       * @notice           - Initiates immutable terms for a Line of Credit agreement related to collateral requirements
@@ -43,10 +53,11 @@ contract Escrow is IEscrow, ReentrancyGuard {
                           - also is the oracle providing current total outstanding debt value.
       * @param _borrower  - borrower on the _line contract. Cannot pull from _line because _line might not be a Line at construction.
     */
-    constructor(uint32 _minimumCollateralRatio, address _oracle, address _line, address _borrower) {
+    constructor(uint32 _minimumCollateralRatio, address _oracle, address _line, address _borrower, address _arbiter) {
         minimumCollateralRatio = _minimumCollateralRatio;
         oracle = _oracle;
         borrower = _borrower;
+        arbiter = _arbiter;
         state.line = _line;
     }
 
@@ -107,7 +118,7 @@ contract Escrow is IEscrow, ReentrancyGuard {
      * @return - the updated cratio
      */
     function releaseCollateral(uint256 amount, address token, address to) external nonReentrant returns (uint256) {
-        return state.releaseCollateral(borrower, oracle, minimumCollateralRatio, amount, token, to);
+        return state.releaseCollateral(borrower, arbiter, oracle, minimumCollateralRatio, amount, token, to);
     }
 
     /**
@@ -140,5 +151,11 @@ contract Escrow is IEscrow, ReentrancyGuard {
      */
     function liquidate(uint256 amount, address token, address to) external nonReentrant returns (bool) {
         return state.liquidate(amount, token, to);
+    }
+
+    function updateMinimumCollateralRatio(uint32 newMinimumCollateralRatio) external onlyLineContract nonReentrant returns (bool) {
+        minimumCollateralRatio = newMinimumCollateralRatio;
+        emit UpdateMinimumCollateralRatio(newMinimumCollateralRatio);
+        return true;
     }
 }

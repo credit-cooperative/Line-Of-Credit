@@ -29,7 +29,7 @@ library CreditLib {
     // Borrower Events
 
     /// @notice Emits when Borrower has drawn down an amount (denominated in credit.token) on a credit line
-    event Borrow(bytes32 indexed id, uint256 indexed amount);
+    event Borrow(bytes32 indexed id, uint256 indexed amount, address indexed to);
 
     /// @notice Emits that a Borrower has repaid some amount of interest (denominated in credit.token)
     event RepayInterest(bytes32 indexed id, uint256 indexed amount);
