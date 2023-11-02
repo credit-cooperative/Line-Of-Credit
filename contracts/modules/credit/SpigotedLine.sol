@@ -296,7 +296,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
      * @param ttlExtension The amount of time to extend the line by
      * @return true is line is extended and set to ACTIVE status.
      */
-    function extend(uint256 ttlExtension) external onlyBorrower override returns (bool) {
+    function extend(uint256 ttlExtension) external onlyBorrower virtual override returns (bool) {
         bool hasBeneficiaryDebtOutstanding = spigot.hasBeneficiaryDebtOutstanding();
 
         if (count == 0 && hasBeneficiaryDebtOutstanding) {

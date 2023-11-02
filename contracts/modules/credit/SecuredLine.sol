@@ -96,9 +96,10 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
     }
 
     /**
-     * @notice - Allows borrower to extend the deadline of the line, update the default revenue split and minimum c ratio percentages, and the owner splits for each revenue contract attached to the Spigot.
+     * @notice - Allows borrower to extend the deadline of the line, update the borrower address, minimum c ratio percentages, and the owner splits for each revenue contract attached to the Spigot.
      * @dev - callable by `borrower`
-     * @dev - requires line to not have open, active credit positions
+     * @dev - requires line to not have open, active credit positions or outstanding debt to beneficiaries
+     * @param newBorrower The new address of the borrower
      * @param ttlExtension The amount of time to extend the line by
      * @param minimumCollateralRatio The minimum collateral ratio required for the line
      * @param revenueContracts The list of revenue contracts to update with new owner splits
@@ -119,9 +120,10 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
     }
 
     /**
-     * @notice - Allows borrower to update the default revenue split and minimum c ratio percentages, and the owner splits for each revenue contract attached to the Spigot.
+     * @notice - Allows borrower to update borrower address, the minimum c ratio percentage, and the owner splits for each revenue contract attached to the Spigot.
      * @dev - callable by `borrower`
-     * @dev - requires line to not have open, active credit positions
+     * @dev - requires line to not have open, active credit positions or outstanding debt to beneficiaries
+     * @param newBorrower The new address of the borrower
      * @param minimumCollateralRatio The minimum collateral ratio required for the line
      * @param revenueContracts The list of revenue contracts to update with new owner splits
      * @param ownerSplits The corresponding list of new owner splits for each revenue contract

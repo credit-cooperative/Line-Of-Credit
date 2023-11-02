@@ -11,8 +11,6 @@ import {ILineOfCredit} from "../../interfaces/ILineOfCredit.sol";
 // used for importing NATSPEC docs, not used
 import {LineOfCredit} from "./LineOfCredit.sol";
 
-// import { SecuredLine } from "./SecuredLine.sol";
-
 abstract contract EscrowedLine is IEscrowedLine, ILineOfCredit {
     // contract holding all collateral for borrower
     IEscrow public escrow;
@@ -91,4 +89,5 @@ abstract contract EscrowedLine is IEscrowedLine, ILineOfCredit {
         require(escrow.updateLine(newLine));
         return true;
     }
+
 }
