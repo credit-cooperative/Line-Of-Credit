@@ -30,7 +30,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
     uint8 constant MAX_SPLIT = 100;
 
     /// @notice % of revenue tokens to take from Spigot if the Line of Credit is healthy. 0 decimals
-    uint8 public immutable defaultRevenueSplit;
+    uint8 public defaultRevenueSplit;
 
     /// @notice exchange aggregator (mainly 0x router) to trade revenue tokens from a Spigot for credit tokens owed to lenders
     address payable public immutable swapTarget;
@@ -86,6 +86,22 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
     function _canDeclareInsolvent() internal virtual override returns (bool) {
         return SpigotedLineLib.canDeclareInsolvent(address(spigot), arbiter);
     }
+
+    /// see ISpigotedLine.closePositionWithUnusedTokens
+    function closePositionWithUnusedTokens(bytes32 id) external nonReentrant onlyBorrowerOrArbiter {
+        Credit memory credit = _accrue(credits[id], id);
+
+        uint256 facilityFee = credit.interestAccrued;
+        uint256 unusedTokensForClosingPosition = unusedTokens[credit.token];
+        unusedTokens[credit.token] -= unusedTokensForClosingPosition;
+
+        if (unusedTokensForClosingPosition > facilityFee) {
+            // clear facility fees and close position
+            credits[id] = _close(_repay(credit, id, facilityFee, address(this)), id);
+        }
+
+    }
+
 
     /// see ISpigotedLine.claimAndRepay
     function claimAndRepay(
@@ -246,6 +262,86 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
     function releaseSpigot(address to) external returns (bool) {
         return SpigotedLineLib.releaseSpigot(address(spigot), _updateStatus(_healthcheck()), borrower, arbiter, to);
     }
+
+    /// see ISpigotedLine.removeSpigot
+    function removeSpigot(address revenueContract) external returns (bool) {
+        return SpigotedLineLib.removeSpigot(address(spigot), _updateStatus(_healthcheck()), borrower, revenueContract);
+    }
+
+    /**
+     * @notice  - Changes the revenue split based upon the status of the Line of Credit
+     *          - or otherwise if the Owner and Borrower wish to change the split.
+     * @dev     - callable by `borrower`
+     * @dev     - only callable if there is no outstanding debt
+     * @param _revenueContracts[] - Array of addresses of spigoted revenue generating contracts
+     * @param _ownerSplits[] - Array of new % split to give owner for each contract
+     */
+    function updateRevenueContractSplits(address[] calldata _revenueContracts, uint8[] calldata _ownerSplits) public onlyBorrower {
+        // TODO: needs to check that outstanding debt to beneficiaries is 0
+        if (count == 0) {
+            if (proposalCount > 0) {
+                _clearProposals();
+            }
+            for (uint256 i = 0; i < _revenueContracts.length; i++) {
+                spigot.updateOwnerSplit(_revenueContracts[i], _ownerSplits[i]);
+            }
+        }
+
+    }
+
+    /**
+     * @notice - Allows borrower to extend the deadline of the line.
+     * @dev - callable by `borrower`
+     * @dev - requires line to not have open, active credit positions or outstanding debt to beneficiaries
+     * @param ttlExtension The amount of time to extend the line by
+     * @return true is line is extended and set to ACTIVE status.
+     */
+    function extend(uint256 ttlExtension) external onlyBorrower virtual override returns (bool) {
+        bool hasBeneficiaryDebtOutstanding = spigot.hasBeneficiaryDebtOutstanding();
+
+        if (count == 0 && hasBeneficiaryDebtOutstanding) {
+            if (proposalCount > 0) {
+                _clearProposals();
+            }
+            bool isExtended = _extend(ttlExtension);
+            return isExtended;
+        }
+        revert CannotExtendLine();
+    }
+
+
+    // TODO: implement this function
+    // NOTE: add/reset new/existing beneficiary agreements
+    // NOTES: allocations cannot sum to greater than 100000
+    // TODO: emit AmendBeneficiaries(address(this), spigot, beneficiaries);
+    // NOTE: only works with existing beneificiaries. Need to add/remove beneficiares before calling this function
+    // function updateBeneficiarySettings(address[] calldata _beneficiaries, address[] calldata _operators, uint256[] calldata _allocations, address[] calldata _repaymentTokens, uint256[] calldata _outstandingDebts) external onlyBorrower {
+
+    //     if (_beneficiaries[0] != address(this)) {
+    //         revert LineMustBeFirstBeneficiary(_beneficiaries[0]);
+    //     }
+
+    //     if (_outstandingDebts[0] > 0) {
+    //         revert LineBeneficiaryDebtMustBeZero(_outstandingDebts[0]);
+    //     }
+
+    //     // TODO: needs to check that outstanding debt to beneficiaries is 0
+    //     if (count == 0) {
+    //         if (proposalCount > 0) {
+    //             _clearProposals();
+    //         }
+
+    //         for (uint256 i = 0; i < _beneficiaries.length; i++) {
+
+    //             spigot.updateBeneficiaryInfo(_beneficiaries[i], _operators[i], _allocations[i], _repaymentTokens[i], _outstandingDebts[i]);
+
+    //         }
+    //     }
+    // }
+
+    // function updateBeneficiaryOperator(address beneficiary, address newOperator) external {
+
+    // }
 
     /// see ISpigotedLine.sweep
     function sweep(address to, address token, uint256 amount) external nonReentrant returns (uint256) {

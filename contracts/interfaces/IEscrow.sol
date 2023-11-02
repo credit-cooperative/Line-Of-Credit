@@ -17,6 +17,8 @@ interface IEscrow {
 
     event EnableCollateral(address indexed token);
 
+    event UpdateMinimumCollateralRatio(uint256 indexed ratio);
+
     error InvalidCollateral();
 
     error CallerAccessDenied();
@@ -52,4 +54,6 @@ interface IEscrow {
     function releaseCollateral(uint amount, address token, address to) external returns (uint);
 
     function liquidate(uint amount, address token, address to) external returns (bool);
+
+    function updateMinimumCollateralRatio(uint32 ratio) external returns (bool);
 }

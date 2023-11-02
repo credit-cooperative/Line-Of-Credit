@@ -9,6 +9,7 @@ import { Denominations } from "chainlink/Denominations.sol";
 import { ZeroEx } from "../mock/ZeroEx.sol";
 import { SimpleOracle } from "../mock/SimpleOracle.sol";
 import { RevenueToken } from "../mock/RevenueToken.sol";
+import {SimpleRevenueContract} from "../mock/SimpleRevenueContract.sol";
 
 import {MutualConsent} from "../utils/MutualConsent.sol";
 
@@ -166,7 +167,7 @@ contract SpigotedLineTest is Test, Events {
 
     function _borrow(bytes32 id, uint amount) public {
       vm.startPrank(borrower);
-      line.borrow(id, amount);
+      line.borrow(id, amount, borrower);
       vm.stopPrank();
     }
 
@@ -1300,12 +1301,82 @@ contract SpigotedLineTest is Test, Events {
       uint unused = line.unused(address(revenueToken));
       hoax(borrower);
       uint swept = line.sweep(address(borrower), address(revenueToken), 0);
+      emit log_named_uint('swept', swept);
+      emit log_named_uint('unused', unused);
+      emit log_named_uint('borrower token balance 2', revenueToken.balanceOf(address(borrower)));
 
       assertEq(unused, 10, '2');     // all unused sent to arbi
       assertEq(swept, unused, '3'); // all unused sent to arbi
       assertEq(swept, 10, '4');      // untraded revenue
       assertEq(swept, revenueToken.balanceOf(address(borrower)) - balance, '5'); // arbi balance updates properly
     }
+
+    function test_arbiter_sweep_to_borrower_when_repaid() public {
+      _borrow(line.ids(0), lentAmount);
+
+      uint claimed = (MAX_REVENUE * ownerSplit) / 100; // expected claim amount
+      console.log(claimed);
+      bytes memory tradeData = abi.encodeWithSignature(
+        'trade(address,address,uint256,uint256)',
+        address(revenueToken),
+        address(creditToken),
+        claimed - 10,
+        lentAmount + 1 ether // give excess tokens so we can sweep with out UsedExcess error
+      );
+
+      vm.prank(arbiter);
+      line.claimAndRepay(address(revenueToken), tradeData);
+
+      bytes32 id = line.ids(0);
+      hoax(borrower);
+      line.close(id);
+
+      // initial mint + spigot revenue to borrower (- unused?)
+      uint balance = revenueToken.balanceOf(address(borrower));
+      console.log(balance);
+      console.log(MAX_REVENUE);
+      assertEq(balance, MAX_REVENUE, '1');
+
+      uint unused = line.unused(address(revenueToken));
+      hoax(arbiter);
+      uint swept = line.sweep(address(borrower), address(revenueToken), 0);
+      assertEq(unused, 10, '2');     // all unused sent to arbi
+      assertEq(swept, unused, '3'); // all unused sent to arbi
+      assertEq(swept, 10, '4');      // untraded revenue
+      assertEq(swept, revenueToken.balanceOf(address(borrower)) - balance, '5'); // arbi balance updates properly
+    }
+
+    function test_arbiter_only_sweep_to_borrower_when_repaid() public {
+      _borrow(line.ids(0), lentAmount);
+
+      uint claimed = (MAX_REVENUE * ownerSplit) / 100; // expected claim amount
+      console.log(claimed);
+      bytes memory tradeData = abi.encodeWithSignature(
+        'trade(address,address,uint256,uint256)',
+        address(revenueToken),
+        address(creditToken),
+        claimed - 10,
+        lentAmount + 1 ether // give excess tokens so we can sweep with out UsedExcess error
+      );
+
+      vm.prank(arbiter);
+      line.claimAndRepay(address(revenueToken), tradeData);
+
+      bytes32 id = line.ids(0);
+      hoax(borrower);
+      line.close(id);
+
+      // initial mint + spigot revenue to borrower (- unused?)
+      uint balance = revenueToken.balanceOf(address(borrower));
+      console.log(balance);
+      console.log(MAX_REVENUE);
+      assertEq(balance, MAX_REVENUE, '1');
+
+      hoax(arbiter);
+      vm.expectRevert(ILineOfCredit.CallerAccessDenied.selector);
+      line.sweep(address(arbiter), address(revenueToken), 0);
+    }
+
 
     function test_cant_sweep_tokens_when_liquidate_as_anon() public {
       _borrow(line.ids(0), lentAmount);
@@ -1434,6 +1505,53 @@ contract SpigotedLineTest is Test, Events {
 
       assertEq(spigot.owner(), new_owner);
 
+    }
+
+
+    // removeSpigot
+
+    // TODO: test can remove spigot from line
+    // TODO: test only borrower can remove spigot from line only if line is REPAID
+    function test_remove_spigot_to_borrower_when_repaid() public {
+
+      // Define Revenue token
+      RevenueToken _token = new RevenueToken();
+
+      // Define SimpleRevenueContract
+      SimpleRevenueContract testRevenueContract = new SimpleRevenueContract(borrower, address(_token));
+
+      address testRevenueContractAddress = address(testRevenueContract);
+
+      // arbiter addSpigot
+      ISpigot.Setting memory setting = ISpigot.Setting({
+        ownerSplit: ownerSplit,
+        claimFunction: bytes4(0),
+        transferOwnerFunction: bytes4(0xf2fde38b)
+      });
+
+      vm.startPrank(arbiter);
+      line.addSpigot(testRevenueContractAddress, setting);
+      vm.stopPrank();
+
+      // borrower transfer ownership to spigot
+      vm.startPrank(borrower);
+      // TODO: fix this
+      testRevenueContractAddress.call(
+            abi.encodeWithSelector(setting.transferOwnerFunction, address(spigot))
+        );
+
+      assertEq(testRevenueContract.owner(), address(line));
+      vm.stopPrank();
+
+
+      vm.startPrank(borrower);
+      line.close(line.ids(0));
+      vm.stopPrank();
+
+      hoax(borrower);
+      assertTrue(line.removeSpigot(testRevenueContractAddress));
+
+      assertEq(testRevenueContract.owner(), borrower);
     }
 
     // updateOwnerSplit()

@@ -184,7 +184,7 @@ contract HotfixForkClaimRevenueTest is Test {
         _rollAndWarpToBlock(16_600_785); // borrow block
         emit log_string("=> Borrowing");
         vm.startPrank(borrower);
-        line.borrow(lineId, 10 ether); // https://etherscan.io/tx/0xf0d9d5c4e4ac933e57ad26bbbbae557b7865474345aac5ebe0bc62947e7e7957
+        line.borrow(lineId, 10 ether, borrower); // https://etherscan.io/tx/0xf0d9d5c4e4ac933e57ad26bbbbae557b7865474345aac5ebe0bc62947e7e7957
         vm.stopPrank();
 
         // 16_678_623: transfer 15 USDC to spigot

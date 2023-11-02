@@ -44,11 +44,11 @@ contract LineFactory is ILineFactory {
 
     /// see ModuleFactory.deployEscrow.
     function deployEscrow(uint32 minCRatio, address owner, address borrower) external returns (address) {
-        return factory.deployEscrow(minCRatio, oracle, owner, borrower);
+        return factory.deployEscrow(minCRatio, oracle, owner, borrower, arbiter);
     }
 
     /// see ModuleFactory.deploySpigot.
-    function deploySpigot(  
+    function deploySpigot(
         address owner,
         address[] memory _startingBeneficiaries,
         uint256[] memory _startingAllocations,
@@ -60,8 +60,8 @@ contract LineFactory is ILineFactory {
     }
 
     function deploySecuredLine(
-        address borrower, 
-        uint256 ttl, 
+        address borrower,
+        uint256 ttl,
         address[] memory _startingBeneficiaries,
         uint256[] memory _startingAllocations,
         uint256[] memory _debtOwed,

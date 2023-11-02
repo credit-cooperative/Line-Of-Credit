@@ -3,7 +3,7 @@
 
 // forked from https://github.com/IndexCoop/index-coop-smart-contracts/blob/master/contracts/lib/MutualConsent.sol
 
- pragma solidity ^0.8.16;
+pragma solidity ^0.8.16;
 
 /**
  * @title MutualConsent
@@ -19,6 +19,10 @@ abstract contract MutualConsent {
 
     // equivalent to any fn with no args, ie just a fn selector
     uint256 constant MIN_DATA_LENGTH_BYTES = 4;
+
+    bytes32[] public mutualConsentProposalIds;
+
+    uint256 public proposalCount;
 
     // Mapping of upgradable units and if consent has been initialized by other party
     mapping(bytes32 => address) public mutualConsentProposals;
@@ -94,17 +98,26 @@ abstract contract MutualConsent {
 
         // The consent hash is defined by the hash of the transaction call data and sender of msg,
         // which uniquely identifies the function, arguments, and sender.
+
         bytes32 expectedProposalId = keccak256(abi.encodePacked(msg.data, nonCaller));
 
         if (mutualConsentProposals[expectedProposalId] == address(0)) {
             bytes32 newProposalId = keccak256(abi.encodePacked(msg.data, msg.sender));
-
+            mutualConsentProposalIds.push(newProposalId); // add proposal id to array
+            proposalCount++;
             mutualConsentProposals[newProposalId] = msg.sender; // save caller's consent for nonCaller to accept
 
             emit MutualConsentRegistered(newProposalId, nonCaller);
 
             return false;
+        } else {
+            // remove the proposal id from the array as it's now a position, not a proposal
+            _removeMutualConsentProposalId(expectedProposalId);
         }
+
+        // if (mutualConsentProposals[expectedProposalId] != nonCaller) {
+        //     revert InvalidConsent();
+        // }
 
         delete mutualConsentProposals[expectedProposalId];
 
@@ -116,4 +129,30 @@ abstract contract MutualConsent {
     function _getNonCaller(address _signerOne, address _signerTwo) internal view returns (address) {
         return msg.sender == _signerOne ? _signerTwo : _signerOne;
     }
+
+    // Function to remove an id from the array
+    // TODO: how expensive is this from a gas perspective?
+    function _removeMutualConsentProposalId(bytes32 idToRemove) internal {
+        uint index;
+        bool found = false;
+
+        // Find the index of the id to remove
+        for(uint i = 0; i < mutualConsentProposalIds.length; i++) {
+            if (mutualConsentProposalIds[i] == idToRemove) {
+                index = i;
+                found = true;
+                break;
+            }
+        }
+
+        require(found, "Id not found");
+
+        // If order of elements is not important,
+        // replace the id to remove with the last one,
+        // and then reduce the array's length by one
+        mutualConsentProposalIds[index] = mutualConsentProposalIds[mutualConsentProposalIds.length - 1];
+        mutualConsentProposalIds.pop();
+        proposalCount--;
+    }
+
 }

@@ -53,7 +53,7 @@ contract EscrowedLineTest is Test {
         unsupportedToken = new RevenueToken();
 
         oracle = new SimpleOracle(address(supportedToken1), address(supportedToken2));
-        escrow = new Escrow(minCollateralRatio, address(oracle), arbiter, borrower);
+        escrow = new Escrow(minCollateralRatio, address(oracle), arbiter, borrower, arbiter);
         line = new MockEscrowedLine(
             address(escrow),
             address(oracle),
@@ -125,7 +125,7 @@ contract EscrowedLineTest is Test {
         bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
         vm.stopPrank();
         vm.startPrank(borrower);
-        line.borrow(id, 1 ether);
+        line.borrow(id, 1 ether, borrower);
         vm.stopPrank();
         vm.expectRevert(ILineOfCredit.NotLiquidatable.selector);
         line.liquidate(1 ether, address(supportedToken2));
@@ -138,7 +138,7 @@ contract EscrowedLineTest is Test {
 
         bytes32 id = line.ids(0);
         vm.startPrank(borrower);
-        line.borrow(id, 1 ether);
+        line.borrow(id, 1 ether, borrower);
         vm.stopPrank();
         (uint p,) = line.updateOutstandingDebt();
         assertGt(p, 0);
@@ -153,7 +153,7 @@ contract EscrowedLineTest is Test {
     function test_line_is_uninitilized_if_escrow_not_owned() public {
         address mock = address(new MockLine(0, address(3)));
 
-        Escrow e = new Escrow(minCollateralRatio, address(oracle), mock, borrower);
+        Escrow e = new Escrow(minCollateralRatio, address(oracle), mock, borrower, arbiter);
         MockEscrowedLine l = new MockEscrowedLine(
 
             address(escrow),
@@ -178,7 +178,7 @@ contract EscrowedLineTest is Test {
         uint balanceOfArbiter = supportedToken2.balanceOf(arbiter);
         bytes32 id = line.ids(0);
         vm.startPrank(borrower);
-        line.borrow(id, 1 ether);
+        line.borrow(id, 1 ether, borrower);
         vm.stopPrank();
         (uint p, uint i) = line.updateOutstandingDebt();
         assertGt(p, 0);

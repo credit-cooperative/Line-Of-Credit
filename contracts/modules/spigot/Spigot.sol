@@ -3,7 +3,6 @@
 
 pragma solidity ^0.8.16;
 import {MutualConsent} from "../../utils/MutualConsent.sol";
-import {AccessControl} from "openzeppelin/access/AccessControl.sol";
 import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
 import {Ownable} from "openzeppelin/access/Ownable.sol";
 import {ERC1155} from "openzeppelin/token/ERC1155/ERC1155.sol";
@@ -16,7 +15,7 @@ import {SpigotState, SpigotLib} from "../../utils/SpigotLib.sol";
 import {ISpigot} from "../../interfaces/ISpigot.sol";
 
 
-contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
+contract Spigot is ISpigot, ReentrancyGuard {
     using SpigotLib for SpigotState;
 
     SpigotState private state;
@@ -24,7 +23,6 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
     uint128 constant MAX_BENEFICIARIES = 5;
     uint128 constant MIN_BENEFICIARIES = 2;
     uint256 constant FULL_ALLOC = 100000;
-
 
     constructor(
         address owner,
@@ -49,13 +47,13 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
         require(sum == FULL_ALLOC, "Ratio does not equal 100000");
 
         // setup multisig as admin that has signers from the borrower and lenders.
-        // _setRoleAdmin(DEFAULT_ADMIN_ROLE, _adminMultisig); 
+        // _setRoleAdmin(DEFAULT_ADMIN_ROLE, _adminMultisig);
 
         for (uint256 i = 0; i < _startingBeneficiaries.length; i++) {
             state.beneficiaries[i] = _startingBeneficiaries[i];
             state.beneficiaryInfo[_startingBeneficiaries[i]].allocation = _startingAllocations[i];
             state.beneficiaryInfo[_startingBeneficiaries[i]].debtOwed = _debtOwed[i];
-            state.beneficiaryInfo[_startingBeneficiaries[i]].desiredRepaymentToken = _repaymentToken[i];
+            state.beneficiaryInfo[_startingBeneficiaries[i]].repaymentToken = _repaymentToken[i];
         }
 
         state.operator = _startingBeneficiaries[0];
@@ -71,8 +69,12 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
         return state.operator;
     }
 
+    function admin() external view returns (address) {
+        return state.admin;
+    }
+
     // ##########################
-    // #####   Claimoooor   #####
+    // #####     Claimer    #####
     // ##########################
 
     /**
@@ -96,14 +98,12 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
         return state.claimRevenue(revenueContract, token, data);
     }
 
-
     /**
      * @notice - Allows Spigot Operqtor to claim escrowed revenue tokens
      * @dev - callable by `operator`
      * @param token - address of revenue token that is being escrowed by spigot
      * @return claimed -  The amount of tokens claimed by the `operator`
      */
-
      // claim position 1
     function claimOperatorTokens(address token) external nonReentrant returns (uint256 claimed) {
         return state.claimOperatorTokens(token); // maybe need to pass in token
@@ -118,7 +118,7 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
 
 
     /*//////////////////////////////////////////////////////
-                       // ADMIN FUNCTIONS //               
+                       // ADMIN FUNCTIONS //
     //////////////////////////////////////////////////////*/
 
     /**
@@ -130,27 +130,33 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
         @param _newAllocation The new allocation of repayments including the new beneficiary
    */
 
-    function addBeneficiaryAddress(address _newBeneficiary, uint256[] calldata _newAllocation) external onlyAdmin() {
+    // TODO: add documentation
+    // TODO: add limits to when/who can call this function
+    function addBeneficiaryAddress(address _newBeneficiary, uint256[] calldata _newAllocation) external {
         state.addBeneficiaryAddress(_newBeneficiary, _newAllocation);
     }
 
 
-    function replaceBeneficiaryAt(uint256 _index, address _newBeneficiary, uint256[] calldata _newAllocation) external onlyAdmin() {
+    // TODO: add documentation
+    // TODO: add limits to when/who can call this function
+    function replaceBeneficiaryAt(uint256 _index, address _newBeneficiary, uint256[] calldata _newAllocation) external {
         state.replaceBeneficiaryAt(_index, _newBeneficiary, _newAllocation);
     }
 
+    // TODO: add documentation
+    // TODO: add limits to when/who can call this function
+    // function updateBeneficiaryInfo(address beneficiary, address newOperator, uint256 allocation, address repaymentToken, uint256 outstandingDebt) external {
+    //     state.updateBeneficiaryInfo(beneficiary, newOperator, allocation, repaymentToken, outstandingDebt);
+    // }
+
+
     /*//////////////////////////////////////////////////////
-                        I N T E R N A L                    
+                        I N T E R N A L
     //////////////////////////////////////////////////////*/
 
-    
-
-
-
-        // ##########################
-    // ##### *ring* *ring*  #####
-    // #####  OPERATOOOR    #####
-    // #####  OPERATOOOR    #####
+    // ##########################
+    // ##########################
+    // #####  OPERATOR    #####
     // ##########################
 
     /**
@@ -166,7 +172,7 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
     }
 
     // ##########################
-    // #####  Maintainooor  #####
+    // #####    Maintainer  #####
     // ##########################
 
     /**
@@ -183,7 +189,7 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
     /**
 
      * @notice  - Uses predefined function in revenueContract settings to transfer complete control and ownership from this Spigot to the Operator
-     * @dev     - revenuContract's transfer func MUST only accept one paramteter which is the new owner's address.
+     * @dev     - revenueContract's transfer func MUST only accept one paramteter which is the new owner's address.
      * @dev     - callable by `owner`
      * @param revenueContract - smart contract to transfer ownership of
      */
@@ -222,6 +228,13 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
     function updateWhitelistedFunction(bytes4 func, bool allowed) external returns (bool) {
         return state.updateWhitelistedFunction(func, allowed);
     }
+
+    // ##########################
+    // #####     GETTERS    #####
+    // ##########################
+
+    /**
+     * @notice  - Retrieve amount of revenue tokens escrowed waiting for claim
      /**
      * @notice  - Changes the revenue split between the Treasury and the Owner based upon the status of the Line of Credit
      *          - or otherwise if the Owner and Borrower wish to change the split.
@@ -255,18 +268,27 @@ contract Spigot is ISpigot, ReentrancyGuard, AccessControl {
         return state.getSetting(revenueContract);
     }
 
+    function hasBeneficiaryDebtOutstanding() external view returns (bool) {
+        return state.hasBeneficiaryDebtOutstanding();
+    }
+
     receive() external payable {
         return;
     }
- 
-    
+
+
 
  ///////////////////////// VIEW FUNCS //////////////////////////
 
     function getBeneficiaries() public view returns (address[] memory) { return (state.beneficiaries); }
 
-    function getLenderTokens(address token, address lender) external view returns (uint256) { 
+    // TODO: add this back
+    // function getBeneficiaryInfo(address beneficiary) public view returns (ISpigot.Beneficiary memory) {
+    //     return state.beneficiaryInfo[beneficiary];
+    // }
+
+    function getLenderTokens(address token, address lender) external view returns (uint256) {
         return state.getLenderTokens(token, lender);
     }
-    // function getSplitAllocation() public view returns (uint256[] memory) { return (allocations); }   
+    // function getSplitAllocation() public view returns (uint256[] memory) { return (allocations); }
 }
