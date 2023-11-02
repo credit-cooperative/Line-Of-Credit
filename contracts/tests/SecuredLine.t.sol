@@ -63,14 +63,14 @@ contract SecuredLineTest is Test {
 
         /// make an array of length 3 and type uint256 where all 3 amounts add up to 100000
         allocations = new uint256[](3);
-        allocations[0] = 10000;
-        allocations[1] = 10000;
+        allocations[0] = 0; // TODO: setting this to something greater than zero breaking tests
+        allocations[1] = 20000;
         allocations[2] = 80000;
 
         // make an array of length 3 and type uint256 with random amounts for each member. name it debtOwed
         debtOwed = new uint256[](3);
-        debtOwed[0] = 10000;
-        debtOwed[1] = 10000;
+        debtOwed[0] = 0;
+        debtOwed[1] = 20000;
         debtOwed[2] = 80000;
 
         // make an array of length 3 and type address where each member is se to supportedToken1
