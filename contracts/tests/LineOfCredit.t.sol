@@ -310,9 +310,9 @@ contract LineTest is Test, Events {
     function test_arbiter_can_manually_close_if_no_outstanding_credit() public {
         _addCredit(address(supportedToken1), 1 ether);
         bytes32 id = line.ids(0);
-        hoax(arbiter);
+        hoax(borrower);
         line.borrow(id, 1 ether, borrower);
-        hoax(arbiter);
+        hoax(borrower);
         line.depositAndRepay(1 ether);
         (uint256 p, uint256 i) = line.updateOutstandingDebt();
         assertEq(p + i, 0, "Line outstanding credit should be 0");
