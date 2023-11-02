@@ -20,7 +20,7 @@ import {RevenueToken} from "../mock/RevenueToken.sol";
 import {SimpleOracle} from "../mock/SimpleOracle.sol";
 
 interface Events {
-    event Borrow(bytes32 indexed id, uint256 indexed amount);
+    event Borrow(bytes32 indexed id, uint256 indexed amount, address indexed to);
     event SetRates(
         bytes32 indexed id,
         uint128 indexed dRate,
@@ -87,7 +87,7 @@ contract QueueTest is Test, Events {
         vm.startPrank(borrower);
 
         // preemptive close or borrow from a line
-        line.borrow(line.ids(0), 1 ether);
+        line.borrow(line.ids(0), 1 ether, borrower);
         for (uint256 i = 1; i < NUM_LINES; ++i ) {
             emit log_string(" ");
             emit log_string("==============");
@@ -101,7 +101,7 @@ contract QueueTest is Test, Events {
             }
             emit log_named_string("borrowing from", idLabels[line.ids(i)]);
             _formatLoggedArrOfIds("before borrowing");
-            line.borrow(line.ids(i), 1 ether);
+            line.borrow(line.ids(i), 1 ether, borrower);
             (uint256 deposit,,,,,,,) = line.credits(line.ids(i));
             _formatLoggedArrOfIds("after borrowing");
         }
@@ -179,7 +179,7 @@ contract QueueTest is Test, Events {
             uint256 newSlot = _getNextAvailableSlot(NUM_LINES);
             bytes32 id = line.ids(i);
             _formatLoggedArrOfIds("before borrowing");
-            line.borrow(line.ids(i), 1 ether);
+            line.borrow(line.ids(i), 1 ether, borrower);
             _formatLoggedArrOfIds("after borrowing");
             assertEq(id, line.ids(newSlot));
         }
@@ -242,7 +242,7 @@ contract QueueTest is Test, Events {
 
         vm.startPrank(borrower);
         // should now look like [ id3, id, id2, id4]
-        line.borrow(id3, 1 ether);
+        line.borrow(id3, 1 ether, borrower);
         _formatLoggedArrOfIds("after borrowing from id3");
         assertEq(line.ids(0), id3);
         assertEq(line.ids(1), id2);
@@ -312,7 +312,7 @@ contract QueueTest is Test, Events {
         assertEq(line.ids(3), id4);
 
         hoax(borrower);
-        line.borrow(id2, 1 ether);
+        line.borrow(id2, 1 ether, borrower);
 
         assertEq(line.ids(0), id2);
         assertEq(line.ids(1), id);
@@ -320,7 +320,7 @@ contract QueueTest is Test, Events {
         assertEq(line.ids(3), id4);
         hoax(borrower);
 
-        line.borrow(id4, 1 ether);
+        line.borrow(id4, 1 ether, borrower);
 
         assertEq(line.ids(0), id2);
         assertEq(line.ids(1), id4);
@@ -395,7 +395,7 @@ contract QueueTest is Test, Events {
 
         vm.prank(borrower);
 
-        line.borrow(id4, 1 ether);
+        line.borrow(id4, 1 ether, borrower);
 
         assertEq(line.ids(0), id4);
         assertEq(line.ids(1), id2);
@@ -403,7 +403,7 @@ contract QueueTest is Test, Events {
         assertEq(line.ids(3), id);
 
         vm.prank(borrower);
-        line.borrow(id, 1 ether);
+        line.borrow(id, 1 ether, borrower);
 
         assertEq(line.ids(0), id4);
         assertEq(line.ids(1), id);
@@ -474,7 +474,7 @@ contract QueueTest is Test, Events {
     function test_next_position_equals_first_position() public {
         _createCreditLines(3);
         vm.startPrank(borrower);
-        line.borrow(line.ids(0),  1 ether);
+        line.borrow(line.ids(0),  1 ether, borrower);
         vm.stopPrank();
         (bytes32 next,,,,,,,) = line.nextInQ();
         assertEq(next, line.ids(0));
@@ -483,7 +483,7 @@ contract QueueTest is Test, Events {
     function test_next_position_has_same_data_as_first_position() public {
         _createCreditLines(3);
         vm.startPrank(borrower);
-        line.borrow(line.ids(0),  1 ether);
+        line.borrow(line.ids(0),  1 ether, borrower);
         vm.stopPrank();
         (, address nextLender,,uint256 nextPrincipal, uint256 nextDeposit,,,) = line.nextInQ();
 
@@ -498,7 +498,7 @@ contract QueueTest is Test, Events {
     function test_next_position_has_same_interest_accrued_as_first_position() public {
         _createCreditLines(3);
         vm.startPrank(borrower);
-        line.borrow(line.ids(0),  1 ether);
+        line.borrow(line.ids(0),  1 ether, borrower);
         vm.stopPrank();
         vm.warp(30 days);
 
@@ -511,7 +511,7 @@ contract QueueTest is Test, Events {
     function test_next_position_has_same_interest_rate_as_first_position() public {
         _createCreditLines(3);
         vm.startPrank(borrower);
-        line.borrow(line.ids(0),  1 ether);
+        line.borrow(line.ids(0),  1 ether, borrower);
         vm.stopPrank();
         bytes32 id = line.ids(0);
         i.setRate(id, dRate, fRate);

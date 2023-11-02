@@ -24,6 +24,12 @@ interface ILineOfCredit {
     event UpdateStatus(uint256 indexed status); // store as normal uint so it can be indexed in subgraph
 
     event DeployLine(address indexed oracle, address indexed arbiter, address indexed borrower);
+    event ExtendLine(address indexed line, address indexed borrower, uint256 indexed deadline);
+    event UpdateBorrower(address indexed borrower, address indexed newBorrower);
+    event AmendLine(address indexed line, address indexed borrower, uint256 indexed deadline);
+    event AmendSpigot(address indexed line, address indexed spigot, uint8 defaultRevenueSplit);
+    event AmendEscrow(address indexed line, address indexed escrow, uint32 indexed minimumCollateralRatio);
+    event AmendRevenueContracts(address indexed line, address indexed spigot, address[] indexed revenueContracts, uint8[] beneficiaries);
 
     event SortedIntoQ(bytes32 indexed id, uint256 indexed newIdx, uint256 indexed oldIdx, bytes32 oldId);
 
@@ -47,6 +53,9 @@ interface ILineOfCredit {
     // Emitted when any credit line is closed by the line's borrower or the position's lender
     event CloseCreditPosition(bytes32 indexed id);
 
+    // Emitted when a line is closed by the line's borrower or arbiter
+    event CloseLine(address indexed line);
+
     // After accrueInterest runs, emits the amount of interest added to a Borrower's outstanding balance of interest due
     // but not yet repaid to the Line of Credit contract
     event InterestAccrued(bytes32 indexed id, uint256 indexed amount);
@@ -54,7 +63,7 @@ interface ILineOfCredit {
     // Borrower Events
 
     // receive full line or drawdown on credit
-    event Borrow(bytes32 indexed id, uint256 indexed amount);
+    event Borrow(bytes32 indexed id, uint256 indexed amount, address indexed to);
 
     // Emits that a Borrower has repaid an amount of interest Results in an increase in interestRepaid, i.e. interest not yet withdrawn by a Lender). There is no corresponding function
     event RepayInterest(bytes32 indexed id, uint256 indexed amount);
@@ -86,6 +95,8 @@ interface ILineOfCredit {
     error CantStepQ();
     error EthSupportDisabled();
     error BorrowFailed();
+    error CannotExtendLine();
+    error InvalidBorrower();
 
     // Fully public functions
 
@@ -148,8 +159,9 @@ interface ILineOfCredit {
      * @dev          - callable by borrower
      * @param id     - the position to draw down on
      * @param amount - amount of tokens the borrower wants to withdraw
+     * @param to - address to send tokens to. defaults to `borrower` if no address provided
      */
-    function borrow(bytes32 id, uint256 amount) external;
+    function borrow(bytes32 id, uint256 amount, address to) external;
 
     /**
      * @notice       - Transfers token used in position id from msg.sender to Line contract.
@@ -171,11 +183,19 @@ interface ILineOfCredit {
      * @notice - Removes and deletes a position, preventing any more borrowing or interest.
      *         - Requires that the position principal has already been repais in full
      * @dev      - MUST repay accrued interest from facility fee during call
-     * @dev - callable by `borrower` or Lender
+     * @dev - callable by `borrower` or `arbiter`
      * @dev          - The function retains the `payable` designation, despite reverting with a non-zero msg.value, as a gas-optimization
      * @param id -the position id to be closed
      */
     function close(bytes32 id) external payable;
+
+    /**
+     * @notice - Closes a line and sets status to REPAID.
+     * @dev      - Only callable if there are no active credit positions.
+     * @dev - callable by `borrower` or `arbiter`
+     * @dev          - The function retains the `payable` designation, despite reverting with a non-zero msg.value, as a gas-optimization
+     */
+    function closeLine() external payable;
 
     // Lender functions
 
@@ -237,6 +257,8 @@ interface ILineOfCredit {
     function arbiter() external returns (address);
 
     function oracle() external returns (IOracle);
+
+    // function mutualConsentProposalIds() external returns (bytes32[] memory);
 
     /**
      * @notice - getter for amount of active ids + total ids in list

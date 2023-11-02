@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 // Copyright: https://github.com/credit-cooperative/Line-Of-Credit/blob/master/COPYRIGHT.md
 
- pragma solidity ^0.8.16;
+//TODO rm for deployement
+import "forge-std/console.sol";
 
 import {Denominations} from "chainlink/Denominations.sol";
 import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
@@ -29,10 +30,12 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     using CreditListLib for bytes32[];
 
     /// @notice - the timestamp that all creditors must be repaid by
-    uint256 public immutable deadline;
+    uint256 public deadline;
+
+    uint256 public deadlineExtension = 0;
 
     /// @notice - the account that can drawdown and manage debt positions
-    address public immutable borrower;
+    address public borrower;
 
     /// @notice - neutral 3rd party that mediates btw borrower and all lenders
     address public immutable arbiter;
@@ -44,7 +47,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     InterestRateCredit public immutable interestRate;
 
     /// @notice - current amount of active positions (aka non-null ids) in `ids` list
-    uint256 private count;
+    uint256 public count;
 
     /// @notice - positions ids of all open credit lines.
     /// @dev    - may contain null elements
@@ -113,6 +116,13 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         _;
     }
 
+    modifier onlyBorrowerOrArbiter() {
+        if (msg.sender != borrower || msg.sender != arbiter) {
+            revert CallerAccessDenied();
+        }
+        _;
+    }
+
     /**
      * @notice - mutualConsent() but hardcodes borrower address and uses the position id to
                  get Lender address instead of passing it in directly
@@ -123,6 +133,66 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
             // Run whatever code is needed for the 2/2 consent
             _;
         }
+    }
+
+    /**
+     * @notice - Allows borrower to extend the deadline of the line.
+     * @dev - callable by `borrower`
+     * @dev - requires line to not have open, active credit positions
+     * @param ttlExtension The amount of time to extend the line by
+     * @return true is line is extended and set to ACTIVE status.
+     */
+    function extend(uint256 ttlExtension) external onlyBorrower virtual returns (bool) {
+        if (count == 0) {
+            if (proposalCount > 0) {
+                _clearProposals();
+            }
+            bool isExtended = _extend(ttlExtension);
+            return isExtended;
+        }
+        revert CannotExtendLine();
+    }
+
+    function _extend(uint256 ttlExtension) internal returns (bool) {
+        deadline = deadline + ttlExtension;
+        if (status != LineLib.STATUS.ACTIVE) {
+            _updateStatus(LineLib.STATUS.ACTIVE);
+        }
+        emit ExtendLine(address(this), borrower, deadline);
+        return true;
+    }
+
+    /**
+     * @notice - Allows borrower to update their address.
+     * @dev - callable by `borrower`
+     * @dev - cannot be called if new borrower is zero address
+     * @param newBorrower The new address of the borrower
+     */
+    function updateBorrower(address newBorrower) public onlyBorrower {
+        if (newBorrower == address(0)) {
+            revert InvalidBorrower();
+        }
+        borrower = newBorrower;
+        emit UpdateBorrower(borrower, newBorrower);
+    }
+
+    /**
+     * @notice - Revokes all mutual consent proposals for the line.
+     * @dev - privileged internal function. MUST check params and logic flow before calling
+     * @dev - prevents a borrower from maliciously changing deal terms after a lender has proposed a credit position by calling amend, extend, or amendAndExtend functions
+     */
+    function _clearProposals() internal {
+        // clear all mutual consent proposals to add credit
+        for (uint256 i = 0; i < mutualConsentProposalIds.length; i++) {
+            // remove mutual consent proposal for all active credits
+            bytes32 proposalIdToDelete = mutualConsentProposalIds[i];
+            delete mutualConsentProposals[proposalIdToDelete];
+
+            // TODO: is this an appropriate use of this event? Or should it be a separate event?
+            emit MutualConsentRevoked(proposalIdToDelete);
+        }
+        // reset the array of proposal ids to length 0
+        delete mutualConsentProposalIds;
     }
 
     /**
@@ -263,6 +333,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         LineLib.receiveTokenOrETH(credit.token, credit.lender, amount);
 
         emit IncreaseCredit(id, amount);
+
     }
 
     ///////////////
@@ -270,7 +341,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     ///////////////
 
     /// see ILineOfCredit.depositAndClose
-    function depositAndClose() external payable override nonReentrant whileBorrowing onlyBorrower {
+    function depositAndClose() external payable override nonReentrant whileBorrowing onlyBorrowerOrArbiter {
         bytes32 id = ids[0];
         Credit memory credit = _accrue(credits[id], id);
 
@@ -282,13 +353,22 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     }
 
     /// see ILineOfCredit.close
-    function close(bytes32 id) external payable override nonReentrant onlyBorrower {
+    function close(bytes32 id) external payable override nonReentrant onlyBorrowerOrArbiter {
         Credit memory credit = _accrue(credits[id], id);
 
         uint256 facilityFee = credit.interestAccrued;
 
         // clear facility fees and close position
         credits[id] = _close(_repay(credit, id, facilityFee, borrower), id);
+    }
+
+    /// see ILineOfCredit.closeLine
+    function closeLine() external payable override nonReentrant onlyBorrowerOrArbiter {
+        if (count == 0) {
+            _updateStatus(LineLib.STATUS.REPAID);
+        }
+
+        emit CloseLine(address(this));
     }
 
     /// see ILineOfCredit.depositAndRepay
@@ -303,12 +383,17 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         credits[id] = _repay(credit, id, amount, msg.sender);
     }
 
+    function getExtension() external view returns (uint256) {
+        return deadline + deadlineExtension;
+    }
+
+
     ////////////////////
     // FUND TRANSFERS //
     ////////////////////
 
     /// see ILineOfCredit.borrow
-    function borrow(bytes32 id, uint256 amount) external override nonReentrant whileActive onlyBorrower {
+    function borrow(bytes32 id, uint256 amount, address to) external override nonReentrant whileActive onlyBorrower {
         Credit memory credit = _accrue(credits[id], id);
 
         if (!credit.isOpen) {
@@ -329,9 +414,14 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
             revert BorrowFailed();
         }
 
-        LineLib.sendOutTokenOrETH(credit.token, borrower, amount);
+        // If the "to" address is not provided (i.e., it's the zero address), set it to the borrower.
+        if (to == address(0)) {
+            to = borrower;
+        }
 
-        emit Borrow(id, amount);
+        LineLib.sendOutTokenOrETH(credit.token, to, amount);
+
+        emit Borrow(id, amount, to);
 
         _sortIntoQ(id);
     }
@@ -488,6 +578,8 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
             }
         }
     }
+
+
 
     /* GETTERS */
 

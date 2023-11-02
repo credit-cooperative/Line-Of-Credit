@@ -417,7 +417,7 @@ contract EthRevenue is Test {
 
         // borrow
         vm.startPrank(borrower);
-        line.borrow(line.ids(0), BORROW_AMOUNT_DAI);
+        line.borrow(line.ids(0), BORROW_AMOUNT_DAI, borrower);
         vm.stopPrank();
 
         assertEq(IERC20(DAI).balanceOf(address(line)), 0);

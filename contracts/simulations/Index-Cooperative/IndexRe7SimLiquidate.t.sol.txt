@@ -242,7 +242,7 @@ contract IndexRe7Sim is Test {
         // index draws down full amount
         vm.startPrank(indexCoopLiquidityOperations);
         emit log_named_string("\n \u2713 Borrower Borrows Full Amount from Line of Credit", "");
-        line.borrow(positionId, 200 ether);
+        line.borrow(positionId, 200 ether, line.borrower());
         vm.stopPrank();
 
         // fast forward 3 months

@@ -147,6 +147,7 @@ library EscrowLib {
     function releaseCollateral(
         EscrowState storage self,
         address borrower,
+        address arbiter,
         address oracle,
         uint256 minimumCollateralRatio,
         uint256 amount,
@@ -156,7 +157,7 @@ library EscrowLib {
         if (amount == 0) {
             revert InvalidZeroAmount();
         }
-        if (msg.sender != borrower) {
+        if (msg.sender != borrower || (msg.sender == arbiter && borrower == to)) {
             revert CallerAccessDenied();
         }
         if (self.deposited[token].amount < amount) {

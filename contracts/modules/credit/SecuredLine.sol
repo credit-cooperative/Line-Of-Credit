@@ -2,6 +2,10 @@
 // Copyright: https://github.com/credit-cooperative/Line-Of-Credit/blob/master/COPYRIGHT.md
 
  pragma solidity ^0.8.16;
+
+ // TODO: Imports for development purpose only
+ import "forge-std/console.sol";
+
 import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
 import {LineLib} from "../../utils/LineLib.sol";
 import {EscrowedLine} from "./EscrowedLine.sol";
@@ -90,4 +94,69 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
     function _canDeclareInsolvent() internal virtual override(EscrowedLine, SpigotedLine) returns (bool) {
         return (EscrowedLine._canDeclareInsolvent() && SpigotedLine._canDeclareInsolvent());
     }
+
+    /**
+     * @notice - Allows borrower to extend the deadline of the line, update the borrower address, minimum c ratio percentages, and the owner splits for each revenue contract attached to the Spigot.
+     * @dev - callable by `borrower`
+     * @dev - requires line to not have open, active credit positions or outstanding debt to beneficiaries
+     * @param newBorrower The new address of the borrower
+     * @param ttlExtension The amount of time to extend the line by
+     * @param minimumCollateralRatio The minimum collateral ratio required for the line
+     * @param revenueContracts The list of revenue contracts to update with new owner splits
+     * @param ownerSplits The corresponding list of new owner splits for each revenue contract
+     * @return true is line is amended, extended, and set to ACTIVE status
+     */
+    function amendAndExtend(address newBorrower, uint256 ttlExtension, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) external onlyBorrower returns (bool) {
+        bool hasBeneficiaryDebtOutstanding = spigot.hasBeneficiaryDebtOutstanding();
+        if (count == 0 && hasBeneficiaryDebtOutstanding) {
+            if (proposalCount > 0) {
+                _clearProposals();
+            }
+            _amend(newBorrower, minimumCollateralRatio, revenueContracts, ownerSplits);
+            _extend(ttlExtension);
+            return true;
+        }
+        revert CannotAmendAndExtendLine();
+    }
+
+    /**
+     * @notice - Allows borrower to update borrower address, the minimum c ratio percentage, and the owner splits for each revenue contract attached to the Spigot.
+     * @dev - callable by `borrower`
+     * @dev - requires line to not have open, active credit positions or outstanding debt to beneficiaries
+     * @param newBorrower The new address of the borrower
+     * @param minimumCollateralRatio The minimum collateral ratio required for the line
+     * @param revenueContracts The list of revenue contracts to update with new owner splits
+     * @param ownerSplits The corresponding list of new owner splits for each revenue contract
+     * @return true is line is amended
+     */
+    function amend(address newBorrower, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) external onlyBorrower returns (bool) {
+        bool hasBeneficiaryDebtOutstanding = spigot.hasBeneficiaryDebtOutstanding();
+        if (count == 0 && hasBeneficiaryDebtOutstanding) {
+            if (proposalCount > 0) {
+                _clearProposals();
+            }
+            bool isAmended = _amend(newBorrower, minimumCollateralRatio, revenueContracts, ownerSplits);
+            return isAmended;
+        }
+        revert CannotAmendLine();
+
+    }
+
+    // TODO: check if SecuredLine owns Spigot address (otherwise should fail)
+    // TODO: check if SecuredLine owns Escrow (otherwise should fail)
+    // TODO: what happens if line is repaid and Spigot is transferred to borrower/operator?
+    // TODO: check that msg.sender is the Escrow State line address
+    function _amend(address newBorrower, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) internal returns (bool) {
+        updateBorrower(newBorrower);
+        escrow.updateMinimumCollateralRatio(minimumCollateralRatio);
+        emit AmendEscrow(address(this), address(escrow), minimumCollateralRatio);
+        updateRevenueContractSplits(revenueContracts, ownerSplits);
+        emit AmendLine(address(this), borrower, deadline);
+
+        return true;
+    }
+
 }
+
+
+

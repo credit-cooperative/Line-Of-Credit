@@ -204,7 +204,7 @@ contract DualRevenueStreamsTest is Test {
 
         // _rollAndWarpToBlock(block.number + advanceBlocks); // borrow block
         vm.startPrank(borrower);
-        line.borrow(lineId, LOAN_AMT);
+        line.borrow(lineId, LOAN_AMT, borrower);
         vm.stopPrank();
 
         _rollAndWarpToBlock(block.number + 50_000);
@@ -298,7 +298,7 @@ contract DualRevenueStreamsTest is Test {
 
         // _rollAndWarpToBlock(block.number + advanceBlocks); // borrow block
         vm.startPrank(borrower);
-        line.borrow(lineId, borrowAmount);
+        line.borrow(lineId, borrowAmount, borrower);
         vm.stopPrank();
 
 

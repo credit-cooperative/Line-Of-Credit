@@ -86,7 +86,8 @@ contract LineFactoryTest is Test {
             3000, // cRatio
             oracle,
             address(this), // owner
-            borrower
+            borrower,
+            arbiter
         );
 
         ILineFactory.CoreLineParams memory coreParams = ILineFactory
