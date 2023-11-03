@@ -108,7 +108,7 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
      */
     function amendAndExtend(address newBorrower, uint256 ttlExtension, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) external onlyBorrower returns (bool) {
         bool hasBeneficiaryDebtOutstanding = spigot.hasBeneficiaryDebtOutstanding();
-        if (count == 0 && hasBeneficiaryDebtOutstanding) {
+        if (count == 0 && !hasBeneficiaryDebtOutstanding) {
             if (proposalCount > 0) {
                 _clearProposals();
             }
@@ -131,7 +131,7 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
      */
     function amend(address newBorrower, uint32 minimumCollateralRatio, address[] calldata revenueContracts, uint8[] calldata ownerSplits) external onlyBorrower returns (bool) {
         bool hasBeneficiaryDebtOutstanding = spigot.hasBeneficiaryDebtOutstanding();
-        if (count == 0 && hasBeneficiaryDebtOutstanding) {
+        if (count == 0 && !hasBeneficiaryDebtOutstanding) {
             if (proposalCount > 0) {
                 _clearProposals();
             }
