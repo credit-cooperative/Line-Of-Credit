@@ -313,7 +313,6 @@ library SpigotLib {
         trade(amount, sellToken, swapTarget, zeroExTradeData);
 
         uint256 boughtTokens = IERC20(self.beneficiaryInfo[lender].repaymentToken).balanceOf(address(this)) - oldTokens;
-        
         if (boughtTokens <= self.beneficiaryInfo[lender].debtOwed){
             self.beneficiaryInfo[lender].debtOwed -= boughtTokens;
             IERC20(self.beneficiaryInfo[lender].repaymentToken).safeTransfer(lender, boughtTokens);
@@ -322,7 +321,6 @@ library SpigotLib {
             self.operatorTokens[self.beneficiaryInfo[lender].repaymentToken] = self.operatorTokens[self.beneficiaryInfo[lender].repaymentToken] + (boughtTokens - self.beneficiaryInfo[lender].debtOwed);
             self.beneficiaryInfo[lender].debtOwed = 0;
         }
-        
         return true;
     }
 
@@ -392,7 +390,7 @@ library SpigotLib {
         uint256 total;
         total = IERC20(token).balanceOf(address(this)) - self.operatorTokens[token];
 
-        total += total * self.beneficiaryInfo[lender].allocation / 100000; 
+        total += total * self.beneficiaryInfo[lender].allocation / 100000;
         total -= getEscrowedTokens(self, token);
         total += self.beneficiaryInfo[lender].bennyTokens[token];
         return total;
@@ -442,7 +440,6 @@ library SpigotLib {
         }
     }
 
-    
 
     // TODO: add docuementation
     function addBeneficiaryAddress(SpigotState storage self, address _newBeneficiary, uint256[] calldata _newAllocation) external {
@@ -519,7 +516,6 @@ library SpigotLib {
 ////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////
 
-    
 
     // Spigot Events
     event AddSpigot(address indexed revenueContract, uint256 ownerSplit, bytes4 claimFnSig, bytes4 trsfrFnSig);
