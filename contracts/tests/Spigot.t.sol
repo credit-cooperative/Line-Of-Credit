@@ -59,9 +59,8 @@ contract SpigotTest is Test {
 
         // make an array of addresses using the owner var, operator var and 3rd new address
         beneficiaries = new address[](3);
-        beneficiaries[0] = operator;
-        beneficiaries[1] = owner;
-        beneficiaries[2] = address(20);
+        beneficiaries[0] = owner;
+        beneficiaries[1] = address(20);
 
         token = new RevenueToken();
 

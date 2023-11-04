@@ -15,7 +15,7 @@ struct SpigotState {
     mapping(address => ISpigot.Beneficiary) beneficiaryInfo; // beneficiary -> info
     address operator;
     address owner;
-    address admin;
+    address arbiter;
     address swapTarget;
     mapping(address => uint256) operatorTokens;
     /// @notice Functions that the operator is allowed to run on all revenue contracts controlled by the Spigot
@@ -444,7 +444,7 @@ library SpigotLib {
 
     // TODO: add documentation
     function deleteBeneficiaries(SpigotState storage self) external {
-        if (msg.sender != self.owner) {
+        if (msg.sender != self.owner && msg.sender != self.arbiter) {
             revert CallerAccessDenied();
         }
         delete self.beneficiaries;
@@ -455,14 +455,15 @@ library SpigotLib {
     function addBeneficiaryAddress(SpigotState storage self, address _newBeneficiary) external {
         require(self.beneficiaries.length < 5, "Max beneficiaries");
         require(_newBeneficiary!=address(0), "beneficiary cannot be 0 address");
+        if (msg.sender != self.owner && msg.sender != self.arbiter) {
+            revert CallerAccessDenied();
+        }
 
         for (uint256 i = 0; i < self.beneficiaries.length; i++) {
             require(self.beneficiaries[i] != _newBeneficiary, "Duplicate beneficiary");
         }
 
         self.beneficiaries.push(_newBeneficiary);
-
-        // _setSplitAllocation(self, _newAllocation);
     }
 
     // TODO: add documentation
@@ -507,12 +508,17 @@ library SpigotLib {
     //     }
     // }
 
+
+
     // TODO: add documentation
     // TODO: needs restrictions on who/when can be called
 
     function updateBeneficiaryInfo(SpigotState storage self, address beneficiary, address newOperator, uint256 allocation, address repaymentToken, uint256 outstandingDebt) external {
         require(beneficiary != address(0), "Invalid beneficiary");
         require(newOperator != address(0), "Invalid operator");
+        if (msg.sender != self.owner && msg.sender != self.arbiter) {
+            revert CallerAccessDenied();
+        }
         // require(allocation > 0, "Invalid allocation");
         // require(repaymentToken != address(0), "Invalid repayment token");
 

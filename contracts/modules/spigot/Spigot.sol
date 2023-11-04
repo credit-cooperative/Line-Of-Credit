@@ -22,30 +22,30 @@ contract Spigot is ISpigot, ReentrancyGuard {
     SpigotState private state;
 
     uint128 constant MAX_BENEFICIARIES = 5;
-    uint128 constant MIN_BENEFICIARIES = 2;
+    uint128 constant MIN_BENEFICIARIES = 1;
     uint256 constant FULL_ALLOC = 100000;
 
     constructor(
-        address owner,
+        address _owner,
         address[] memory _startingBeneficiaries,
         uint256[] memory _startingAllocations,
         uint256[] memory _debtOwed,
         address[] memory _repaymentToken,
-        address _adminMultisig
+        address _arbiter
         ) {
         require(_startingBeneficiaries.length == _startingAllocations.length, "Beneficiaries and allocations must be equal length");
-        require(_startingAllocations[0] == 0, "operator must always have 0% allocation. Their split is determined by the rev contracts");
         require(_startingBeneficiaries.length <= MAX_BENEFICIARIES, "Max beneficiaries");
         require(_startingBeneficiaries.length == _debtOwed.length, "Debt owed array and beneficiaries must be equal length");
         require(_startingBeneficiaries.length == _repaymentToken.length, "Repayment token and beneficiaries must be equal length");
-        require(_startingBeneficiaries.length >= MIN_BENEFICIARIES, "Must have at least 2 beneficiaries");
+        require(_startingBeneficiaries.length >= MIN_BENEFICIARIES, "Must have at least 1 beneficiary");
+        require(_startingBeneficiaries[0] == _owner, "Owner must be the first beneficiary");
 
         uint256 sum=0;
         for (uint256 i=0; i<_startingAllocations.length; i++) {
             sum = sum + _startingAllocations[i];
         }
 
-        require(sum == FULL_ALLOC, "Ratio does not equal 100000");
+        require(sum == FULL_ALLOC, "Allocations array must sum to 100000");
 
         // setup multisig as admin that has signers from the borrower and lenders.
         // _setRoleAdmin(DEFAULT_ADMIN_ROLE, _adminMultisig);
@@ -56,9 +56,23 @@ contract Spigot is ISpigot, ReentrancyGuard {
             state.beneficiaryInfo[_startingBeneficiaries[i]].repaymentToken = _repaymentToken[i];
         }
 
-        state.operator = _startingBeneficiaries[0];
-        state.owner = _startingBeneficiaries[1];
-        state.admin = _adminMultisig;
+        state.owner = _owner;
+        state.arbiter = _arbiter;
+    }
+
+    // Modifiers
+    modifier onlyOwner() {
+        if (msg.sender != state.owner) {
+            revert CallerAccessDenied();
+        }
+        _;
+    }
+
+    modifier onlyOwnerOrArbiter() {
+        if (msg.sender != state.owner && msg.sender != state.arbiter) {
+            revert CallerAccessDenied();
+        }
+        _;
     }
 
     function owner() external view returns (address) {
@@ -69,8 +83,8 @@ contract Spigot is ISpigot, ReentrancyGuard {
         return state.operator;
     }
 
-    function admin() external view returns (address) {
-        return state.admin;
+    function arbiter() external view returns (address) {
+        return state.arbiter;
     }
 
     // ##########################
@@ -144,13 +158,13 @@ contract Spigot is ISpigot, ReentrancyGuard {
 
     // TODO: add documentation
     // TODO: add limits to when/who can call this function
-    function updateBeneficiaryInfo(address beneficiary, address newOperator, uint256 allocation, address repaymentToken, uint256 outstandingDebt) external {
+    function updateBeneficiaryInfo(address beneficiary, address newOperator, uint256 allocation, address repaymentToken, uint256 outstandingDebt) external onlyOwnerOrArbiter {
         state.updateBeneficiaryInfo(beneficiary, newOperator, allocation, repaymentToken, outstandingDebt);
     }
 
     // TODO: add documentation
     // TODO: add limits to when/who can call this function
-    function deleteBeneficiaries() external {
+    function deleteBeneficiaries() external onlyOwner {
         state.deleteBeneficiaries();
     }
 

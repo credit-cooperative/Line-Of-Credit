@@ -60,9 +60,8 @@ contract SecuredLineTest is Test {
         _multisigAdmin = address(0xdead);
 
         beneficiaries = new address[](3);
-        beneficiaries[0] = borrower;
-        beneficiaries[1] = address(this);
-        beneficiaries[2] = lender;
+        beneficiaries[0] = address(this);
+        beneficiaries[1] = lender;
 
         supportedToken1 = new RevenueToken();
         supportedToken2 = new RevenueToken();
@@ -792,6 +791,9 @@ contract SecuredLineTest is Test {
 
         vm.stopPrank();
     }
+
+
+
 
 
     // TODO: implement this function
