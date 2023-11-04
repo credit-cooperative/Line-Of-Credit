@@ -12,7 +12,7 @@ import {Denominations} from "chainlink/Denominations.sol";
 
 struct SpigotState {
     address[] beneficiaries; // Claims on the repayment
-    mapping(address => ISpigot.Beneficiary)  beneficiaryInfo; // beneficiary -> info
+    mapping(address => ISpigot.Beneficiary) beneficiaryInfo; // beneficiary -> info
     address operator;
     address owner;
     address admin;
@@ -442,10 +442,17 @@ library SpigotLib {
         }
     }
 
+    // TODO: add documentation
+    function deleteBeneficiaries(SpigotState storage self) external {
+        if (msg.sender != self.owner) {
+            revert CallerAccessDenied();
+        }
+        delete self.beneficiaries;
+    }
 
 
     // TODO: add docuementation
-    function addBeneficiaryAddress(SpigotState storage self, address _newBeneficiary, uint256[] calldata _newAllocation) external {
+    function addBeneficiaryAddress(SpigotState storage self, address _newBeneficiary) external {
         require(self.beneficiaries.length < 5, "Max beneficiaries");
         require(_newBeneficiary!=address(0), "beneficiary cannot be 0 address");
 
@@ -455,7 +462,7 @@ library SpigotLib {
 
         self.beneficiaries.push(_newBeneficiary);
 
-        _setSplitAllocation(self, _newAllocation);
+        // _setSplitAllocation(self, _newAllocation);
     }
 
     // TODO: add documentation
@@ -502,17 +509,35 @@ library SpigotLib {
 
     // TODO: add documentation
     // TODO: needs restrictions on who/when can be called
-    // function updateBeneficiaryInfo(SpigotState storage self, address beneficiary, address newOperator, uint256 newAllocation, address newRepaymentToken, uint256 newOutstandingDebt) external {
 
-    //     // Delete the existing Beneficiary to reset bennyTokens mapping
-    //     delete self.beneficiaryInfo[beneficiary];
+    function updateBeneficiaryInfo(SpigotState storage self, address beneficiary, address newOperator, uint256 allocation, address repaymentToken, uint256 outstandingDebt) external {
+        require(beneficiary != address(0), "Invalid beneficiary");
+        require(newOperator != address(0), "Invalid operator");
+        // require(allocation > 0, "Invalid allocation");
+        // require(repaymentToken != address(0), "Invalid repayment token");
 
-    //     // update variables
-    //     self.beneficiaryInfo[beneficiary].bennyOperator = newOperator;
-    //     self.beneficiaryInfo[beneficiary].allocation = newAllocation;
-    //     self.beneficiaryInfo[beneficiary].repaymentToken = newRepaymentToken;
-    //     self.beneficiaryInfo[beneficiary].debtOwed = newOutstandingDebt;
+        self.beneficiaryInfo[beneficiary].bennyOperator = newOperator;
+        self.beneficiaryInfo[beneficiary].allocation = allocation;
+        self.beneficiaryInfo[beneficiary].repaymentToken = repaymentToken;
+        self.beneficiaryInfo[beneficiary].debtOwed = outstandingDebt;
 
+        // TODO: cannnot delete mapping entirely. need to iterate over to delete if necessary
+        // delete self.beneficiaryInfo[beneficiary].bennyTokens;
+
+    }
+
+    // Getters
+
+    // TODO: add documentation
+    function getBeneficiaryBasicInfo(SpigotState storage self, address beneficiary) external view returns (address, uint256, address, uint256) {
+        ISpigot.Beneficiary storage b = self.beneficiaryInfo[beneficiary];
+        return (b.bennyOperator, b.allocation, b.repaymentToken, b.debtOwed);
+    }
+
+    // // TODO: add documentation
+    // function getBennyTokenAmount(SpigotState storage self, address beneficiary, address token) external view returns (uint256) {
+    //     uint256 amount = self.beneficiaryInfo[beneficiary].bennyTokens[token];
+    //     return amount;
     // }
 
 ////////////////////////////////////////////////////////////////////////////////////////////

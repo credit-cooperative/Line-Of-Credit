@@ -3,6 +3,9 @@
 
  pragma solidity ^0.8.16;
 
+// TODO: Imports for development purpose only
+import "forge-std/console.sol";
+
 import {Denominations} from "chainlink/Denominations.sol";
 import {LineOfCredit} from "./LineOfCredit.sol";
 import {LineLib} from "../../utils/LineLib.sol";
@@ -299,7 +302,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
     function extend(uint256 ttlExtension) external onlyBorrower virtual override returns (bool) {
         bool hasBeneficiaryDebtOutstanding = spigot.hasBeneficiaryDebtOutstanding();
 
-        if (count == 0 && hasBeneficiaryDebtOutstanding) {
+        if (count == 0 && !hasBeneficiaryDebtOutstanding) {
             if (proposalCount > 0) {
                 _clearProposals();
             }
@@ -315,33 +318,61 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
     // NOTES: allocations cannot sum to greater than 100000
     // TODO: emit AmendBeneficiaries(address(this), spigot, beneficiaries);
     // NOTE: only works with existing beneificiaries. Need to add/remove beneficiares before calling this function
-    // function updateBeneficiarySettings(address[] calldata _beneficiaries, address[] calldata _operators, uint256[] calldata _allocations, address[] calldata _repaymentTokens, uint256[] calldata _outstandingDebts) external onlyBorrower {
+    function updateBeneficiarySettings(address[] calldata _beneficiaries, address[] calldata _operators, uint256[] calldata _allocations, address[] calldata _repaymentTokens, uint256[] calldata _outstandingDebts) external onlyBorrower {
+        bool hasBeneficiaryDebtOutstanding = spigot.hasBeneficiaryDebtOutstanding();
 
-    //     if (_beneficiaries[0] != address(this)) {
-    //         revert LineMustBeFirstBeneficiary(_beneficiaries[0]);
-    //     }
+        if (_beneficiaries[0] != address(this)) {
+            revert LineMustBeFirstBeneficiary(_beneficiaries[0]);
+        }
 
-    //     if (_outstandingDebts[0] > 0) {
-    //         revert LineBeneficiaryDebtMustBeZero(_outstandingDebts[0]);
-    //     }
+        // TODO: line should not have a repayment token either
+        if (_outstandingDebts[0] > 0) {
+            revert LineBeneficiaryDebtMustBeZero(_outstandingDebts[0]);
+        }
 
-    //     // TODO: needs to check that outstanding debt to beneficiaries is 0
-    //     if (count == 0) {
-    //         if (proposalCount > 0) {
-    //             _clearProposals();
-    //         }
+        // TODO: sum of allocations must be 100000
+        uint256 sumOfAllocations = 0;
+        for (uint256 i=0; i<_allocations.length; i++) {
+            sumOfAllocations += _allocations[i];
+        }
+        if (sumOfAllocations != 100000) {
+            revert SumOfAllocationsMustBe100Percent(_allocations, sumOfAllocations);
+        }
 
-    //         for (uint256 i = 0; i < _beneficiaries.length; i++) {
+        // TODO: needs to check that outstanding debt to beneficiaries is 0
+        if (count == 0 && !hasBeneficiaryDebtOutstanding) {
+            if (proposalCount > 0) {
+                _clearProposals();
+            }
+            console.log('Birds');
+            // set beneficiaries array to length zero
+            spigot.deleteBeneficiaries();
 
-    //             spigot.updateBeneficiaryInfo(_beneficiaries[i], _operators[i], _allocations[i], _repaymentTokens[i], _outstandingDebts[i]);
+            // iterate through the new beneficiaries array and add each new beneficiary to the array
+            for (uint256 i = 0; i < _beneficiaries.length; i++) {
+                // add new beneficiary to the array
+                // spigot.beneficiaries.push(_beneficiaries[i]);
+                spigot.addBeneficiaryAddress(_beneficiaries[i]);
 
-    //         }
-    //     }
-    // }
+                // update the beneficiary settings
+                if (i > 0) {
+                    spigot.updateBeneficiaryInfo(_beneficiaries[i], _operators[i], _allocations[i], _repaymentTokens[i], _outstandingDebts[i]);
 
-    // function updateBeneficiaryOperator(address beneficiary, address newOperator) external {
+                // line is the first beneficiary and cannot have a repayment token or beneficiary debt
+                // TODO: should the line even have an entry in the beneficiarySettings mapping?
+                } else {
+                    spigot.updateBeneficiaryInfo(_beneficiaries[i], address(this), _allocations[i], address(0), 0);
+                }
 
-    // }
+            }
+        }
+    }
+
+
+
+    function updateBeneficiaryOperator(address beneficiary, address newOperator) external {
+
+    }
 
     /// see ISpigotedLine.sweep
     function sweep(address to, address token, uint256 amount) external nonReentrant returns (uint256) {

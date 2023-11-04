@@ -80,7 +80,7 @@ interface ISpigot {
 
     function removeSpigot(address revenueContract) external returns (bool);
 
-    // function updateBeneficiaryInfo(address beneficiary, address newOperator, uint256 newAllocation, address newRepaymentToken, uint256 newOutstandingDebt) external;
+    function updateBeneficiaryInfo(address beneficiary, address newOperator, uint256 newAllocation, address newRepaymentToken, uint256 newOutstandingDebt) external;
 
     // stakeholder funcs
 
@@ -92,7 +92,23 @@ interface ISpigot {
 
     function updateWhitelistedFunction(bytes4 func, bool allowed) external returns (bool);
 
+    function deleteBeneficiaries() external;
+
+    function addBeneficiaryAddress(address beneficiary) external;
+
     // Getters
+
+    // function beneficiaries() external view returns (address[] memory);
+
+    function getBeneficiaryBasicInfo(address beneficiary) external view returns (
+        address bennyOperator,
+        uint256 allocation,
+        address repaymentToken,
+        uint256 debtOwed
+    );
+
+    // function getBennyTokenAmount(address beneficiary, address token) external view returns (uint256);
+
     function owner() external view returns (address);
 
     function operator() external view returns (address);

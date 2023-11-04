@@ -4,6 +4,10 @@
  pragma solidity ^0.8.16;
 
 import "forge-std/Test.sol";
+// TODO: Imports for development purpose only
+import "forge-std/console.sol";
+
+
 import { Denominations } from "chainlink/Denominations.sol";
 
 import { Spigot } from "../modules/spigot/Spigot.sol";
@@ -35,9 +39,12 @@ contract SecuredLineTest is Test {
     uint128 fRate = 1;
     uint ttl = 150 days;
 
+    uint256 FULL_ALLOC = 100000;
+
     address borrower;
     address arbiter;
     address lender;
+    address externalLender;
     address _multisigAdmin;
 
     address[] beneficiaries;
@@ -48,6 +55,7 @@ contract SecuredLineTest is Test {
     function setUp() public {
         borrower = address(20);
         lender = address(10);
+        externalLender = address(30);
         arbiter = address(this);
         _multisigAdmin = address(0xdead);
 
@@ -728,6 +736,71 @@ contract SecuredLineTest is Test {
     // TODO: what happens if invalid array inputs?
     // TODO: what happens if invalid default split
     // TODO: what happens if invalid minCRatio
+
+
+    // update beneficiaries
+    function test_can_update_beneficiary_settings_if_repaid_line() public {
+        address[] memory newBeneficiaries = new address[](2);
+        newBeneficiaries[0] = address(line);
+        newBeneficiaries[1] = address(externalLender);
+
+        address[] memory newOperators = new address[](2);
+        newOperators[0] = address(line);
+        newOperators[1] = address(externalLender);
+
+        uint256[] memory newAllocations = new uint256[](2);
+        newAllocations[0] = 50000;
+        newAllocations[1] = 50000;
+
+        address[] memory newRepaymentTokens = new address[](2);
+        newRepaymentTokens[0] = address(0);
+        newRepaymentTokens[1] = address(supportedToken1);
+
+        uint256 usdcDebtOwed = 100000;
+        uint256[] memory newOutstandingDebts = new uint256[](2);
+        newOutstandingDebts[0] = 0;
+        newOutstandingDebts[1] = usdcDebtOwed;
+
+        // update beneficiary settings the first time
+        vm.startPrank(borrower);
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+
+        (address locBennyOperator, uint256 locAllocation, address locRepaymentToken, uint256 locDebtOwed) = line.spigot().getBeneficiaryBasicInfo(address(line));
+        emit log_named_address('LoC Benny: ', locBennyOperator);
+        emit log_named_uint('LoC Allocation: ', locAllocation);
+        emit log_named_address('LoC Repayment Token: ', locRepaymentToken);
+        emit log_named_uint('LoC Debt Owed: ', locDebtOwed);
+
+        (address elBennyOperator, uint256 elAllocation, address elRepaymentToken, uint256 elDebtOwed) = line.spigot().getBeneficiaryBasicInfo(address(externalLender));
+        emit log_named_address('EL Benny: ', elBennyOperator);
+        emit log_named_uint('EL Allocation: ', elAllocation);
+        emit log_named_address('EL Repayment Token: ', elRepaymentToken);
+        emit log_named_uint('EL Debt Owed: ', elDebtOwed);
+
+        assertEq(locBennyOperator, address(line));
+        assertEq(elBennyOperator, address(externalLender));
+        assertEq(locAllocation, 50000);
+        assertEq(elAllocation, 50000);
+        assertEq(locAllocation + elAllocation, FULL_ALLOC);
+        assertEq(locRepaymentToken, address(0));
+        assertEq(elRepaymentToken, address(supportedToken1));
+        assertEq(locDebtOwed, 0);
+        assertEq(elDebtOwed, usdcDebtOwed);
+
+        // console.log('LoC Beneficiary Basic Info: ', locBennyOperator, locAllocation, locRepaymentToken, locDebtOwed);
+
+
+        vm.stopPrank();
+    }
+
+
+    // TODO: implement this function
+    function test_arbiter_can_set_beneficiary_debt_to_zero() public {
+
+        // arbiter sets beneficiary debt to zero and allocation dynamically adjusts to 100% to the LoC
+
+    }
+
 
 
     // Rollover()

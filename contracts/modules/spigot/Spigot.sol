@@ -126,14 +126,13 @@ contract Spigot is ISpigot, ReentrancyGuard {
         @dev The new beneficiary will be pushed to the end of the beneficiaries array.
         The new allocations must include the new beneficiary
         @dev There is a maximum of 5 beneficiaries which can be registered with the repayments collector
-        @param _newBeneficiary The new beneficiary to add
-        @param _newAllocation The new allocation of repayments including the new beneficiary
+        @param beneficiary The new beneficiary to add
    */
 
     // TODO: add documentation
     // TODO: add limits to when/who can call this function
-    function addBeneficiaryAddress(address _newBeneficiary, uint256[] calldata _newAllocation) external {
-        state.addBeneficiaryAddress(_newBeneficiary, _newAllocation);
+    function addBeneficiaryAddress(address beneficiary) external {
+        state.addBeneficiaryAddress(beneficiary);
     }
 
 
@@ -145,9 +144,15 @@ contract Spigot is ISpigot, ReentrancyGuard {
 
     // TODO: add documentation
     // TODO: add limits to when/who can call this function
-    // function updateBeneficiaryInfo(address beneficiary, address newOperator, uint256 allocation, address repaymentToken, uint256 outstandingDebt) external {
-    //     state.updateBeneficiaryInfo(beneficiary, newOperator, allocation, repaymentToken, outstandingDebt);
-    // }
+    function updateBeneficiaryInfo(address beneficiary, address newOperator, uint256 allocation, address repaymentToken, uint256 outstandingDebt) external {
+        state.updateBeneficiaryInfo(beneficiary, newOperator, allocation, repaymentToken, outstandingDebt);
+    }
+
+    // TODO: add documentation
+    // TODO: add limits to when/who can call this function
+    function deleteBeneficiaries() external {
+        state.deleteBeneficiaries();
+    }
 
 
     /*//////////////////////////////////////////////////////
@@ -281,6 +286,15 @@ contract Spigot is ISpigot, ReentrancyGuard {
  ///////////////////////// VIEW FUNCS //////////////////////////
 
     function getBeneficiaries() public view returns (address[] memory) { return (state.beneficiaries); }
+
+    function getBeneficiaryBasicInfo(address beneficiary) external view returns (
+        address bennyOperator,
+        uint256 allocation,
+        address repaymentToken,
+        uint256 debtOwed
+    ) {
+        return state.getBeneficiaryBasicInfo(beneficiary);
+    }
 
     // TODO: add this back
     // function getBeneficiaryInfo(address beneficiary) public view returns (ISpigot.Beneficiary memory) {
