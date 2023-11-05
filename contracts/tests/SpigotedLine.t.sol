@@ -5,6 +5,8 @@
 
 import "forge-std/Test.sol";
 import { Denominations } from "chainlink/Denominations.sol";
+// TODO: Imports for development purpose only
+import "forge-std/console.sol";
 
 import { ZeroEx } from "../mock/ZeroEx.sol";
 import { SimpleOracle } from "../mock/SimpleOracle.sol";

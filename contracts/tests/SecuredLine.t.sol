@@ -15,6 +15,7 @@ import { Escrow } from "../modules/escrow/Escrow.sol";
 import { SecuredLine } from "../modules/credit/SecuredLine.sol";
 import { ILineOfCredit } from "../interfaces/ILineOfCredit.sol";
 import { ISecuredLine } from "../interfaces/ISecuredLine.sol";
+import { ISpigotedLine } from "../interfaces/ISpigotedLine.sol";
 
 import { LineLib } from "../utils/LineLib.sol";
 import { MutualConsent } from "../utils/MutualConsent.sol";
@@ -737,7 +738,139 @@ contract SecuredLineTest is Test {
     // TODO: what happens if invalid minCRatio
 
 
+
+
     // update beneficiaries
+
+    // TODO:
+    function test_cannot_update_beneficiary_settings_if_line_not_first_element() public {
+       address[] memory newBeneficiaries = new address[](2);
+        newBeneficiaries[0] = address(externalLender);
+        newBeneficiaries[1] = address(line);
+
+        address[] memory newOperators = new address[](2);
+        newOperators[0] = address(externalLender);
+        newOperators[1] = address(line);
+
+        uint256[] memory newAllocations = new uint256[](2);
+        newAllocations[0] = 50000;
+        newAllocations[1] = 50000;
+
+        address[] memory newRepaymentTokens = new address[](2);
+        newRepaymentTokens[0] = address(0);
+        newRepaymentTokens[1] = address(supportedToken1);
+
+        uint256 usdcDebtOwed = 100000;
+        uint256[] memory newOutstandingDebts = new uint256[](2);
+        newOutstandingDebts[0] = 0;
+        newOutstandingDebts[1] = usdcDebtOwed;
+
+        // update beneficiary settings the first time
+        vm.startPrank(borrower);
+        vm.expectRevert(abi.encodeWithSelector(ISpigotedLine.LineMustBeFirstBeneficiary.selector, newBeneficiaries[0]));
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+    }
+
+    // TODO:
+    function test_cannot_update_beneficiary_settings_if_line_has_active_credit_positions() public {
+
+    }
+
+    // TODO:
+    function test_cannot_update_beneficiary_settings_if_allocations_do_not_sum_to_100() public {
+        address[] memory newBeneficiaries = new address[](2);
+        newBeneficiaries[0] = address(line);
+        newBeneficiaries[1] = address(externalLender);
+
+        address[] memory newOperators = new address[](2);
+        newOperators[0] = address(line);
+        newOperators[1] = address(externalLender);
+
+        uint256[] memory newAllocations = new uint256[](2);
+        newAllocations[0] = 40000;
+        newAllocations[1] = 50000;
+
+        address[] memory newRepaymentTokens = new address[](2);
+        newRepaymentTokens[0] = address(0);
+        newRepaymentTokens[1] = address(supportedToken1);
+
+        uint256 usdcDebtOwed = 100000;
+        uint256[] memory newOutstandingDebts = new uint256[](2);
+        newOutstandingDebts[0] = 0;
+        newOutstandingDebts[1] = usdcDebtOwed;
+
+        // update beneficiary settings fails when sum of allocations less than 100000
+        vm.startPrank(borrower);
+        vm.expectRevert(abi.encodeWithSelector(ISpigotedLine.SumOfAllocationsMustBe100Percent.selector, newAllocations, 90000));
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+
+        // update beneficiary settings fails when sum of allocations greater than 100000
+        newAllocations[0] = 60000;
+        newAllocations[1] = 50000;
+
+        vm.startPrank(borrower);
+        vm.expectRevert(abi.encodeWithSelector(ISpigotedLine.SumOfAllocationsMustBe100Percent.selector, newAllocations, 110000));
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+
+    }
+
+    // TODO:
+    function test_cannot_update_beneficiary_settings_if_arrays_not_equal_length() public {
+
+    }
+
+    // TODO:
+    function test_update_beneficiary_settings_clears_credit_proposals() public {}
+
+
+    // TODO:
+    function test_onlyBorrower_can_update_beneficiary_settings() public {}
+
+    // TODO:
+    function test_onlyArbiter_can_delete_beneficiary() public {}
+
+    // TODO:
+    function test_cannot_update_beneficiary_settings_if_line_has_outstanding_debt() public {
+        address[] memory newBeneficiaries = new address[](2);
+        newBeneficiaries[0] = address(line);
+        newBeneficiaries[1] = address(externalLender);
+
+        address[] memory newOperators = new address[](2);
+        newOperators[0] = address(line);
+        newOperators[1] = address(externalLender);
+
+        uint256[] memory newAllocations = new uint256[](2);
+        newAllocations[0] = 50000;
+        newAllocations[1] = 50000;
+
+        address[] memory newRepaymentTokens = new address[](2);
+        newRepaymentTokens[0] = address(0);
+        newRepaymentTokens[1] = address(supportedToken1);
+
+        uint256 usdcDebtOwed = 100000;
+        uint256[] memory newOutstandingDebts = new uint256[](2);
+        newOutstandingDebts[0] = 0;
+        newOutstandingDebts[1] = usdcDebtOwed;
+
+        // borrower adds credits
+        _addCredit(address(supportedToken1), 1 ether);
+        bytes32 id = line.ids(0);
+
+        // borrower repays and closes line
+        // vm.startPrank(borrower);
+        // line.borrow(id, 1 ether, borrower);
+        // line.depositAndClose();
+        // vm.stopPrank();
+
+        // update beneficiary settings the first time
+        vm.startPrank(borrower);
+        // TODO: revrts
+        vm.expectRevert(ISpigotedLine.LineHasOutstandingDebts.selector);
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+
+    }
+
+
     function test_can_update_beneficiary_settings_if_repaid_line() public {
         address[] memory newBeneficiaries = new address[](2);
         newBeneficiaries[0] = address(line);

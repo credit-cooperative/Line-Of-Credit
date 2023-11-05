@@ -365,6 +365,8 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
                 }
 
             }
+        } else {
+            revert LineHasOutstandingDebts(proposalCount, hasBeneficiaryDebtOutstanding);
         }
     }
 
