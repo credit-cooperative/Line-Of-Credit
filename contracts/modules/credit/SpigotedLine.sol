@@ -336,6 +336,14 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
             revert LineBeneficiaryDebtMustBeZero(_outstandingDebts[0]);
         }
 
+        if (count != 0) {
+            revert LineHasActiveCreditPositions(count);
+        }
+
+        if (hasBeneficiaryDebtOutstanding) {
+            revert LineHasBeneficiaryDebts();
+        }
+
         // TODO: sum of allocations must be 100000
         uint256 sumOfAllocations = 0;
         for (uint256 i=0; i<_allocations.length; i++) {
@@ -346,33 +354,28 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
         }
 
         // TODO: needs to check that outstanding debt to beneficiaries is 0
-        if (count == 0 && !hasBeneficiaryDebtOutstanding) {
-            if (proposalCount > 0) {
-                _clearProposals();
-            }
+        if (proposalCount > 0) {
+            _clearProposals();
+        }
 
-            // set beneficiaries array to length zero
-            spigot.deleteBeneficiaries();
+        // set beneficiaries array to length zero
+        spigot.deleteBeneficiaries();
 
-            // iterate through the new beneficiaries array and add each new beneficiary to the array
-            for (uint256 i = 0; i < _beneficiaries.length; i++) {
-                // add new beneficiary to the array
-                // spigot.beneficiaries.push(_beneficiaries[i]);
-                spigot.addBeneficiaryAddress(_beneficiaries[i]);
+        // iterate through the new beneficiaries array and add each new beneficiary to the array
+        for (uint256 i = 0; i < _beneficiaries.length; i++) {
+            // add new beneficiary to the array
+            // spigot.beneficiaries.push(_beneficiaries[i]);
+            spigot.addBeneficiaryAddress(_beneficiaries[i]);
 
-                // update the beneficiary settings
-                if (i > 0) {
-                    spigot.updateBeneficiaryInfo(_beneficiaries[i], _operators[i], _allocations[i], _repaymentTokens[i], _outstandingDebts[i]);
+            // update the beneficiary settings
+            if (i > 0) {
+                spigot.updateBeneficiaryInfo(_beneficiaries[i], _operators[i], _allocations[i], _repaymentTokens[i], _outstandingDebts[i]);
 
                 // line is the first beneficiary and cannot have a repayment token or beneficiary debt
                 // TODO: should the line even have an entry in the beneficiarySettings mapping?
-                } else {
-                    spigot.updateBeneficiaryInfo(_beneficiaries[i], address(this), _allocations[i], address(0), 0);
-                }
-
+            } else {
+                spigot.updateBeneficiaryInfo(_beneficiaries[i], address(this), _allocations[i], address(0), 0);
             }
-        } else {
-            revert LineHasOutstandingDebts(proposalCount, hasBeneficiaryDebtOutstanding);
         }
     }
 

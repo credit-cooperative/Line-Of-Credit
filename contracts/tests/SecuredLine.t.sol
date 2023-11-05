@@ -845,7 +845,35 @@ contract SecuredLineTest is Test {
     // TODO:
     // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
     function test_cannot_update_beneficiary_settings_if_line_has_active_credit_positions() public {
+        address[] memory newBeneficiaries = new address[](2);
+        newBeneficiaries[0] = address(line);
+        newBeneficiaries[1] = address(externalLender);
 
+        address[] memory newOperators = new address[](2);
+        newOperators[0] = address(line);
+        newOperators[1] = address(externalLender);
+
+        uint256[] memory newAllocations = new uint256[](2);
+        newAllocations[0] = 40000;
+        newAllocations[1] = 50000;
+
+        address[] memory newRepaymentTokens = new address[](2);
+        newRepaymentTokens[0] = address(0);
+        newRepaymentTokens[1] = address(supportedToken1);
+
+        uint256 usdcDebtOwed = 100000;
+        uint256[] memory newOutstandingDebts = new uint256[](2);
+        newOutstandingDebts[0] = 0;
+        newOutstandingDebts[1] = usdcDebtOwed;
+
+        // borrower adds credits
+        _addCredit(address(supportedToken1), 1 ether);
+        bytes32 id = line.ids(0);
+
+        // update beneficiary settings fails when sum of allocations less than 100000
+        vm.startPrank(borrower);
+        vm.expectRevert(abi.encodeWithSelector(ISpigotedLine.LineHasActiveCreditPositions.selector, 1));
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
     }
 
     // TODO:
@@ -908,7 +936,7 @@ contract SecuredLineTest is Test {
 
     // TODO:
     // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
-    function test_cannot_update_beneficiary_settings_if_line_has_outstanding_debt() public {
+    function test_cannot_update_beneficiary_settings_if_line_has_outstanding_beneficiary_debt() public {
         address[] memory newBeneficiaries = new address[](2);
         newBeneficiaries[0] = address(line);
         newBeneficiaries[1] = address(externalLender);
@@ -930,9 +958,9 @@ contract SecuredLineTest is Test {
         newOutstandingDebts[0] = 0;
         newOutstandingDebts[1] = usdcDebtOwed;
 
-        // borrower adds credits
-        _addCredit(address(supportedToken1), 1 ether);
-        bytes32 id = line.ids(0);
+        // // borrower adds credits
+        // _addCredit(address(supportedToken1), 1 ether);
+        // bytes32 id = line.ids(0);
 
         // borrower repays and closes line
         // vm.startPrank(borrower);
@@ -943,7 +971,7 @@ contract SecuredLineTest is Test {
         // update beneficiary settings the first time
         vm.startPrank(borrower);
         // TODO: revrts
-        vm.expectRevert(ISpigotedLine.LineHasOutstandingDebts.selector);
+        vm.expectRevert(ISpigotedLine.LineHasBeneficiaryDebts.selector);
         line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
 
     }

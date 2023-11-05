@@ -21,7 +21,9 @@ interface ISpigotedLine {
 
     error SumOfAllocationsMustBe100Percent(uint256[] allocations, uint256 sumOfAllocations);
 
-    error LineHasOutstandingDebts(uint256 numActiveCreditPositions, bool hasBeneficiaryDebt);
+    error LineHasActiveCreditPositions(uint256 numActiveCreditPositions);
+
+    error LineHasBeneficiaryDebts();
 
     /**
      * @notice - Log how many revenue tokens were traded for credit tokens.
