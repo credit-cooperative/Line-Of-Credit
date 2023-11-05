@@ -344,16 +344,17 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
             revert LineHasBeneficiaryDebts();
         }
 
-        // TODO: sum of allocations must be 100000
+        // Sum of allocations array cannot exceed 100%
         uint256 sumOfAllocations = 0;
         for (uint256 i=0; i<_allocations.length; i++) {
             sumOfAllocations += _allocations[i];
         }
+
         if (sumOfAllocations != 100000) {
             revert SumOfAllocationsMustBe100Percent(_allocations, sumOfAllocations);
         }
 
-        // TODO: needs to check that outstanding debt to beneficiaries is 0
+        // Clear existing addCredit() proposals
         if (proposalCount > 0) {
             _clearProposals();
         }

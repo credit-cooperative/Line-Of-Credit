@@ -84,8 +84,6 @@ contract SpigotedLineTest is Test, Events {
         beneficiaries[0] = address(this);
         beneficiaries[1] = externalLender;
 
-        console.log('Address: ', address(this));
-
         dex = new ZeroEx();
         creditToken = new RevenueToken();
         revenueToken = new RevenueToken();
