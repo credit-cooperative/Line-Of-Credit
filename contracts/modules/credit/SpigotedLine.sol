@@ -319,6 +319,12 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
     // TODO: emit AmendBeneficiaries(address(this), spigot, beneficiaries);
     // NOTE: only works with existing beneificiaries. Need to add/remove beneficiares before calling this function
     function updateBeneficiarySettings(address[] calldata _beneficiaries, address[] calldata _operators, uint256[] calldata _allocations, address[] calldata _repaymentTokens, uint256[] calldata _outstandingDebts) external onlyBorrower {
+
+        require(_beneficiaries.length == _operators.length, "Beneficiaries and operators must be same length");
+        require(_beneficiaries.length == _allocations.length, "Beneficiaries and allocations must be same length");
+        require(_beneficiaries.length == _repaymentTokens.length, "Beneficiaries and repayment tokens must be same length");
+        require(_beneficiaries.length == _outstandingDebts.length, "Beneficiaries and outstanding debts must be same length");
+
         bool hasBeneficiaryDebtOutstanding = spigot.hasBeneficiaryDebtOutstanding();
 
         if (_beneficiaries[0] != address(this)) {

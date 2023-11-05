@@ -108,7 +108,7 @@ contract SpigotTest is Test {
 
         settings = ISpigot.Setting(split, claimFunc, newOwnerFunc);
 
-        spigot = new Spigot(address(this), beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
+        spigot = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
 
         // add spigot for revenue contract
         require(
@@ -846,7 +846,7 @@ contract SpigotTest is Test {
 
         settings = ISpigot.Setting(10, bytes4(""), bytes4("1234"));
 
-        spigot = new Spigot(address(this), beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
+        spigot = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
 
         vm.expectRevert(SpigotLib.InvalidRevenueContract.selector);
         spigot.addSpigot(address(spigot), settings);
@@ -857,7 +857,7 @@ contract SpigotTest is Test {
 
         settings = ISpigot.Setting(10, bytes4(""), bytes4("1234"));
 
-        spigot = new Spigot(address(this), beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
+        spigot = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
 
         spigot.addSpigot(address(revenueContract), settings);
 

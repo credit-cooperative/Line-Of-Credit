@@ -27,6 +27,7 @@ contract Spigot is ISpigot, ReentrancyGuard {
 
     constructor(
         address _owner,
+        address _operator,
         address[] memory _startingBeneficiaries,
         uint256[] memory _startingAllocations,
         uint256[] memory _debtOwed,
@@ -57,6 +58,7 @@ contract Spigot is ISpigot, ReentrancyGuard {
         }
 
         state.owner = _owner;
+        state.operator = _operator;
         state.arbiter = _arbiter;
     }
 
