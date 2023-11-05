@@ -108,7 +108,7 @@ contract SpigotedLineTest is Test, Events {
         // repaymentToken[2] = address(revenueToken);
 
         oracle = new SimpleOracle(address(revenueToken), address(creditToken));
-        spigot = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, repaymentToken,  _multisigAdmin);
+        spigot = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, repaymentToken, arbiter);
 
         line = new SpigotedLine(
           address(oracle),
