@@ -120,19 +120,16 @@ contract SpigotedLineTest is Test, Events {
           ownerSplit
         );
 
-        console.log('Address 2: ', address(line));
         spigot.updateOwner(address(line));
-        console.log('Address 3: ', address(line));
 
         line.init();
-        console.log('Address 4: ', address(line));
 
         _mintAndApprove();
-        console.log('Address 5: ', address(line));
+
         _createCredit(address(revenueToken), address(creditToken), revenueContract);
-        console.log('Address 5.5: ', address(line));
+        // TODO: claimRevenue function does not work
         spigot.claimRevenue(address(revenueContract), address(revenueToken), "");
-        console.log('Address 6: ', address(line));
+
     }
 
     function _generateRevenueAndClaim(uint256 revenue) internal {

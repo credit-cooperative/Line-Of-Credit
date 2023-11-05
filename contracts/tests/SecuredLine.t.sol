@@ -743,10 +743,77 @@ contract SecuredLineTest is Test {
     // update beneficiaries
 
     // TODO
+    // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
     function test_cannot_update_beneficiary_settings_if_inputs_have_different_lengths() public {
+       address[] memory newBeneficiaries = new address[](2);
+        newBeneficiaries[0] = address(line);
+        newBeneficiaries[1] = address(externalLender);
+
+        address[] memory newOperators = new address[](3);
+        newOperators[0] = address(line);
+        newOperators[1] = address(externalLender);
+        newOperators[2] = address(externalLender);
+
+        uint256[] memory newAllocations = new uint256[](2);
+        newAllocations[0] = 50000;
+        newAllocations[1] = 50000;
+
+        address[] memory newRepaymentTokens = new address[](2);
+        newRepaymentTokens[0] = address(0);
+        newRepaymentTokens[1] = address(supportedToken1);
+
+        uint256 usdcDebtOwed = 100000;
+        uint256[] memory newOutstandingDebts = new uint256[](2);
+        newOutstandingDebts[0] = 0;
+        newOutstandingDebts[1] = usdcDebtOwed;
+
+        // update beneficiary settings fails when beneficiaries and operators arrays are different lengths
+        vm.startPrank(borrower);
+        vm.expectRevert("Beneficiaries and operators must be same length");
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+
+        // reset operators array to be same length as beneficiaries array
+        newOperators = new address[](2);
+        newOperators[0] = address(externalLender);
+        newOperators[1] = address(line);
+
+        // update beneficiary settings fails when beneficiaries and allocations arrays are different lengths
+        newAllocations = new uint256[](1);
+        newAllocations[0] = 50000;
+
+        // make allocations array too small
+        vm.expectRevert("Beneficiaries and allocations must be same length");
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+
+        // reset allocations array to be same length as beneficiaries array
+        newAllocations = new uint256[](2);
+        newAllocations[0] = 50000;
+        newAllocations[1] = 50000;
+
+        // update beneficiary settings fails when beneficiaries and repayment token arrays are different lengths
+        newRepaymentTokens = new address[](1);
+        newRepaymentTokens[0] = address(supportedToken1);
+
+        // make newRepaymentTokens too small
+        vm.expectRevert("Beneficiaries and repayment tokens must be same length");
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+
+        // reset repayment tokens array to be same length as beneficiaries array
+        newRepaymentTokens = new address[](2);
+        newRepaymentTokens[0] = address(0);
+        newRepaymentTokens[1] = address(supportedToken1);
+
+        // update beneficiary settings fails when beneficiaries and outstanding debts arrays are different lengths
+        newOutstandingDebts = new uint256[](1);
+        newOutstandingDebts[0] = 0;
+
+        // make newRepaymentTokens too small
+        vm.expectRevert("Beneficiaries and outstanding debts must be same length");
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
 
     }
 
+    // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
     function test_cannot_update_beneficiary_settings_if_line_not_first_element() public {
        address[] memory newBeneficiaries = new address[](2);
         newBeneficiaries[0] = address(externalLender);
@@ -776,11 +843,13 @@ contract SecuredLineTest is Test {
     }
 
     // TODO:
+    // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
     function test_cannot_update_beneficiary_settings_if_line_has_active_credit_positions() public {
 
     }
 
     // TODO:
+    // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
     function test_cannot_update_beneficiary_settings_if_allocations_do_not_sum_to_100() public {
         address[] memory newBeneficiaries = new address[](2);
         newBeneficiaries[0] = address(line);
@@ -819,21 +888,26 @@ contract SecuredLineTest is Test {
     }
 
     // TODO:
+    // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
     function test_cannot_update_beneficiary_settings_if_arrays_not_equal_length() public {
 
     }
 
     // TODO:
+    // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
     function test_update_beneficiary_settings_clears_credit_proposals() public {}
 
 
     // TODO:
+    // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
     function test_onlyBorrower_can_update_beneficiary_settings() public {}
 
     // TODO:
+    // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
     function test_onlyArbiter_can_delete_beneficiary() public {}
 
     // TODO:
+    // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
     function test_cannot_update_beneficiary_settings_if_line_has_outstanding_debt() public {
         address[] memory newBeneficiaries = new address[](2);
         newBeneficiaries[0] = address(line);
@@ -875,6 +949,7 @@ contract SecuredLineTest is Test {
     }
 
 
+    // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
     function test_can_update_beneficiary_settings_if_repaid_line() public {
         address[] memory newBeneficiaries = new address[](2);
         newBeneficiaries[0] = address(line);
@@ -934,6 +1009,7 @@ contract SecuredLineTest is Test {
 
 
     // TODO: implement this function
+    // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
     function test_arbiter_can_set_beneficiary_debt_to_zero() public {
 
         // arbiter sets beneficiary debt to zero and allocation dynamically adjusts to 100% to the LoC

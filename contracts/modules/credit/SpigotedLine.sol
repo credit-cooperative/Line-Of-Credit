@@ -350,7 +350,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
             if (proposalCount > 0) {
                 _clearProposals();
             }
-            console.log('Birds');
+
             // set beneficiaries array to length zero
             spigot.deleteBeneficiaries();
 
