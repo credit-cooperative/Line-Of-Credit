@@ -12,7 +12,7 @@ interface IModuleFactory {
 
     event RegisteredEscrow(address indexed deployedAt, uint32 indexed minCRatio, address indexed oracle, address owner);
 
-    function deploySpigot(address owner, address[] calldata _startingBeneficiaries,
+    function deploySpigot(address owner, address operator, address[] calldata _startingBeneficiaries,
         uint256[] calldata _startingAllocations,
         uint256[] calldata _debtOwed,
         address[] calldata _repaymentToken,
