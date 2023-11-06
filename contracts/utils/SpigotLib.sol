@@ -405,10 +405,10 @@ library SpigotLib {
     }
 
     function hasBeneficiaryDebtOutstanding(SpigotState storage self) external view returns (bool) {
-        bool hasDebtOwed = true;
+        bool hasDebtOwed = false;
         for (uint256 i = 0; i < self.beneficiaries.length; i++) {
-            if (self.beneficiaryInfo[self.beneficiaries[i]].debtOwed == 0){
-                hasDebtOwed = false;
+            if (self.beneficiaryInfo[self.beneficiaries[i]].debtOwed > 0){
+                hasDebtOwed = true;
             }
         }
         return hasDebtOwed;

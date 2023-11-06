@@ -77,8 +77,8 @@ contract SecuredLineTest is Test {
         // make an array of length 3 and type uint256 with random amounts for each member. name it debtOwed
         debtOwed = new uint256[](3);
         debtOwed[0] = 0;
-        debtOwed[1] = 20000;
-        debtOwed[2] = 80000;
+        debtOwed[1] = 0;
+        debtOwed[2] = 10000000;
 
         // make an array of length 3 and type address where each member is se to supportedToken1
         repaymentToken = new address[](3);
@@ -953,10 +953,10 @@ contract SecuredLineTest is Test {
         newRepaymentTokens[0] = address(0);
         newRepaymentTokens[1] = address(supportedToken1);
 
-        uint256 usdcDebtOwed = 100000;
+        uint256 debtOwed = 100000;
         uint256[] memory newOutstandingDebts = new uint256[](2);
         newOutstandingDebts[0] = 0;
-        newOutstandingDebts[1] = usdcDebtOwed;
+        newOutstandingDebts[1] = debtOwed;
 
         // // borrower adds credits
         // _addCredit(address(supportedToken1), 1 ether);
@@ -968,11 +968,13 @@ contract SecuredLineTest is Test {
         // line.depositAndClose();
         // vm.stopPrank();
 
-        // update beneficiary settings the first time
+        // attempting to update beneficiary settings fails because there is outstanding debt
         vm.startPrank(borrower);
-        // TODO: revrts
         vm.expectRevert(ISpigotedLine.LineHasBeneficiaryDebts.selector);
         line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+        vm.stopPrank();
+
+        //
 
     }
 
