@@ -406,9 +406,6 @@ library SpigotLib {
 
         // lender token allocation
         total += self.allocationTokens[token] * self.beneficiaryInfo[lender].allocation / 100000;
-
-        // TODO: remove or adjust this
-        total -= getEscrowedTokens(self, token);
         total += self.beneficiaryInfo[lender].bennyTokens[token];
         return total;
     }
