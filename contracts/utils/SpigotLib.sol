@@ -20,6 +20,7 @@ struct SpigotState {
     address arbiter;
     address swapTarget;
     mapping(address => uint256) operatorTokens;
+    mapping(address => uint256) allocationTokens;
     /// @notice Functions that the operator is allowed to run on all revenue contracts controlled by the Spigot
     mapping(bytes4 => bool) whitelistedFunctions; // function -> allowed
     /// @notice Configurations for revenue contracts related to the split of revenue, access control to claiming revenue tokens and transfer of Spigot ownership
@@ -53,7 +54,7 @@ library SpigotLib {
         if (self.settings[revenueContract].claimFunction == bytes4(0)) {
             // push payments
             console.log('Address 5.7.1');
-            revert PushPayment();
+            claimed = existingBalance - self.operatorTokens[token] - self.allocationTokens[token] - getEscrowedTokens(self,token);
 
             // underflow revert ensures we have more tokens than we started with and actually claimed revenue
         } else {
@@ -96,11 +97,16 @@ library SpigotLib {
         claimed = _claimRevenue(self, revenueContract, token, data);
 
         // splits revenue stream according to Spigot settings
-        uint256 operatorTokens = claimed - ((claimed * self.settings[revenueContract].ownerSplit) / 100);
+        uint256 allocationTokens = (claimed * self.settings[revenueContract].ownerSplit) / 100;
         // update escrowed balance
-        self.operatorTokens[token] = self.operatorTokens[token] + operatorTokens;
+        self.allocationTokens[token] = self.allocationTokens[token] + allocationTokens;
 
-        emit ClaimRevenue(token, claimed, operatorTokens, revenueContract);
+        if (claimed > allocationTokens) {
+            self.operatorTokens[token] = self.operatorTokens[token] + (claimed - allocationTokens);
+        }
+
+
+        emit ClaimRevenue(token, claimed, allocationTokens, revenueContract);
 
         return claimed;
     }
@@ -337,7 +343,7 @@ library SpigotLib {
         uint256 _currentBalance;
         uint256[] memory feeBalances = new uint256[](self.beneficiaries.length);
 
-        _currentBalance = IERC20(revToken).balanceOf(address(this)) - self.operatorTokens[revToken] - getEscrowedTokens(self, revToken);
+        _currentBalance = self.allocationTokens[revToken];
 
         if (_currentBalance > 0){
 
@@ -374,6 +380,7 @@ library SpigotLib {
 
             }
         }
+        self.allocationTokens[revToken] = 0;
         return feeBalances;
     }
 
@@ -396,7 +403,7 @@ library SpigotLib {
 
     function getLenderTokens(SpigotState storage self, address token, address lender) external view returns (uint256) {
         uint256 total;
-        total = IERC20(token).balanceOf(address(this)) - self.operatorTokens[token];
+        total = self.allocationTokens[token];
 
         total += total * self.beneficiaryInfo[lender].allocation / 100000;
         total -= getEscrowedTokens(self, token);
