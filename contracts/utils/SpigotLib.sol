@@ -403,7 +403,7 @@ library SpigotLib {
 
     function getLenderTokens(SpigotState storage self, address token, address lender) external view returns (uint256) {
         uint256 total;
-        total = IERC20(token).balanceOf(address(this)) - self.operatorTokens[token];
+        total = allocationTokens[token] - self.operatorTokens[token];
 
         total += total * self.beneficiaryInfo[lender].allocation / 100000;
         total -= getEscrowedTokens(self, token);
