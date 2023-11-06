@@ -70,11 +70,22 @@ contract Spigot is ISpigot, ReentrancyGuard {
         _;
     }
 
+    modifier onlyArbiter() {
+        if (msg.sender != state.arbiter) {
+            revert CallerAccessDenied();
+        }
+        _;
+    }
+
     modifier onlyOwnerOrArbiter() {
         if (msg.sender != state.owner && msg.sender != state.arbiter) {
             revert CallerAccessDenied();
         }
         _;
+    }
+
+    function beneficiaries() external view returns (address[] memory) {
+        return state.beneficiaries;
     }
 
     function owner() external view returns (address) {
@@ -159,10 +170,15 @@ contract Spigot is ISpigot, ReentrancyGuard {
     }
 
     // TODO: add documentation
-    // TODO: add limits to when/who can call this function
     function updateBeneficiaryInfo(address beneficiary, address newOperator, uint256 allocation, address repaymentToken, uint256 outstandingDebt) external onlyOwnerOrArbiter {
         state.updateBeneficiaryInfo(beneficiary, newOperator, allocation, repaymentToken, outstandingDebt);
     }
+
+    // TODO: add docuemntation
+    function removeBeneficiary(address beneficiary) external onlyArbiter {
+        state.removeBeneficiary(beneficiary);
+    }
+
 
     // TODO: add documentation
     // TODO: add limits to when/who can call this function

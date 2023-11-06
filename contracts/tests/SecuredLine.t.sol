@@ -63,6 +63,7 @@ contract SecuredLineTest is Test {
         beneficiaries = new address[](3);
         beneficiaries[0] = address(this);
         beneficiaries[1] = lender;
+        beneficiaries[2] = externalLender;
 
         supportedToken1 = new RevenueToken();
         supportedToken2 = new RevenueToken();
@@ -70,15 +71,15 @@ contract SecuredLineTest is Test {
 
         /// make an array of length 3 and type uint256 where all 3 amounts add up to 100000
         allocations = new uint256[](3);
-        allocations[0] = 0; // TODO: setting this to something greater than zero breaking tests
-        allocations[1] = 20000;
-        allocations[2] = 80000;
+        allocations[0] = 30000;
+        allocations[1] = 50000;
+        allocations[2] = 20000;
 
         // make an array of length 3 and type uint256 with random amounts for each member. name it debtOwed
         debtOwed = new uint256[](3);
         debtOwed[0] = 0;
         debtOwed[1] = 0;
-        debtOwed[2] = 10000000;
+        debtOwed[2] = 0;
 
         // make an array of length 3 and type address where each member is se to supportedToken1
         repaymentToken = new address[](3);
@@ -87,7 +88,7 @@ contract SecuredLineTest is Test {
         repaymentToken[2] = address(supportedToken1);
 
 
-        spigot = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
+        spigot = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, repaymentToken, arbiter);
         oracle = new SimpleOracle(address(supportedToken1), address(supportedToken2));
 
         escrow = new Escrow(minCollateralRatio, address(oracle), arbiter, borrower, arbiter);
@@ -939,19 +940,19 @@ contract SecuredLineTest is Test {
         newOutstandingDebts[0] = 0;
         newOutstandingDebts[1] = debtOwed;
 
-        // lender makes credit prob adds credits
+        // lender makes credit proposal
         vm.startPrank(lender);
         line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
         vm.stopPrank();
-        uint256 activeCreditPositions = line.count();
-        bytes32 id = line.ids(0);
-        assertEq(activeCreditPositions, 1);
+        uint256 numCreditProposals = line.proposalCount();
+        assertEq(numCreditProposals, 1);
 
         // credit positions cleared
         vm.startPrank(borrower);
         line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
-        assertEq(activeCreditPositions, 0);
-        // TODO: add assertion to check that id is not in the credits array
+        numCreditProposals = line.proposalCount();
+        assertEq(numCreditProposals, 0);
+        // TODO: add assertion to check that credit proposal id is not in the mutual consent proposals array
         vm.stopPrank();
 
     }
@@ -995,7 +996,63 @@ contract SecuredLineTest is Test {
 
     // TODO:
     // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
-    function test_onlyArbiter_can_delete_beneficiary() public {}
+    function test_onlyArbiter_can_delete_beneficiary() public {
+        address[] memory newBeneficiaries = new address[](2);
+        newBeneficiaries[0] = address(line);
+        newBeneficiaries[1] = address(externalLender);
+
+        address[] memory newOperators = new address[](2);
+        newOperators[0] = address(line);
+        newOperators[1] = address(externalLender);
+
+        uint256[] memory newAllocations = new uint256[](2);
+        newAllocations[0] = 50000;
+        newAllocations[1] = 50000;
+
+        address[] memory newRepaymentTokens = new address[](2);
+        newRepaymentTokens[0] = address(0);
+        newRepaymentTokens[1] = address(supportedToken1);
+
+        uint256 debtOwed = 100000;
+        uint256[] memory newOutstandingDebts = new uint256[](2);
+        newOutstandingDebts[0] = 0;
+        newOutstandingDebts[1] = debtOwed;
+
+        // update beneficiary settings to add outstanding debt
+        vm.startPrank(borrower);
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+        vm.stopPrank();
+
+        vm.startPrank(externalLender);
+        vm.expectRevert();
+        spigot.updateBeneficiaryInfo(externalLender, externalLender, 50000, address(supportedToken1), 0);
+        vm.stopPrank();
+
+        vm.startPrank(borrower);
+        vm.expectRevert();
+        spigot.updateBeneficiaryInfo(externalLender, externalLender, 50000, address(supportedToken1), 0);
+        vm.stopPrank();
+
+        vm.startPrank(arbiter);
+        spigot.updateBeneficiaryInfo(externalLender, externalLender, 50000, address(supportedToken1), 0);
+        spigot.getBeneficiaryBasicInfo(externalLender);
+        (address elLender, uint256 elAllocation, address elToken, uint256 elDebtOwed) = spigot.getBeneficiaryBasicInfo(externalLender);
+        // assertEq((elLender, elAllocation, elToken, elDebtOwed), (externalLender, 50000, address(supportedToken1), 0));
+        assertEq(elLender, externalLender);
+        assertEq(elAllocation, 50000);
+        assertEq(elToken, address(supportedToken1));
+        assertEq(elDebtOwed, 0);
+        vm.stopPrank();
+
+
+    }
+
+    // TODO: beneficiaries array cannot have duplicates
+
+    // TODO: beneficiaryInfo cannot be updated by Arbiter for Line of Credit (position 0)
+    function test_cannot_update_beneficiary_info_for_line() public {
+
+    }
 
     // TODO:
     // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
@@ -1021,29 +1078,21 @@ contract SecuredLineTest is Test {
         newOutstandingDebts[0] = 0;
         newOutstandingDebts[1] = debtOwed;
 
-        // // borrower adds credits
-        // _addCredit(address(supportedToken1), 1 ether);
-        // bytes32 id = line.ids(0);
+        // update beneficiary settings to add outstanding debt
+        vm.startPrank(borrower);
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+        vm.stopPrank();
 
-        // borrower repays and closes line
-        // vm.startPrank(borrower);
-        // line.borrow(id, 1 ether, borrower);
-        // line.depositAndClose();
-        // vm.stopPrank();
-
-        // attempting to update beneficiary settings fails because there is outstanding debt
+        // update beneficiary settings fails because there is outstanding beneficiary debt
         vm.startPrank(borrower);
         vm.expectRevert(ISpigotedLine.LineHasBeneficiaryDebts.selector);
         line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
         vm.stopPrank();
 
-        //
-
     }
 
-
     // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
-    function test_can_update_beneficiary_settings_if_repaid_line() public {
+    function test_can_update_beneficiary_settings_if_no_beneficiary_debt() public {
         address[] memory newBeneficiaries = new address[](2);
         newBeneficiaries[0] = address(line);
         newBeneficiaries[1] = address(externalLender);
@@ -1093,19 +1142,82 @@ contract SecuredLineTest is Test {
 
         // console.log('LoC Beneficiary Basic Info: ', locBennyOperator, locAllocation, locRepaymentToken, locDebtOwed);
 
-
         vm.stopPrank();
     }
 
 
 
-
+    // removeBeneficiary()
 
     // TODO: implement this function
     // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
-    function test_arbiter_can_set_beneficiary_debt_to_zero() public {
+    function test_only_arbiter_can_remove_beneficiary() public {
+        address[] memory newBeneficiaries = new address[](2);
+        newBeneficiaries[0] = address(line);
+        newBeneficiaries[1] = address(externalLender);
 
-        // arbiter sets beneficiary debt to zero and allocation dynamically adjusts to 100% to the LoC
+        address[] memory newOperators = new address[](2);
+        newOperators[0] = address(line);
+        newOperators[1] = address(externalLender);
+
+        uint256[] memory newAllocations = new uint256[](2);
+        newAllocations[0] = 50000;
+        newAllocations[1] = 50000;
+
+        address[] memory newRepaymentTokens = new address[](2);
+        newRepaymentTokens[0] = address(0);
+        newRepaymentTokens[1] = address(supportedToken1);
+
+        uint256 usdcDebtOwed = 100000;
+        uint256[] memory newOutstandingDebts = new uint256[](2);
+        newOutstandingDebts[0] = 0;
+        newOutstandingDebts[1] = usdcDebtOwed;
+
+        vm.startPrank(borrower);
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+        vm.stopPrank();
+
+        // reverts when not called by arbiter
+        vm.startPrank(borrower);
+        vm.expectRevert();
+        spigot.removeBeneficiary(address(externalLender));
+        vm.stopPrank();
+
+        // reverts when not called by arbiter
+        vm.startPrank(externalLender);
+        vm.expectRevert();
+        spigot.removeBeneficiary(address(externalLender));
+        vm.stopPrank();
+
+    }
+
+    function test_cannot_remove_owner_from_beneficiaries() public {
+        // reverts when attempting to remove owner from beneficiaries
+        vm.startPrank(arbiter);
+        vm.expectRevert("Cannot remove owner from beneficiaries");
+        spigot.removeBeneficiary(beneficiaries[0]);
+        vm.stopPrank();
+    }
+
+    function test_remove_beneficiary_transfers_allocation_to_owner() public {
+
+        assertEq(beneficiaries.length, 3);
+        (, uint256 ownerAllocation, , ) = spigot.getBeneficiaryBasicInfo(beneficiaries[0]);
+        (, uint256 elAllocation, , ) = spigot.getBeneficiaryBasicInfo(externalLender);
+
+        vm.startPrank(arbiter);
+        spigot.removeBeneficiary(address(externalLender));
+
+        assertEq(spigot.beneficiaries().length, 2);
+
+        (, uint256 ownerAllocation2, , ) = spigot.getBeneficiaryBasicInfo(beneficiaries[0]);
+        assertEq(ownerAllocation2, ownerAllocation + elAllocation);
+
+        spigot.removeBeneficiary(address(lender));
+        (, uint256 ownerAllocation3, , ) = spigot.getBeneficiaryBasicInfo(beneficiaries[0]);
+        assertEq(ownerAllocation3, FULL_ALLOC); // line allocation set to 100%
+        assertEq(spigot.beneficiaries().length, 1); // owner is only beneficiary remaining
+        vm.stopPrank();
 
     }
 

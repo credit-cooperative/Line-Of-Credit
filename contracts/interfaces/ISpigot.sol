@@ -98,8 +98,6 @@ interface ISpigot {
 
     // Getters
 
-    // function beneficiaries() external view returns (address[] memory);
-
     function getBeneficiaryBasicInfo(address beneficiary) external view returns (
         address bennyOperator,
         uint256 allocation,
@@ -108,6 +106,8 @@ interface ISpigot {
     );
 
     // function getBennyTokenAmount(address beneficiary, address token) external view returns (uint256);
+
+    function beneficiaries() external view returns (address[] memory);
 
     function owner() external view returns (address);
 

@@ -544,6 +544,44 @@ library SpigotLib {
 
     }
 
+    // TODO: add documentation
+    // Notes:
+    // - onlyArbiter can call this function
+    // - arbiter can unilaterally remove an external credit position (i.e. beneficiary)
+    // - arbiter sets beneficiary's debt to 0, removes beneficiary from array, and
+    //   transfers allocation back to the owner of the Spigot (i.e. Line of Credit)
+    // - does not maintain order of the beneficiaries array as the order has no significance
+    function removeBeneficiary(SpigotState storage self, address beneficiary) external {
+        require(beneficiary != address(0), "Invalid beneficiary");
+        require(beneficiary != self.beneficiaries[0], "Cannot remove owner from beneficiaries");
+        if (msg.sender != self.arbiter) {
+            revert CallerAccessDenied();
+        }
+
+        // set the debt owed to 0
+        self.beneficiaryInfo[beneficiary].debtOwed = 0;
+
+        // get the beneficiary allocation
+        uint256 beneficiaryAllocation = self.beneficiaryInfo[beneficiary].allocation;
+
+        // remove from Beneficiary struct
+        delete self.beneficiaryInfo[beneficiary];
+
+        // add the beneficiaries allocation to the owner's allocation (the first beneficiary)
+
+        self.beneficiaryInfo[self.beneficiaries[0]].allocation += beneficiaryAllocation;
+        // remove the beneficiary from the beneficiaries array
+        uint length = self.beneficiaries.length;
+        for (uint i = 0; i < length; i++) {
+            if (self.beneficiaries[i] == beneficiary) {
+                self.beneficiaries[i] = self.beneficiaries[length - 1];
+                self.beneficiaries.pop();
+                break;
+            }
+        }
+
+    }
+
     // Getters
 
     // TODO: add documentation
