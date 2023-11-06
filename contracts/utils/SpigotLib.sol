@@ -106,7 +106,7 @@ library SpigotLib {
         }
 
 
-        emit ClaimRevenue(token, claimed, operatorTokens, revenueContract);
+        emit ClaimRevenue(token, claimed, allocationTokens, revenueContract);
 
         return claimed;
     }
@@ -345,7 +345,7 @@ library SpigotLib {
 
         // _currentBalance = IERC20(revToken).balanceOf(address(this)) - self.operatorTokens[revToken] - getEscrowedTokens(self, revToken);
 
-        if (allocationTokens[revToken] > 0){
+        if (self.allocationTokens[revToken] > 0){
 
             uint256[] memory allocations = new uint256[](self.beneficiaries.length);
 
@@ -353,7 +353,7 @@ library SpigotLib {
                 allocations[i] = self.beneficiaryInfo[self.beneficiaries[i]].allocation;
             }
             // feeBalances[0] is fee sent to smartTreasury
-            feeBalances = _amountsFromAllocations(allocations, allocationTokens[revToken]);
+            feeBalances = _amountsFromAllocations(allocations, self.allocationTokens[revToken]);
 
             for (uint256 i = 0; i < self.beneficiaries.length; i++){
                 uint256 debt = self.beneficiaryInfo[self.beneficiaries[i]].debtOwed;
@@ -380,7 +380,7 @@ library SpigotLib {
 
             }
         }
-        allocationTokens[revToken] = 0;
+        self.allocationTokens[revToken] = 0;
         return feeBalances;
     }
 
@@ -403,7 +403,7 @@ library SpigotLib {
 
     function getLenderTokens(SpigotState storage self, address token, address lender) external view returns (uint256) {
         uint256 total;
-        total = allocationTokens[token] - self.operatorTokens[token];
+        total = self.allocationTokens[token] - self.operatorTokens[token];
 
         total += total * self.beneficiaryInfo[lender].allocation / 100000;
         total -= getEscrowedTokens(self, token);
