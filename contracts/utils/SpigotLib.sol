@@ -402,10 +402,12 @@ library SpigotLib {
     }
 
     function getLenderTokens(SpigotState storage self, address token, address lender) external view returns (uint256) {
-        uint256 total;
-        total = self.allocationTokens[token];
+        uint256 total = 0;
 
-        total += total * self.beneficiaryInfo[lender].allocation / 100000;
+        // lender token allocation
+        total += self.allocationTokens[token] * self.beneficiaryInfo[lender].allocation / 100000;
+
+        // TODO: remove or adjust this
         total -= getEscrowedTokens(self, token);
         total += self.beneficiaryInfo[lender].bennyTokens[token];
         return total;
