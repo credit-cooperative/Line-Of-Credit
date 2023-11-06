@@ -940,18 +940,18 @@ contract SecuredLineTest is Test {
         newOutstandingDebts[1] = debtOwed;
 
         // lender makes credit prob adds credits
-        // _addCredit(address(supportedToken1), 1 ether);
-        // bytes32 id = line.ids(0);
+        vm.startPrank(lender);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        vm.stopPrank();
+        uint256 activeCreditPositions = line.count();
+        bytes32 id = line.ids(0);
+        assertEq(activeCreditPositions, 1);
 
-        // borrower repays and closes line
-        // vm.startPrank(borrower);
-        // line.borrow(id, 1 ether, borrower);
-        // line.depositAndClose();
-        // vm.stopPrank();
-
-        // attempting to update beneficiary settings fails because there is outstanding debt
+        // credit positions cleared
         vm.startPrank(borrower);
         line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+        assertEq(activeCreditPositions, 0);
+        // TODO: add assertion to check that id is not in the credits array
         vm.stopPrank();
 
     }
@@ -960,6 +960,36 @@ contract SecuredLineTest is Test {
     // TODO:
     // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
     function test_onlyBorrower_can_update_beneficiary_settings() public {
+        address[] memory newBeneficiaries = new address[](2);
+        newBeneficiaries[0] = address(line);
+        newBeneficiaries[1] = address(externalLender);
+
+        address[] memory newOperators = new address[](2);
+        newOperators[0] = address(line);
+        newOperators[1] = address(externalLender);
+
+        uint256[] memory newAllocations = new uint256[](2);
+        newAllocations[0] = 50000;
+        newAllocations[1] = 50000;
+
+        address[] memory newRepaymentTokens = new address[](2);
+        newRepaymentTokens[0] = address(0);
+        newRepaymentTokens[1] = address(supportedToken1);
+
+        uint256 debtOwed = 100000;
+        uint256[] memory newOutstandingDebts = new uint256[](2);
+        newOutstandingDebts[0] = 0;
+        newOutstandingDebts[1] = debtOwed;
+
+        // attempting to update beneficiary settings fails because there is outstanding debt
+        vm.startPrank(lender);
+        vm.expectRevert(ILineOfCredit.CallerAccessDenied.selector);
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+        vm.stopPrank();
+
+        vm.startPrank(borrower);
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+        vm.stopPrank();
 
     }
 
