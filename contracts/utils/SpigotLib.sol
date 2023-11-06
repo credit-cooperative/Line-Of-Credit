@@ -106,7 +106,7 @@ library SpigotLib {
         }
 
 
-        emit ClaimRevenue(token, claimed, operatorTokens, revenueContract);
+        emit ClaimRevenue(token, claimed, allocationTokens, revenueContract);
 
         return claimed;
     }
@@ -343,7 +343,7 @@ library SpigotLib {
         // uint256 _currentBalance;
         uint256[] memory feeBalances = new uint256[](self.beneficiaries.length);
 
-        // _currentBalance = IERC20(revToken).balanceOf(address(this)) - self.operatorTokens[revToken] - getEscrowedTokens(self, revToken);
+        _currentBalance = self.allocationTokens[revToken];
 
         if (allocationTokens[revToken] > 0){
 
@@ -380,7 +380,7 @@ library SpigotLib {
 
             }
         }
-        allocationTokens[revToken] = 0;
+        self.allocationTokens[revToken] = 0;
         return feeBalances;
     }
 
@@ -403,7 +403,7 @@ library SpigotLib {
 
     function getLenderTokens(SpigotState storage self, address token, address lender) external view returns (uint256) {
         uint256 total;
-        total = allocationTokens[token] - self.operatorTokens[token];
+        total = self.allocationTokens[token];
 
         total += total * self.beneficiaryInfo[lender].allocation / 100000;
         total -= getEscrowedTokens(self, token);
