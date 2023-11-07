@@ -128,7 +128,7 @@ contract Spigot is ISpigot, ReentrancyGuard {
     }
 
     /**
-     * @notice - Allows Spigot Operqtor to claim escrowed revenue tokens
+     * @notice - Allows Spigot Operator to claim escrowed revenue tokens
      * @dev - callable by `operator`
      * @param token - address of revenue token that is being escrowed by spigot
      * @return claimed -  The amount of tokens claimed by the `operator`

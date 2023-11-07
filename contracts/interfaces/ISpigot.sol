@@ -60,6 +60,8 @@ interface ISpigot {
 
     error InvalidRevenueContract();
 
+    error NoTokensToDistribute();
+
     // ops funcs
 
     function claimRevenue(

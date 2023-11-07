@@ -333,53 +333,174 @@ library SpigotLib {
         return true;
     }
 
-    function _distributeFunds(SpigotState storage self, address revToken) internal returns (uint256[] memory feeBalances) {
+    function _distributeFunds(SpigotState storage self, address revToken) internal returns (uint256[] memory distributions) {
 
-        uint256 _currentBalance;
-        uint256[] memory feeBalances = new uint256[](self.beneficiaries.length);
+        // get balance of revenue token to distribute
+        uint256 _tokensToDistribute = self.allocationTokens[revToken];
 
-        _currentBalance = self.allocationTokens[revToken];
+        // return array of amounts to distribute to each beneficiary
+        uint256[] memory distributions = new uint256[](self.beneficiaries.length);
 
-        if (self.allocationTokens[revToken] > 0){
+        if (_tokensToDistribute == 0) {
+            revert NoTokensToDistribute();
+        }
 
-            uint256[] memory allocations = new uint256[](self.beneficiaries.length);
+        // get current beneficiary settings for all beneficiaries
+        // TODO: this should be a helper function
+        uint256[] memory allocations = new uint256[](self.beneficiaries.length);
+        address[] memory repaymentTokens = new address[](self.beneficiaries.length);
+        uint256[] memory outstandingDebts = new uint256[](self.beneficiaries.length);
+        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+            allocations[i] = self.beneficiaryInfo[self.beneficiaries[i]].allocation;
+            outstandingDebts[i] = self.beneficiaryInfo[self.beneficiaries[i]].debtOwed;
+            repaymentTokens[i] = self.beneficiaryInfo[self.beneficiaries[i]].repaymentToken;
+        }
 
-            for (uint256 i = 0; i < self.beneficiaries.length; i++) {
-                allocations[i] = self.beneficiaryInfo[self.beneficiaries[i]].allocation;
-            }
-            // feeBalances[0] is fee sent to smartTreasury
-            feeBalances = _amountsFromAllocations(allocations, self.allocationTokens[revToken]);
+        uint256 numBeneficiaries = self.beneficiaries.length;
+        uint256 numRepaidBeneficiaries = 1;
 
-            for (uint256 i = 0; i < self.beneficiaries.length; i++){
-                uint256 debt = self.beneficiaryInfo[self.beneficiaries[i]].debtOwed;
-
-                if (i == 1){
-                    IERC20(revToken).safeTransfer(self.beneficiaries[i], feeBalances[i]);
+        console.log('xxx - FIRST tokensToDistribute: ', _tokensToDistribute);
+        // while there are tokens to distribute and there are still beneficiaries with debt
+        uint256 excessTokens = 0;
+        // uint256 count = 0;
+        while (_tokensToDistribute > 0 && numRepaidBeneficiaries < numBeneficiaries) { // && count < 5
+            console.log('\nxxx - tokensToDistribute: ', _tokensToDistribute);
+            uint256 allocatedTokens = 0;
+            for (uint256 i = 0; i < distributions.length; i++) {
+                uint256 beneficiaryDistribution = (allocations[i] * _tokensToDistribute) / (100000);
+                console.log('\nxxx - i', i);
+                console.log('xxx - beneficiary distribution: ', beneficiaryDistribution);
+                // if first beneficiary, send all tokens
+                if (i == 0) {
+                    distributions[i] += beneficiaryDistribution;
                 }
-                // check if revtoken is the same as beneficiary desired token
-                if (self.beneficiaryInfo[self.beneficiaries[i]].repaymentToken == revToken){
-                    // TODO: I think this can be a helper
-                    if (feeBalances[i] <= debt){
-                        IERC20(revToken).safeTransfer(self.beneficiaries[i], feeBalances[i]);
-                        self.beneficiaryInfo[self.beneficiaries[i]].debtOwed -= feeBalances[i];
-                    } else if (feeBalances[i] > debt){
-                        IERC20(revToken).safeTransfer(self.beneficiaries[i], debt);
-                        self.operatorTokens[revToken] += (feeBalances[i] - debt);
-                        self.beneficiaryInfo[self.beneficiaries[i]].debtOwed = 0;
+
+                // check if revtoken is the same as beneficiary repayment token
+                else if (revToken == repaymentTokens[i]) {
+                    // if distribution amount exceeds debt, set debt and allocations to zero
+                    console.log('xxx - outstanding debts: ', outstandingDebts[i]);
+                    if (beneficiaryDistribution > outstandingDebts[i]){
+                        excessTokens += (beneficiaryDistribution - outstandingDebts[i]);
+                        console.log('xxx - excess tokens: ', excessTokens);
+                        beneficiaryDistribution = outstandingDebts[i];
+                        outstandingDebts[i] = 0; // set beneficiary debt to zero
+                        // uint256 beneficiaryAllocation = allocations[i]; // TODO: add back in
+                        // TODO: distribute beneficiary allocation to other beneficiaries
+                        allocations = _resetAllocations(i, allocations);
+                        distributions[i] += beneficiaryDistribution;
+                        numRepaidBeneficiaries += 1;
+                    } else {
+                        outstandingDebts[i] -= beneficiaryDistribution;
                     }
 
-                } else if (self.beneficiaryInfo[self.beneficiaries[i]].repaymentToken != revToken){
-                    self.beneficiaryInfo[self.beneficiaries[i]].bennyTokens[revToken] = self.beneficiaryInfo[self.beneficiaries[i]].bennyTokens[revToken] + feeBalances[i];
+                // if revToken different than beneficiary repayment token
+                // } else {
+                // }
+
                 }
+                allocatedTokens += beneficiaryDistribution; //
+                console.log('xxx - allocatedTokens: ', allocatedTokens);
+                console.log('xxx - distributions: ', distributions[i]);
+            }
+            // count += 1;
+            _tokensToDistribute -= excessTokens; // add excess tokens back
+            _tokensToDistribute -= allocatedTokens; // subtract allocated tokens
+
+        }
+
+    // TODO: set allocations in state
 
 
+    // distribute excess tokens to the first beneficiary (the owner of the Spigot)
+    distributions[0] += excessTokens;
+
+    self.allocationTokens[revToken] = 0; // set allocation tokens to zero
+
+    // TODO: transfer funds in distributions array to respective beneficiary addresses?
+    return distributions;
+
+        // OLD CODE
+        // // get current allocations
+        // uint256[] memory allocations = new uint256[](self.beneficiaries.length);
+        // for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+        //     allocations[i] = self.beneficiaryInfo[self.beneficiaries[i]].allocation;
+        // }
+
+        // // feeBalances[0] is fee sent to smartTreasury
+        // feeBalances = _amountsFromAllocations(allocations, self.allocationTokens[revToken]);
+
+        // for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+        //     uint256 debt = self.beneficiaryInfo[self.beneficiaries[i]].debtOwed;
+
+        //     if (i == 1){
+        //         IERC20(revToken).safeTransfer(self.beneficiaries[i], feeBalances[i]);
+        //     }
+
+        //     // check if revtoken is the same as beneficiary desired token
+        //     if (self.beneficiaryInfo[self.beneficiaries[i]].repaymentToken == revToken) {
+        //         // TODO: I think this can be a helper
+        //         if (feeBalances[i] <= debt){
+        //             IERC20(revToken).safeTransfer(self.beneficiaries[i], feeBalances[i]);
+        //             self.beneficiaryInfo[self.beneficiaries[i]].debtOwed -= feeBalances[i];
+        //         } else if (feeBalances[i] > debt){
+        //             IERC20(revToken).safeTransfer(self.beneficiaries[i], debt);
+        //             self.operatorTokens[revToken] += (feeBalances[i] - debt);
+        //             self.beneficiaryInfo[self.beneficiaries[i]].debtOwed = 0;
+        //         }
+
+        //     } else if (self.beneficiaryInfo[self.beneficiaries[i]].repaymentToken != revToken){
+        //         self.beneficiaryInfo[self.beneficiaries[i]].bennyTokens[revToken] = self.beneficiaryInfo[self.beneficiaries[i]].bennyTokens[revToken] + feeBalances[i];
+        //     }
+
+
+        // }
+    }
+
+    function _resetAllocations(uint256 index, uint256[] memory allocations) internal view returns (uint256[] memory newAllocations) {
+
+        // allocations must sum to 100000
+        uint256 total = 0;
+        for (uint256 i = 0; i < allocations.length; i++) {
+            total += allocations[i];
+            console.log('xxx - allocations', allocations[i]);
+        }
+        require(total == 100000, "Sum must be 100000");
+
+        // Avoid division by zero in case the array has only one element
+        if (allocations.length <= 1) {
+            return allocations;
+        }
+
+        // Save the value to be redistributed and set the index's value to 0
+        uint256 amountToSpread = allocations[index];
+        allocations[index] = 0;
+        total -= amountToSpread; // Update total to the sum of the remaining elements
+
+        // Distribute the value proportionally
+        if (total > 0) {
+            for (uint256 i = 0; i < allocations.length; i++) {
+                if (i != index) {
+                    // Calculate the proportional amount for each element
+                    uint256 proportionalAmount = (allocations[i] * amountToSpread) / total;
+                    // Add the proportional amount to the current element
+                    allocations[i] += proportionalAmount;
+                }
             }
         }
-        self.allocationTokens[revToken] = 0;
-        return feeBalances;
+        // Handle any rounding errors by adding the difference to the first element
+        uint256 newTotal = 0;
+        for (uint256 i = 0; i < allocations.length; i++) {
+            newTotal += allocations[i];
+        }
+        if (newTotal < 100000) {
+            allocations[0] += (100000 - newTotal);
+        }
+
+        return allocations;
     }
 
     function _amountsFromAllocations(uint256[] memory _allocations, uint256 total) internal pure returns (uint256[] memory newAmounts) {
+
         newAmounts = new uint256[](_allocations.length);
         uint256 currBalance;
         uint256 allocatedBalance;
@@ -641,6 +762,8 @@ library SpigotLib {
     error BadSetting();
 
     error InvalidRevenueContract();
+
+    error NoTokensToDistribute();
 
     error SpigotSettingsExist();
 

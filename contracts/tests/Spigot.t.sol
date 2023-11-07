@@ -66,19 +66,19 @@ contract SpigotTest is Test {
 
         /// make an array of length 3 and type uint256 where all 3 amounts add up to 100000
         allocations = new uint256[](3);
-        allocations[0] = 0;
-        allocations[1] = 20000;
-        allocations[2] = 80000;
+        allocations[0] = 33333;
+        allocations[1] = 33333;
+        allocations[2] = 33334;
 
         // make an array of length 3 and type uint256 with random amounts for each member. name it debtOwed
         debtOwed = new uint256[](3);
         debtOwed[0] = 0;
-        debtOwed[1] = 10000;
-        debtOwed[2] = 80000;
+        debtOwed[1] = 100000;
+        debtOwed[2] = 100000;
 
         // make an array of length 3 and type address where each member is se to supportedToken1
         repaymentToken = new address[](3);
-        repaymentToken[0] = address(token);
+        repaymentToken[0] = address(0);
         repaymentToken[1] = address(token);
         repaymentToken[2] = address(token);
 
@@ -533,6 +533,36 @@ contract SpigotTest is Test {
         // will always return 0 if you can't claim revenue for token
         // spigot.claimEscrow(address(fakeToken));
     }
+
+
+    // Distribute Funds
+
+    function test_distributeFunds_repays_all_beneficiaries_with_same_repayment_token() public {
+
+        // Single
+        // 1 beneficiary: the spigot owner
+
+        // 2 beneficiaries
+
+        // 3 beneficiaries
+        // send 4000 revenue tokens to the Spigot
+        token.mint(address(spigot), 400000);
+        spigot.claimRevenue(revenueContract, address(token), "");
+        emit log_named_uint("spigot balance", token.balanceOf(address(spigot)));
+        uint256[] memory tokensToDistribute = spigot.distributeFunds(address(token));
+        assertEq(tokensToDistribute[0], 133332 + 66668);
+        assertEq(tokensToDistribute[1], 100000);
+        assertEq(tokensToDistribute[2], 100000);
+
+        // TODO: distributions array: [2000, 1000, 1000]
+        // TODO: allocations array: [100 (owner), 0, 0]
+
+    }
+
+    // TODO: test with multiple repayment tokens
+
+    //
+
 
     // Spigot initialization
 
