@@ -320,10 +320,10 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
     // NOTE: only works with existing beneificiaries. Need to add/remove beneficiares before calling this function
     function updateBeneficiarySettings(address[] calldata _beneficiaries, address[] calldata _operators, uint256[] calldata _allocations, address[] calldata _repaymentTokens, uint256[] calldata _outstandingDebts) external onlyBorrower {
 
-        require(_beneficiaries.length == _operators.length, "Beneficiaries and operators must be same length");
-        require(_beneficiaries.length == _allocations.length, "Beneficiaries and allocations must be same length");
-        require(_beneficiaries.length == _repaymentTokens.length, "Beneficiaries and repayment tokens must be same length");
-        require(_beneficiaries.length == _outstandingDebts.length, "Beneficiaries and outstanding debts must be same length");
+        if (_beneficiaries.length != _operators.length || _beneficiaries.length != _allocations.length || _beneficiaries.length != _repaymentTokens.length || _beneficiaries.length != _outstandingDebts.length) {
+            revert InputArrayLengthsMustMatch();
+        }
+
 
         bool hasBeneficiaryDebtOutstanding = spigot.hasBeneficiaryDebtOutstanding();
 
@@ -372,8 +372,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
             if (i > 0) {
                 spigot.updateBeneficiaryInfo(_beneficiaries[i], _operators[i], _allocations[i], _repaymentTokens[i], _outstandingDebts[i]);
 
-                // line is the first beneficiary and cannot have a repayment token or beneficiary debt
-                // TODO: should the line even have an entry in the beneficiarySettings mapping?
+            // line is the first beneficiary and cannot have a repayment token or beneficiary debt
             } else {
                 spigot.updateBeneficiaryInfo(_beneficiaries[i], address(this), _allocations[i], address(0), 0);
             }

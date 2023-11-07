@@ -15,6 +15,8 @@ interface ISpigotedLine {
 
     error ReservesOverdrawn(address token, uint256 amountAvailable);
 
+    error InputArrayLengthsMustMatch();
+
     error LineMustBeFirstBeneficiary(address beneficiary);
 
     error LineBeneficiaryDebtMustBeZero(uint256 debt);

@@ -88,18 +88,15 @@ contract SpigotedLineTest is Test, Events {
         creditToken = new RevenueToken();
         revenueToken = new RevenueToken();
 
-        /// make an array of length 3 and type uint256 where all 3 amounts add up to 100000
         allocations = new uint256[](2);
         allocations[0] = 50000;
         allocations[1] = 50000;
 
-        // make an array of length 3 and type uint256 with random amounts for each member. name it debtOwed
         debtOwed = new uint256[](2);
         debtOwed[0] = 0;
         debtOwed[1] = 100000;
         // debtOwed[2] = 80000;
 
-        // make an array of length 3 and type address where each member is se to supportedToken1
         repaymentToken = new address[](2);
         repaymentToken[0] = address(revenueToken);
         repaymentToken[1] = address(revenueToken);
@@ -125,7 +122,6 @@ contract SpigotedLineTest is Test, Events {
         _mintAndApprove();
 
         _createCredit(address(revenueToken), address(creditToken), revenueContract);
-        // TODO: claimRevenue function does not work
         spigot.claimRevenue(address(revenueContract), address(revenueToken), "");
 
     }

@@ -49,34 +49,29 @@ library SpigotLib {
         if (self.settings[revenueContract].transferOwnerFunction == bytes4(0)) {
             revert InvalidRevenueContract();
         }
-        console.log('Address 5.6');
+
         uint256 existingBalance = LineLib.getBalance(token);
         if (self.settings[revenueContract].claimFunction == bytes4(0)) {
             // push payments
-            console.log('Address 5.7.1');
             claimed = existingBalance - self.operatorTokens[token] - self.allocationTokens[token] - getEscrowedTokens(self,token);
 
             // underflow revert ensures we have more tokens than we started with and actually claimed revenue
         } else {
             // pull payments
             if (bytes4(data) != self.settings[revenueContract].claimFunction) {
-                console.log('Address 5.7.2');
                 revert BadFunction();
             }
             (bool claimSuccess, ) = revenueContract.call(data);
             if (!claimSuccess) {
-                console.log('Address 5.7.3');
                 revert ClaimFailed();
             }
 
             // claimed = total balance - existing balance
-            console.log('Address 5.7.4');
             claimed = LineLib.getBalance(token) - existingBalance;
             // underflow revert ensures we have more tokens than we started with and actually claimed revenue
         }
 
         if (claimed == 0) {
-            console.log('Address 5.7.5');
             revert NoRevenue();
         }
 

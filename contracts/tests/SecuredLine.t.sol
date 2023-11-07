@@ -69,24 +69,20 @@ contract SecuredLineTest is Test {
         supportedToken2 = new RevenueToken();
         unsupportedToken = new RevenueToken();
 
-        /// make an array of length 3 and type uint256 where all 3 amounts add up to 100000
         allocations = new uint256[](3);
         allocations[0] = 30000;
         allocations[1] = 50000;
         allocations[2] = 20000;
 
-        // make an array of length 3 and type uint256 with random amounts for each member. name it debtOwed
         debtOwed = new uint256[](3);
         debtOwed[0] = 0;
         debtOwed[1] = 0;
         debtOwed[2] = 0;
 
-        // make an array of length 3 and type address where each member is se to supportedToken1
         repaymentToken = new address[](3);
         repaymentToken[0] = address(supportedToken1);
         repaymentToken[1] = address(supportedToken1);
         repaymentToken[2] = address(supportedToken1);
-
 
         spigot = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, repaymentToken, arbiter);
         oracle = new SimpleOracle(address(supportedToken1), address(supportedToken2));
@@ -770,7 +766,7 @@ contract SecuredLineTest is Test {
 
         // update beneficiary settings fails when beneficiaries and operators arrays are different lengths
         vm.startPrank(borrower);
-        vm.expectRevert("Beneficiaries and operators must be same length");
+        vm.expectRevert(ISpigotedLine.InputArrayLengthsMustMatch.selector);
         line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
 
         // reset operators array to be same length as beneficiaries array
@@ -783,7 +779,7 @@ contract SecuredLineTest is Test {
         newAllocations[0] = 50000;
 
         // make allocations array too small
-        vm.expectRevert("Beneficiaries and allocations must be same length");
+        vm.expectRevert(ISpigotedLine.InputArrayLengthsMustMatch.selector);
         line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
 
         // reset allocations array to be same length as beneficiaries array
@@ -796,7 +792,7 @@ contract SecuredLineTest is Test {
         newRepaymentTokens[0] = address(supportedToken1);
 
         // make newRepaymentTokens too small
-        vm.expectRevert("Beneficiaries and repayment tokens must be same length");
+        vm.expectRevert(ISpigotedLine.InputArrayLengthsMustMatch.selector);
         line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
 
         // reset repayment tokens array to be same length as beneficiaries array
@@ -809,7 +805,7 @@ contract SecuredLineTest is Test {
         newOutstandingDebts[0] = 0;
 
         // make newRepaymentTokens too small
-        vm.expectRevert("Beneficiaries and outstanding debts must be same length");
+        vm.expectRevert(ISpigotedLine.InputArrayLengthsMustMatch.selector);
         line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
 
     }
