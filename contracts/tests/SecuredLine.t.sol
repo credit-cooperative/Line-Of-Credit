@@ -727,8 +727,13 @@ contract SecuredLineTest is Test {
         emit log_named_uint("minCRatio 3", uint(escrow.minimumCollateralRatio()));
     }
 
+    // TODO: implement this test
     function test_amend_and_extend_does_not_update_owner_splits_0_revenue_contracts() public {}
+
+    // TODO: implement this test
     function test_amend_and_extend_updates_owner_splits_1_revenue_contracts() public {}
+
+    // TODO: implement this test
     function test_amend_and_extend_updates_owner_splits_2_revenue_contracts() public {}
     // TODO: what happens if invalid array inputs?
     // TODO: what happens if invalid default split
@@ -739,8 +744,6 @@ contract SecuredLineTest is Test {
 
     // update beneficiaries
 
-    // TODO
-    // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
     function test_cannot_update_beneficiary_settings_if_inputs_have_different_lengths() public {
        address[] memory newBeneficiaries = new address[](2);
         newBeneficiaries[0] = address(line);
@@ -810,7 +813,6 @@ contract SecuredLineTest is Test {
 
     }
 
-    // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
     function test_cannot_update_beneficiary_settings_if_line_not_first_element() public {
        address[] memory newBeneficiaries = new address[](2);
         newBeneficiaries[0] = address(externalLender);
@@ -839,8 +841,6 @@ contract SecuredLineTest is Test {
         line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
     }
 
-    // TODO:
-    // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
     function test_cannot_update_beneficiary_settings_if_line_has_active_credit_positions() public {
         address[] memory newBeneficiaries = new address[](2);
         newBeneficiaries[0] = address(line);
@@ -873,8 +873,6 @@ contract SecuredLineTest is Test {
         line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
     }
 
-    // TODO:
-    // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
     function test_cannot_update_beneficiary_settings_if_allocations_do_not_sum_to_100() public {
         address[] memory newBeneficiaries = new address[](2);
         newBeneficiaries[0] = address(line);
@@ -912,8 +910,6 @@ contract SecuredLineTest is Test {
 
     }
 
-    // TODO: finish implementing this
-    // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
     function test_update_beneficiary_settings_clears_credit_proposals() public {
         address[] memory newBeneficiaries = new address[](2);
         newBeneficiaries[0] = address(line);
@@ -953,9 +949,6 @@ contract SecuredLineTest is Test {
 
     }
 
-
-    // TODO:
-    // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
     function test_onlyBorrower_can_update_beneficiary_settings() public {
         address[] memory newBeneficiaries = new address[](2);
         newBeneficiaries[0] = address(line);
@@ -990,8 +983,6 @@ contract SecuredLineTest is Test {
 
     }
 
-    // TODO:
-    // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
     function test_onlyArbiter_can_delete_beneficiary() public {
         address[] memory newBeneficiaries = new address[](2);
         newBeneficiaries[0] = address(line);
@@ -1050,8 +1041,6 @@ contract SecuredLineTest is Test {
 
     }
 
-    // TODO:
-    // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
     function test_cannot_update_beneficiary_settings_if_line_has_outstanding_beneficiary_debt() public {
         address[] memory newBeneficiaries = new address[](2);
         newBeneficiaries[0] = address(line);
@@ -1087,7 +1076,6 @@ contract SecuredLineTest is Test {
 
     }
 
-    // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
     function test_can_update_beneficiary_settings_if_no_beneficiary_debt() public {
         address[] memory newBeneficiaries = new address[](2);
         newBeneficiaries[0] = address(line);
@@ -1145,8 +1133,6 @@ contract SecuredLineTest is Test {
 
     // removeBeneficiary()
 
-    // TODO: implement this function
-    // TODO: moved to SpigotedLine.t.sol after spigot.claimRevenue() is fixed
     function test_only_arbiter_can_remove_beneficiary() public {
         address[] memory newBeneficiaries = new address[](2);
         newBeneficiaries[0] = address(line);
