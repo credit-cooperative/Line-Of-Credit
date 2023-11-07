@@ -34,6 +34,8 @@ contract Spigot is ISpigot, ReentrancyGuard {
         address[] memory _repaymentToken,
         address _arbiter
         ) {
+
+        // TODO: multiple require() statements or single if() statement
         require(_startingBeneficiaries.length == _startingAllocations.length, "Beneficiaries and allocations must be equal length");
         require(_startingBeneficiaries.length <= MAX_BENEFICIARIES, "Max beneficiaries");
         require(_startingBeneficiaries.length == _debtOwed.length, "Debt owed array and beneficiaries must be equal length");

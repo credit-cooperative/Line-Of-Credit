@@ -365,7 +365,6 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
         // iterate through the new beneficiaries array and add each new beneficiary to the array
         for (uint256 i = 0; i < _beneficiaries.length; i++) {
             // add new beneficiary to the array
-            // spigot.beneficiaries.push(_beneficiaries[i]);
             spigot.addBeneficiaryAddress(_beneficiaries[i]);
 
             // update the beneficiary settings
