@@ -24,6 +24,8 @@ contract SpigotTest is Test {
 
     // Named vars for common inputs
     uint256 constant MAX_REVENUE = type(uint256).max / 100;
+    uint256 constant FULL_ALLOC = 100000;
+
     // function signatures for mock revenue contract to pass as params to spigot
     bytes4 constant opsFunc =
         SimpleRevenueContract.doAnOperationsThing.selector;
@@ -545,17 +547,30 @@ contract SpigotTest is Test {
         // 2 beneficiaries
 
         // 3 beneficiaries
-        // send 4000 revenue tokens to the Spigot
+        // send 400000 revenue tokens to the Spigot
         token.mint(address(spigot), 400000);
         spigot.claimRevenue(revenueContract, address(token), "");
         emit log_named_uint("spigot balance", token.balanceOf(address(spigot)));
         uint256[] memory tokensToDistribute = spigot.distributeFunds(address(token));
+
+        // distributions array
         assertEq(tokensToDistribute[0], 133332 + 66668);
         assertEq(tokensToDistribute[1], 100000);
         assertEq(tokensToDistribute[2], 100000);
 
+        // allocations and debtOwed arrays
         // TODO: distributions array: [2000, 1000, 1000]
         // TODO: allocations array: [100 (owner), 0, 0]
+        (, uint256 ownerAllocation, , uint256 ownerDebtOwed) = spigot.getBeneficiaryBasicInfo(beneficiaries[0]);
+        (, uint256 el1Allocation, , uint256 el1DebtOwed ) = spigot.getBeneficiaryBasicInfo(beneficiaries[1]);
+        (, uint256 el2Allocation, , uint256 el2DebtOwed) = spigot.getBeneficiaryBasicInfo(beneficiaries[2]);
+        assertEq(ownerAllocation, FULL_ALLOC);
+        assertEq(el1Allocation, 0);
+        assertEq(el2Allocation, 0);
+
+        assertEq(ownerDebtOwed, 0);
+        assertEq(el1Allocation, 0);
+        assertEq(el2Allocation, 0);
 
     }
 

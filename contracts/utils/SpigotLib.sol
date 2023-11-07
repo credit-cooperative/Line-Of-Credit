@@ -366,6 +366,7 @@ library SpigotLib {
         while (_tokensToDistribute > 0 && numRepaidBeneficiaries < numBeneficiaries) { // && count < 5
             console.log('\nxxx - tokensToDistribute: ', _tokensToDistribute);
             uint256 allocatedTokens = 0;
+            uint256 allocationToSpread = 0;
             for (uint256 i = 0; i < distributions.length; i++) {
                 uint256 beneficiaryDistribution = (allocations[i] * _tokensToDistribute) / (100000);
                 console.log('\nxxx - i', i);
@@ -384,9 +385,8 @@ library SpigotLib {
                         console.log('xxx - excess tokens: ', excessTokens);
                         beneficiaryDistribution = outstandingDebts[i];
                         outstandingDebts[i] = 0; // set beneficiary debt to zero
-                        // uint256 beneficiaryAllocation = allocations[i]; // TODO: add back in
-                        // TODO: distribute beneficiary allocation to other beneficiaries
-                        allocations = _resetAllocations(i, allocations);
+                        allocationToSpread += allocations[i];
+                        allocations[i] = 0; // set beneficiary allocation to zero
                         distributions[i] += beneficiaryDistribution;
                         numRepaidBeneficiaries += 1;
                     } else {
@@ -406,10 +406,15 @@ library SpigotLib {
             _tokensToDistribute -= excessTokens; // add excess tokens back
             _tokensToDistribute -= allocatedTokens; // subtract allocated tokens
 
+            // reset allocations
+            allocations = _resetAllocations(allocations, outstandingDebts, allocationToSpread);
         }
 
-    // TODO: set allocations in state
-
+    // Set allocations and debtOwed in state
+    for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+        self.beneficiaryInfo[self.beneficiaries[i]].allocation = allocations[i];
+        self.beneficiaryInfo[self.beneficiaries[i]].debtOwed = outstandingDebts[i];
+    }
 
     // distribute excess tokens to the first beneficiary (the owner of the Spigot)
     distributions[0] += excessTokens;
@@ -456,32 +461,33 @@ library SpigotLib {
         // }
     }
 
-    function _resetAllocations(uint256 index, uint256[] memory allocations) internal view returns (uint256[] memory newAllocations) {
+    function _resetAllocations(uint256[] memory allocations, uint256[] memory outstandingDebts, uint256 allocationToSpread) internal view returns (uint256[] memory newAllocations) {
 
         // allocations must sum to 100000
-        uint256 total = 0;
-        for (uint256 i = 0; i < allocations.length; i++) {
-            total += allocations[i];
-            console.log('xxx - allocations', allocations[i]);
-        }
-        require(total == 100000, "Sum must be 100000");
+        // uint256 total = 0;
+        // for (uint256 i = 0; i < allocations.length; i++) {
+        //     total += allocations[i];
+        //     console.log('xxx - original allocation: ', allocations[i]);
+        // }
+        // require(total == 100000, "Sum must be 100000");
+        uint256 total = 100000;
 
-        // Avoid division by zero in case the array has only one element
-        if (allocations.length <= 1) {
+        // Cannot reset allocations if only owner or there is nothing to spread
+        if (allocations.length <= 1 || allocationToSpread == 0) {
             return allocations;
         }
 
+        console.log('xxx - allocationToSpread', allocationToSpread);
+
         // Save the value to be redistributed and set the index's value to 0
-        uint256 amountToSpread = allocations[index];
-        allocations[index] = 0;
-        total -= amountToSpread; // Update total to the sum of the remaining elements
+        total -= allocationToSpread; // Update total to the sum of the remaining elements
 
         // Distribute the value proportionally
         if (total > 0) {
             for (uint256 i = 0; i < allocations.length; i++) {
-                if (i != index) {
+                if (i == 0 || outstandingDebts[i] != 0) {
                     // Calculate the proportional amount for each element
-                    uint256 proportionalAmount = (allocations[i] * amountToSpread) / total;
+                    uint256 proportionalAmount = (allocations[i] * allocationToSpread) / total;
                     // Add the proportional amount to the current element
                     allocations[i] += proportionalAmount;
                 }
@@ -490,6 +496,7 @@ library SpigotLib {
         // Handle any rounding errors by adding the difference to the first element
         uint256 newTotal = 0;
         for (uint256 i = 0; i < allocations.length; i++) {
+            console.log('xxx - new allocation: ', allocations[i]);
             newTotal += allocations[i];
         }
         if (newTotal < 100000) {
