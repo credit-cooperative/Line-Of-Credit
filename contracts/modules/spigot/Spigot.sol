@@ -53,6 +53,7 @@ contract Spigot is ISpigot, ReentrancyGuard {
         // setup multisig as admin that has signers from the borrower and lenders.
         // _setRoleAdmin(DEFAULT_ADMIN_ROLE, _adminMultisig);
         for (uint256 i = 0; i < _startingBeneficiaries.length; i++) {
+            require(_startingBeneficiaries[i] != address(0), "beneficiary cannot be zero address");
             state.beneficiaries.push(_startingBeneficiaries[i]);
             state.beneficiaryInfo[_startingBeneficiaries[i]].allocation = _startingAllocations[i];
             state.beneficiaryInfo[_startingBeneficiaries[i]].debtOwed = _debtOwed[i];

@@ -363,7 +363,7 @@ library SpigotLib {
         // while there are tokens to distribute and there are still beneficiaries with debt
         uint256 excessTokens = 0;
         // uint256 count = 0;
-        while (_tokensToDistribute > 0 && numRepaidBeneficiaries < numBeneficiaries) { // && count < 5
+        while (_tokensToDistribute > 0) { // && count < 5  && numRepaidBeneficiaries < numBeneficiaries
             console.log('\nxxx - tokensToDistribute: ', _tokensToDistribute);
             uint256 allocatedTokens = 0;
             uint256 allocationToSpread = 0;
@@ -390,6 +390,7 @@ library SpigotLib {
                         distributions[i] += beneficiaryDistribution;
                         numRepaidBeneficiaries += 1;
                     } else {
+                        distributions[i] += beneficiaryDistribution;
                         outstandingDebts[i] -= beneficiaryDistribution;
                     }
 
@@ -408,6 +409,12 @@ library SpigotLib {
 
             // reset allocations
             allocations = _resetAllocations(allocations, outstandingDebts, allocationToSpread);
+
+            // add excessTokens to _tokensToDistribute if there are no more tokens to distribute
+            if (excessTokens > 0 && _tokensToDistribute == 0) {
+                _tokensToDistribute += excessTokens;
+                excessTokens = 0;
+            }
         }
 
     // Set allocations and debtOwed in state
@@ -589,7 +596,7 @@ library SpigotLib {
     // TODO: add docuementation
     function addBeneficiaryAddress(SpigotState storage self, address _newBeneficiary) external {
         require(self.beneficiaries.length < 5, "Max beneficiaries");
-        require(_newBeneficiary!=address(0), "beneficiary cannot be 0 address");
+        require(_newBeneficiary != address(0), "beneficiary cannot be zero address");
         if (msg.sender != self.owner && msg.sender != self.arbiter) {
             revert CallerAccessDenied();
         }
