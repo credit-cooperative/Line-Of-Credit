@@ -312,7 +312,8 @@ library SpigotLib {
     }
 
     // function that calls trade. pass in a lender address and it will trade their tokens for the desired token
-    function tradeAndClaim(SpigotState storage self, address lender, address sellToken, address payable swapTarget, bytes calldata zeroExTradeData) external returns (bool) {
+
+    function tradeAndDistribute(SpigotState storage self, address lender, address sellToken, address payable swapTarget, bytes calldata zeroExTradeData) external returns (bool) {
         // called from
         uint256 amount = self.beneficiaryInfo[lender].bennyTokens[sellToken];
         uint256 oldTokens = IERC20(self.beneficiaryInfo[lender].repaymentToken).balanceOf(address(this));
@@ -326,7 +327,9 @@ library SpigotLib {
             IERC20(self.beneficiaryInfo[lender].repaymentToken).safeTransfer(lender, boughtTokens);
         } else if (boughtTokens > self.beneficiaryInfo[lender].debtOwed){
             IERC20(self.beneficiaryInfo[lender].repaymentToken).safeTransfer(lender, self.beneficiaryInfo[lender].debtOwed);
-            self.operatorTokens[self.beneficiaryInfo[lender].repaymentToken] = self.operatorTokens[self.beneficiaryInfo[lender].repaymentToken] + (boughtTokens - self.beneficiaryInfo[lender].debtOwed);
+            // reset allocations
+            // add excess tokens to allocationTokens in state
+            self.allocationTokens[self.beneficiaryInfo[lender].repaymentToken] += (boughtTokens - self.beneficiaryInfo[lender].debtOwed);
             self.beneficiaryInfo[lender].debtOwed = 0;
         }
 
@@ -356,6 +359,7 @@ library SpigotLib {
             repaymentTokens[i] = self.beneficiaryInfo[self.beneficiaries[i]].repaymentToken;
         }
 
+        // TODO: remove logic for numBeneficiaries and numRepaidBeneficiaries
         uint256 numBeneficiaries = self.beneficiaries.length;
         uint256 numRepaidBeneficiaries = 1;
 
@@ -419,55 +423,30 @@ library SpigotLib {
             }
         }
 
-    // Set allocations and debtOwed in state
-    for (uint256 i = 0; i < self.beneficiaries.length; i++) {
-        self.beneficiaryInfo[self.beneficiaries[i]].allocation = allocations[i];
-        self.beneficiaryInfo[self.beneficiaries[i]].debtOwed = outstandingDebts[i];
-    }
+        // Set allocations and debtOwed in state
+        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+            self.beneficiaryInfo[self.beneficiaries[i]].allocation = allocations[i];
+            self.beneficiaryInfo[self.beneficiaries[i]].debtOwed = outstandingDebts[i];
+        }
 
-    // distribute excess tokens to the first beneficiary (the owner of the Spigot)
-    distributions[0] += excessTokens;
+        // distribute excess tokens to the first beneficiary (the owner of the Spigot)
+        distributions[0] += excessTokens;
 
-    self.allocationTokens[revToken] = 0; // set allocation tokens to zero
+        self.allocationTokens[revToken] = 0; // set allocation tokens to zero
 
-    // TODO: transfer funds in distributions array to respective beneficiary addresses?
-    return distributions;
+        // Transfer funds in distributions array to respective beneficiaries
+        for (uint256 i = 0; i < distributions.length; i++) {
+            // if beneficiary is line, or credit token is same as revenue token, transfer funds
+            if (i == 0 || repaymentTokens[i] == revToken) {
+                IERC20(revToken).safeTransfer(self.beneficiaries[i], distributions[i]);
+            }
+            // otherwise, store funds in bennyTokens struct
+            else {
+                self.beneficiaryInfo[self.beneficiaries[i]].bennyTokens[revToken] += distributions[i];
+            }
+        }
 
-        // OLD CODE
-        // // get current allocations
-        // uint256[] memory allocations = new uint256[](self.beneficiaries.length);
-        // for (uint256 i = 0; i < self.beneficiaries.length; i++) {
-        //     allocations[i] = self.beneficiaryInfo[self.beneficiaries[i]].allocation;
-        // }
-
-        // // feeBalances[0] is fee sent to smartTreasury
-        // feeBalances = _amountsFromAllocations(allocations, self.allocationTokens[revToken]);
-
-        // for (uint256 i = 0; i < self.beneficiaries.length; i++) {
-        //     uint256 debt = self.beneficiaryInfo[self.beneficiaries[i]].debtOwed;
-
-        //     if (i == 1){
-        //         IERC20(revToken).safeTransfer(self.beneficiaries[i], feeBalances[i]);
-        //     }
-
-        //     // check if revtoken is the same as beneficiary desired token
-        //     if (self.beneficiaryInfo[self.beneficiaries[i]].repaymentToken == revToken) {
-        //         // TODO: I think this can be a helper
-        //         if (feeBalances[i] <= debt){
-        //             IERC20(revToken).safeTransfer(self.beneficiaries[i], feeBalances[i]);
-        //             self.beneficiaryInfo[self.beneficiaries[i]].debtOwed -= feeBalances[i];
-        //         } else if (feeBalances[i] > debt){
-        //             IERC20(revToken).safeTransfer(self.beneficiaries[i], debt);
-        //             self.operatorTokens[revToken] += (feeBalances[i] - debt);
-        //             self.beneficiaryInfo[self.beneficiaries[i]].debtOwed = 0;
-        //         }
-
-        //     } else if (self.beneficiaryInfo[self.beneficiaries[i]].repaymentToken != revToken){
-        //         self.beneficiaryInfo[self.beneficiaries[i]].bennyTokens[revToken] = self.beneficiaryInfo[self.beneficiaries[i]].bennyTokens[revToken] + feeBalances[i];
-        //     }
-
-
-        // }
+        return distributions;
     }
 
     function _resetAllocations(uint256[] memory allocations, uint256[] memory outstandingDebts, uint256 allocationToSpread) internal view returns (uint256[] memory newAllocations) {
@@ -722,11 +701,11 @@ library SpigotLib {
         return (b.bennyOperator, b.allocation, b.repaymentToken, b.debtOwed);
     }
 
-    // // TODO: add documentation
-    // function getBennyTokenAmount(SpigotState storage self, address beneficiary, address token) external view returns (uint256) {
-    //     uint256 amount = self.beneficiaryInfo[beneficiary].bennyTokens[token];
-    //     return amount;
-    // }
+    // TODO: add documentation
+    function getBennyTokenAmount(SpigotState storage self, address beneficiary, address token) external view returns (uint256) {
+        return self.beneficiaryInfo[beneficiary].bennyTokens[token];
+    }
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////

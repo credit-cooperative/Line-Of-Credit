@@ -542,6 +542,7 @@ contract SpigotTest is Test {
 
     // Distribute Funds
 
+    // TODO: handle rounding issues
     function test_distributeFunds_repays_all_beneficiaries_with_same_repayment_token() public {
 
         // Single
@@ -560,9 +561,18 @@ contract SpigotTest is Test {
         console.log('xxx - tokensToDistribute[2]: ', tokensToDistribute[2]);
 
         // distributions array
-        assertEq(tokensToDistribute[0], 133332 + 66668);
+        assertEq(tokensToDistribute[0], 200000);
         assertEq(tokensToDistribute[1], 100000);
         assertEq(tokensToDistribute[2], 100000);
+
+        console.log('xxx - beneficiaries[0] balance: ', token.balanceOf(beneficiaries[0]));
+        console.log('xxx - beneficiaries[1] balance: ', token.balanceOf(beneficiaries[1]));
+        console.log('xxx - beneficiaries[2] balance: ', token.balanceOf(beneficiaries[2]));
+
+        // amounts transferred to beneficiaries
+        assertEq(tokensToDistribute[0], token.balanceOf(beneficiaries[0]));
+        assertEq(tokensToDistribute[1], token.balanceOf(beneficiaries[1]));
+        assertEq(tokensToDistribute[2], token.balanceOf(beneficiaries[2]));
 
         // allocations and debtOwed arrays
         // TODO: distributions array: [2000, 1000, 1000]
@@ -580,6 +590,7 @@ contract SpigotTest is Test {
 
     }
 
+    // TODO: handle rounding issues
     function test_distributeFunds_partial_repayment_beneficiaries_with_same_repayment_token() public {
 
         // Single
@@ -609,6 +620,15 @@ contract SpigotTest is Test {
         assertEq(tokensToDistribute[1], 150000);
         assertEq(tokensToDistribute[2], 100000);
 
+        console.log('xxx - beneficiaries[0] balance: ', token.balanceOf(beneficiaries[0]));
+        console.log('xxx - beneficiaries[1] balance: ', token.balanceOf(beneficiaries[1]));
+        console.log('xxx - beneficiaries[2] balance: ', token.balanceOf(beneficiaries[2]));
+
+        // amounts transferred to beneficiaries
+        assertEq(tokensToDistribute[0], token.balanceOf(beneficiaries[0]));
+        assertEq(tokensToDistribute[1], token.balanceOf(beneficiaries[1]));
+        assertEq(tokensToDistribute[2], token.balanceOf(beneficiaries[2]));
+
         // // allocations and debtOwed arrays
         // // TODO: distributions array: [2000, 1000, 1000]
         // // TODO: allocations array: [100 (owner), 0, 0]
@@ -628,7 +648,7 @@ contract SpigotTest is Test {
 
     }
 
-
+    // TODO: handle rounding issues
     function test_distributeFunds_fully_repays_beneficiaries_with_different_repayment_tokens() public {
         // Set 2nd beneficiaries outstanding debt to 200000
         vm.startPrank(arbiter);
@@ -650,6 +670,17 @@ contract SpigotTest is Test {
         assertEq(tokensToDistribute[1], 150000);
         assertEq(tokensToDistribute[2], 100000);
 
+        console.log('xxx - beneficiaries[0] balance: ', token.balanceOf(beneficiaries[0]));
+        console.log('xxx - beneficiaries[1] balance: ', token.balanceOf(beneficiaries[1]));
+        console.log('xxx - beneficiaries[1] bennyTokens: ', spigot.getBennyTokenAmount(beneficiaries[1], address(token)));
+        console.log('xxx - beneficiaries[2] balance: ', token.balanceOf(beneficiaries[2]));
+
+        // amounts transferred to beneficiaries
+        assertEq(tokensToDistribute[0], token.balanceOf(beneficiaries[0]));
+        // assertEq(tokensToDistribute[1], 0);
+        assertEq(tokensToDistribute[1], spigot.getBennyTokenAmount(beneficiaries[1], address(token))); // check that benny tokens has received distribution
+        assertEq(tokensToDistribute[2], token.balanceOf(beneficiaries[2]));
+
         // // allocations and debtOwed arrays
         // // TODO: distributions array: [2000, 1000, 1000]
         // // TODO: allocations array: [100 (owner), 0, 0]
@@ -669,6 +700,7 @@ contract SpigotTest is Test {
 
     }
 
+    // TODO: handle rounding issues
     function test_distributeFunds_partial_repayment_beneficiaries_with_different_repayment_tokens() public {
         // Set 2nd beneficiaries outstanding debt to 200000
         vm.startPrank(arbiter);
@@ -685,10 +717,22 @@ contract SpigotTest is Test {
         console.log('xxx - tokensToDistribute[0]: ', tokensToDistribute[0]);
         console.log('xxx - tokensToDistribute[1]: ', tokensToDistribute[1]);
         console.log('xxx - tokensToDistribute[2]: ', tokensToDistribute[2]);
+
         // distributions array
         assertEq(tokensToDistribute[0], 66666);
         assertEq(tokensToDistribute[1], 66666);
         assertEq(tokensToDistribute[2], 66668);
+
+        console.log('xxx - beneficiaries[0] balance: ', token.balanceOf(beneficiaries[0]));
+        console.log('xxx - beneficiaries[1] balance: ', token.balanceOf(beneficiaries[1]));
+        console.log('xxx - beneficiaries[1] bennyTokens: ', spigot.getBennyTokenAmount(beneficiaries[1], address(token)));
+        console.log('xxx - beneficiaries[2] balance: ', token.balanceOf(beneficiaries[2]));
+
+        // amounts transferred to beneficiaries
+        assertEq(tokensToDistribute[0], token.balanceOf(beneficiaries[0]));
+        // assertEq(tokensToDistribute[1], 0);
+        assertEq(tokensToDistribute[1], spigot.getBennyTokenAmount(beneficiaries[1], address(token))); // check that benny tokens has received distribution
+        assertEq(tokensToDistribute[2], token.balanceOf(beneficiaries[2]));
 
         // // allocations and debtOwed arrays
         // // TODO: distributions array: [2000, 1000, 1000]
@@ -707,9 +751,16 @@ contract SpigotTest is Test {
         assertEq(el1DebtOwed, revenueToken2DebtOwed);
         assertEq(el2DebtOwed, 33332);
 
+
     }
 
-
+    // TODO: update tests for claimRevenue() with new logic for allocatedTokens
+    // TODO: test distributeFunds() where the owner/line is the only beneficiary in the array
+    // TODO: test distributeFunds() + trade functionality repays debts for each beneficiary (i.e. external lender)
+    // TODO: test distributeFunds + original Spigot trade functionality repays credit positions on Line of Credit
+        // claimAndTrade
+        // useAndRepay
+        // claimAndRepay
 
     // Spigot initialization
 

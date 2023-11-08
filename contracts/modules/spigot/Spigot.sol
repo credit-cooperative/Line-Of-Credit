@@ -331,10 +331,9 @@ contract Spigot is ISpigot, ReentrancyGuard {
         return state.getBeneficiaryBasicInfo(beneficiary);
     }
 
-    // TODO: add this back
-    // function getBeneficiaryInfo(address beneficiary) public view returns (ISpigot.Beneficiary memory) {
-    //     return state.beneficiaryInfo[beneficiary];
-    // }
+    function getBennyTokenAmount(address beneficiary, address token) public view returns (uint256) {
+        return state.getBennyTokenAmount(beneficiary, token);
+    }
 
     function getLenderTokens(address token, address lender) external view returns (uint256) {
         return state.getLenderTokens(token, lender);
