@@ -326,11 +326,25 @@ library SpigotLib {
             IERC20(self.beneficiaryInfo[lender].repaymentToken).safeTransfer(lender, boughtTokens);
         } else if (boughtTokens > self.beneficiaryInfo[lender].debtOwed){
             IERC20(self.beneficiaryInfo[lender].repaymentToken).safeTransfer(lender, self.beneficiaryInfo[lender].debtOwed);
-            self.operatorTokens[self.beneficiaryInfo[lender].repaymentToken] = self.operatorTokens[self.beneficiaryInfo[lender].repaymentToken] + (boughtTokens - self.beneficiaryInfo[lender].debtOwed);
+            self.allocationTokens[self.beneficiaryInfo[lender].repaymentToken] += (boughtTokens - self.beneficiaryInfo[lender].debtOwed);
             self.beneficiaryInfo[lender].debtOwed = 0;
+            (uint256[] memory allocations, uint256[] memory outstandingDebts, uint256[] memory allocationToSpread) = _thatOneHelperFunc();
+            _resetAllocations(allocations, outstandingDebts, allocationToSpread);
         }
 
         return true;
+    }
+
+   function _thatOneHelperFunc() internal pure returns (uint256[] memory allocations, uint256[] memory outstandingDebts, uint256 allocationToSpread) {
+        uint256[] memory allocations = new uint256[](self.beneficiaries.length);
+        address[] memory repaymentTokens = new address[](self.beneficiaries.length);
+        uint256[] memory outstandingDebts = new uint256[](self.beneficiaries.length);
+        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+            allocations[i] = self.beneficiaryInfo[self.beneficiaries[i]].allocation;
+            outstandingDebts[i] = self.beneficiaryInfo[self.beneficiaries[i]].debtOwed;
+            repaymentTokens[i] = self.beneficiaryInfo[self.beneficiaries[i]].repaymentToken;
+        }
+        return (allocations, outstandingDebts, allocationToSpread);
     }
 
     function _distributeFunds(SpigotState storage self, address revToken) internal returns (uint256[] memory distributions) {
@@ -347,14 +361,7 @@ library SpigotLib {
 
         // get current beneficiary settings for all beneficiaries
         // TODO: this should be a helper function
-        uint256[] memory allocations = new uint256[](self.beneficiaries.length);
-        address[] memory repaymentTokens = new address[](self.beneficiaries.length);
-        uint256[] memory outstandingDebts = new uint256[](self.beneficiaries.length);
-        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
-            allocations[i] = self.beneficiaryInfo[self.beneficiaries[i]].allocation;
-            outstandingDebts[i] = self.beneficiaryInfo[self.beneficiaries[i]].debtOwed;
-            repaymentTokens[i] = self.beneficiaryInfo[self.beneficiaries[i]].repaymentToken;
-        }
+        (uint256[] memory allocations, uint256[] memory outstandingDebts, uint256[] memory allocationToSpread) = _thatOneHelperFunc();
 
         uint256 numBeneficiaries = self.beneficiaries.length;
         uint256 numRepaidBeneficiaries = 1;
