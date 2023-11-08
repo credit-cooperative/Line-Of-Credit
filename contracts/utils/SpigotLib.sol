@@ -389,16 +389,18 @@ library SpigotLib {
                         allocations[i] = 0; // set beneficiary allocation to zero
                         distributions[i] += beneficiaryDistribution;
                         numRepaidBeneficiaries += 1;
-                    } else {
+                    }
+                    else {
                         distributions[i] += beneficiaryDistribution;
                         outstandingDebts[i] -= beneficiaryDistribution;
                     }
+                }
 
                 // if revToken different than beneficiary repayment token
-                // } else {
-                // }
-
+                else if (revToken != repaymentTokens[i]) {
+                    distributions[i] += beneficiaryDistribution;
                 }
+
                 allocatedTokens += beneficiaryDistribution; //
                 console.log('xxx - allocatedTokens: ', allocatedTokens);
                 console.log('xxx - distributions: ', distributions[i]);
