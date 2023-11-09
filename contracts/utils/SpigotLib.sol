@@ -331,14 +331,14 @@ library SpigotLib {
             IERC20(self.beneficiaryInfo[lender].repaymentToken).safeTransfer(lender, difference);
             self.allocationTokens[self.beneficiaryInfo[lender].repaymentToken] += difference;
             
-            (uint256[] memory allocations, uint256[] memory outstandingDebts, ) = _thatOneHelperFunc(self);
+            (uint256[] memory allocations, uint256[] memory outstandingDebts, ) = _getBennySettings(self);
             _resetAllocations(allocations, outstandingDebts, difference);
         }
 
         return true;
     }
 
-   function _thatOneHelperFunc(SpigotState storage self) internal view returns (uint256[] memory allocations, uint256[] memory outstandingDebts, address[] memory repaymentTokens) {
+   function _getBennySettings(SpigotState storage self) internal view returns (uint256[] memory allocations, uint256[] memory outstandingDebts, address[] memory repaymentTokens) {
         uint256[] memory allocations = new uint256[](self.beneficiaries.length);
         address[] memory repaymentTokens = new address[](self.beneficiaries.length);
         uint256[] memory outstandingDebts = new uint256[](self.beneficiaries.length);
@@ -364,7 +364,7 @@ library SpigotLib {
 
         // get current beneficiary settings for all beneficiaries
         // TODO: this should be a helper function
-      (uint256[] memory allocations, uint256[] memory outstandingDebts, address[] memory repaymentTokens) = _thatOneHelperFunc(self);
+      (uint256[] memory allocations, uint256[] memory outstandingDebts, address[] memory repaymentTokens) = _getBennySettings(self);
 
         // TODO: remove logic for numBeneficiaries and numRepaidBeneficiaries
         uint256 numBeneficiaries = self.beneficiaries.length;
