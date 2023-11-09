@@ -211,7 +211,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
     ) internal returns (uint256) {
         if (claimToken == targetToken) {
             // same asset. dont trade
-            return spigot.distributeFunds(claimToken)[1];
+            return spigot.distributeFunds(claimToken)[0];
         } else {
             // trade revenue token for debt obligation
             (uint256 tokensBought, uint256 totalUnused) = SpigotedLineLib.claimAndTrade(
