@@ -325,17 +325,19 @@ library SpigotLib {
             self.beneficiaryInfo[lender].debtOwed -= boughtTokens;
             IERC20(self.beneficiaryInfo[lender].repaymentToken).safeTransfer(lender, boughtTokens);
         } else if (boughtTokens > self.beneficiaryInfo[lender].debtOwed){
-            IERC20(self.beneficiaryInfo[lender].repaymentToken).safeTransfer(lender, self.beneficiaryInfo[lender].debtOwed);
-            self.allocationTokens[self.beneficiaryInfo[lender].repaymentToken] += (boughtTokens - self.beneficiaryInfo[lender].debtOwed);
+            uint256 difference = boughtTokens - self.beneficiaryInfo[lender].debtOwed;
             self.beneficiaryInfo[lender].debtOwed = 0;
-            (uint256[] memory allocations, uint256[] memory outstandingDebts, uint256[] memory allocationToSpread) = _thatOneHelperFunc();
-            _resetAllocations(allocations, outstandingDebts, allocationToSpread);
+            IERC20(self.beneficiaryInfo[lender].repaymentToken).safeTransfer(lender, difference);
+            self.allocationTokens[self.beneficiaryInfo[lender].repaymentToken] += difference;
+            
+            (uint256[] memory allocations, uint256[] memory outstandingDebts, ) = _thatOneHelperFunc(self);
+            _resetAllocations(allocations, outstandingDebts, difference);
         }
 
         return true;
     }
 
-   function _thatOneHelperFunc() internal pure returns (uint256[] memory allocations, uint256[] memory outstandingDebts, uint256 allocationToSpread) {
+   function _thatOneHelperFunc(SpigotState storage self) internal view returns (uint256[] memory allocations, uint256[] memory outstandingDebts, address[] memory repaymentTokens) {
         uint256[] memory allocations = new uint256[](self.beneficiaries.length);
         address[] memory repaymentTokens = new address[](self.beneficiaries.length);
         uint256[] memory outstandingDebts = new uint256[](self.beneficiaries.length);
@@ -344,7 +346,7 @@ library SpigotLib {
             outstandingDebts[i] = self.beneficiaryInfo[self.beneficiaries[i]].debtOwed;
             repaymentTokens[i] = self.beneficiaryInfo[self.beneficiaries[i]].repaymentToken;
         }
-        return (allocations, outstandingDebts, allocationToSpread);
+        return (allocations, outstandingDebts, repaymentTokens);
     }
 
     function _distributeFunds(SpigotState storage self, address revToken) internal returns (uint256[] memory distributions) {
@@ -361,7 +363,7 @@ library SpigotLib {
 
         // get current beneficiary settings for all beneficiaries
         // TODO: this should be a helper function
-        (uint256[] memory allocations, uint256[] memory outstandingDebts, uint256[] memory allocationToSpread) = _thatOneHelperFunc();
+      (uint256[] memory allocations, uint256[] memory outstandingDebts, address[] memory repaymentTokens) = _thatOneHelperFunc(self);
 
         uint256 numBeneficiaries = self.beneficiaries.length;
         uint256 numRepaidBeneficiaries = 1;
