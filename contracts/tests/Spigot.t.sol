@@ -750,13 +750,20 @@ contract SpigotTest is Test {
         assertEq(ownerDebtOwed, 0);
         assertEq(el1DebtOwed, revenueToken2DebtOwed);
         assertEq(el2DebtOwed, 33332);
-
-
     }
 
     // TODO: update tests for claimRevenue() with new logic for allocatedTokens
     // TODO: test distributeFunds() where the owner/line is the only beneficiary in the array
     // TODO: test distributeFunds() + trade functionality repays debts for each beneficiary (i.e. external lender)
+
+    function test_trade_and_distribute_fully_repays_beneficiary_debt() public {
+
+    }
+
+    function test_trade_and_distribute_partially_repays_beneficiary_debt() public {
+
+    }
+
     // TODO: test distributeFunds + original Spigot trade functionality repays credit positions on Line of Credit
         // claimAndTrade
         // useAndRepay

@@ -312,27 +312,43 @@ library SpigotLib {
     }
 
     // function that calls trade. pass in a lender address and it will trade their tokens for the desired token
-
+    // TODO: add onlyBeneficiaryOrArbiter modifier
+    // TODO: how to handle if funds are for the line? should we just send them to the line?
+    // TODO: does this have to sell all of the lender's tokens? or can it sell a portion? ideally, you want to sell the minimum necessary to repay the debt, and then transfer the remaining to the other beneficiaries
     function tradeAndDistribute(SpigotState storage self, address lender, address sellToken, address payable swapTarget, bytes calldata zeroExTradeData) external returns (bool) {
         // called from
         uint256 amount = self.beneficiaryInfo[lender].bennyTokens[sellToken];
         uint256 oldTokens = IERC20(self.beneficiaryInfo[lender].repaymentToken).balanceOf(address(this));
 
+        // TODO: what forces the zeroExTradeData to contain the lender's repaymentToken?
         trade(amount, sellToken, swapTarget, zeroExTradeData);
 
         uint256 boughtTokens = IERC20(self.beneficiaryInfo[lender].repaymentToken).balanceOf(address(this)) - oldTokens;
-
         if (boughtTokens <= self.beneficiaryInfo[lender].debtOwed){
             self.beneficiaryInfo[lender].debtOwed -= boughtTokens;
             IERC20(self.beneficiaryInfo[lender].repaymentToken).safeTransfer(lender, boughtTokens);
         } else if (boughtTokens > self.beneficiaryInfo[lender].debtOwed){
-            uint256 difference = boughtTokens - self.beneficiaryInfo[lender].debtOwed;
+            uint256 excessTokens = boughtTokens - self.beneficiaryInfo[lender].debtOwed;
+
+            // set the lender's debt owed and allocation to zero
+            uint256 allocationToSpread = self.beneficiaryInfo[lender].allocation;
             self.beneficiaryInfo[lender].debtOwed = 0;
-            IERC20(self.beneficiaryInfo[lender].repaymentToken).safeTransfer(lender, difference);
-            self.allocationTokens[self.beneficiaryInfo[lender].repaymentToken] += difference;
-            
+            self.beneficiaryInfo[lender].allocation = 0;
+
+            // transfer the debtOwed amount to the lender
+            IERC20(self.beneficiaryInfo[lender].repaymentToken).safeTransfer(lender, self.beneficiaryInfo[lender].debtOwed);
+
+            // Spread the lender's allocation across the beneficiaries with outstanding debt
             (uint256[] memory allocations, uint256[] memory outstandingDebts, ) = _getBennySettings(self);
-            _resetAllocations(allocations, outstandingDebts, difference);
+            _resetAllocations(allocations, outstandingDebts, allocationToSpread);
+
+            // TODO: transfer the excessTokens boughtTokens to the Spigot
+            // TODO: transfer the excess repayment tokens to the Spigot
+            self.allocationTokens[self.beneficiaryInfo[lender].repaymentToken] += excessTokens;
+
+            // Call distributeFunds to distribute excess tokens to the other beneficiaries w/ outstanding debt
+            _distributeFunds(self, self.beneficiaryInfo[lender].repaymentToken); // bought tokens
+            _distributeFunds(self, sellToken); // sellT
         }
 
         return true;
