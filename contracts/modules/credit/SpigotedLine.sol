@@ -165,6 +165,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
         }
 
         address targetToken = credits[ids[0]].token;
+        // console.log('xxx - do I make it here? 1.1');
         uint256 newTokens = _claimAndTrade(claimToken, targetToken, zeroExTradeData);
 
         // add bought tokens to unused balance
