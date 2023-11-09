@@ -107,7 +107,7 @@ interface ISpigot {
         uint256 debtOwed
     );
 
-    // function getBennyTokenAmount(address beneficiary, address token) external view returns (uint256);
+    function getBennyTokenAmount(address beneficiary, address token) external view returns (uint256);
 
     function beneficiaries() external view returns (address[] memory);
 
