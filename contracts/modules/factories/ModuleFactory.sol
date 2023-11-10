@@ -23,10 +23,10 @@ contract ModuleFactory is IModuleFactory {
         address[] calldata _startingBeneficiaries,
         uint256[] calldata _startingAllocations,
         uint256[] calldata _debtOwed,
-        address[] calldata _repaymentToken,
+        address[] calldata _creditToken,
         address _adminMultisig
     ) external returns (address module) {
-        module = address(new Spigot(owner, operator, _startingBeneficiaries, _startingAllocations, _debtOwed, _repaymentToken, _adminMultisig));
+        module = address(new Spigot(owner, operator, _startingBeneficiaries, _startingAllocations, _debtOwed, _creditToken, _adminMultisig));
         emit DeployedSpigot(module, owner, _startingBeneficiaries[0]);
     }
 

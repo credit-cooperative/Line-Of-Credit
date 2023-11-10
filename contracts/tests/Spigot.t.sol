@@ -53,7 +53,7 @@ contract SpigotTest is Test {
     address[] beneficiaries;
     uint256[] allocations;
     uint256[] debtOwed;
-    address[] repaymentToken;
+    address[] creditToken;
 
 
     function setUp() public {
@@ -82,10 +82,10 @@ contract SpigotTest is Test {
         debtOwed[2] = 100000;
 
         // make an array of length 3 and type address where each member is se to supportedToken1
-        repaymentToken = new address[](3);
-        repaymentToken[0] = address(0);
-        repaymentToken[1] = address(token);
-        repaymentToken[2] = address(token);
+        creditToken = new address[](3);
+        creditToken[0] = address(0);
+        creditToken[1] = address(token);
+        creditToken[2] = address(token);
 
         _initSpigot(
             address(token),
@@ -113,7 +113,7 @@ contract SpigotTest is Test {
 
         settings = ISpigot.Setting(split, claimFunc, newOwnerFunc);
 
-        spigot = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
+        spigot = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, creditToken, _multisigAdmin);
 
         // add spigot for revenue contract
         require(
@@ -603,8 +603,8 @@ contract SpigotTest is Test {
         vm.startPrank(arbiter);
         console.log('xxx - Beneficiary: ', beneficiaries[1]);
         console.log('xxx - Allocation: ', allocations[1]);
-        console.log('xxx - Repayment token: ', repaymentToken[1]);
-        spigot.updateBeneficiaryInfo(beneficiaries[1], beneficiaries[1], allocations[1], repaymentToken[1], 200000);
+        console.log('xxx - Repayment token: ', creditToken[1]);
+        spigot.updateBeneficiaryInfo(beneficiaries[1], beneficiaries[1], allocations[1], creditToken[1], 200000);
         vm.stopPrank();
 
         // 3 beneficiaries
@@ -1085,7 +1085,7 @@ contract SpigotTest is Test {
 
         settings = ISpigot.Setting(10, bytes4(""), bytes4("1234"));
 
-        spigot = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
+        spigot = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, creditToken, _multisigAdmin);
 
         vm.expectRevert(SpigotLib.InvalidRevenueContract.selector);
         spigot.addSpigot(address(spigot), settings);
@@ -1096,7 +1096,7 @@ contract SpigotTest is Test {
 
         settings = ISpigot.Setting(10, bytes4(""), bytes4("1234"));
 
-        spigot = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
+        spigot = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, creditToken, _multisigAdmin);
 
         spigot.addSpigot(address(revenueContract), settings);
 

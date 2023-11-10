@@ -51,7 +51,7 @@ contract SecuredLineTest is Test {
     address[] beneficiaries;
     uint256[] allocations;
     uint256[] debtOwed;
-    address[] repaymentToken;
+    address[] creditToken;
 
     function setUp() public {
         borrower = address(20);
@@ -79,12 +79,12 @@ contract SecuredLineTest is Test {
         debtOwed[1] = 0;
         debtOwed[2] = 0;
 
-        repaymentToken = new address[](3);
-        repaymentToken[0] = address(supportedToken1);
-        repaymentToken[1] = address(supportedToken1);
-        repaymentToken[2] = address(supportedToken1);
+        creditToken = new address[](3);
+        creditToken[0] = address(supportedToken1);
+        creditToken[1] = address(supportedToken1);
+        creditToken[2] = address(supportedToken1);
 
-        spigot = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, repaymentToken, arbiter);
+        spigot = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, creditToken, arbiter);
         oracle = new SimpleOracle(address(supportedToken1), address(supportedToken2));
 
         escrow = new Escrow(minCollateralRatio, address(oracle), arbiter, borrower, arbiter);
@@ -174,7 +174,7 @@ contract SecuredLineTest is Test {
     }
 
     function test_line_is_uninitilized_on_deployment() public {
-        Spigot s = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
+        Spigot s = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, creditToken, _multisigAdmin);
         Escrow e = new Escrow(minCollateralRatio, address(oracle), arbiter, borrower, arbiter);
         SecuredLine l = new SecuredLine(
             address(oracle),
@@ -205,7 +205,7 @@ contract SecuredLineTest is Test {
 
     function test_line_is_uninitilized_if_escrow_not_owned() public {
         address mock = address(new MockLine(0, address(3)));
-        Spigot s = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
+        Spigot s = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, creditToken, _multisigAdmin);
         Escrow e = new Escrow(minCollateralRatio, address(oracle), mock, borrower, arbiter);
         SecuredLine l = new SecuredLine(
             address(oracle),
@@ -227,7 +227,7 @@ contract SecuredLineTest is Test {
     }
 
     function test_line_is_uninitilized_if_spigot_not_owned() public {
-        Spigot s = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
+        Spigot s = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, creditToken, _multisigAdmin);
         Escrow e = new Escrow(minCollateralRatio, address(oracle), address(this), borrower, arbiter);
         SecuredLine l = new SecuredLine(
             address(oracle),
@@ -758,9 +758,9 @@ contract SecuredLineTest is Test {
         newAllocations[0] = 50000;
         newAllocations[1] = 50000;
 
-        address[] memory newRepaymentTokens = new address[](2);
-        newRepaymentTokens[0] = address(0);
-        newRepaymentTokens[1] = address(supportedToken1);
+        address[] memory newCreditTokens = new address[](2);
+        newCreditTokens[0] = address(0);
+        newCreditTokens[1] = address(supportedToken1);
 
         uint256 usdcDebtOwed = 100000;
         uint256[] memory newOutstandingDebts = new uint256[](2);
@@ -770,7 +770,7 @@ contract SecuredLineTest is Test {
         // update beneficiary settings fails when beneficiaries and operators arrays are different lengths
         vm.startPrank(borrower);
         vm.expectRevert(ISpigotedLine.InputArrayLengthsMustMatch.selector);
-        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newCreditTokens, newOutstandingDebts);
 
         // reset operators array to be same length as beneficiaries array
         newOperators = new address[](2);
@@ -783,7 +783,7 @@ contract SecuredLineTest is Test {
 
         // make allocations array too small
         vm.expectRevert(ISpigotedLine.InputArrayLengthsMustMatch.selector);
-        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newCreditTokens, newOutstandingDebts);
 
         // reset allocations array to be same length as beneficiaries array
         newAllocations = new uint256[](2);
@@ -791,25 +791,25 @@ contract SecuredLineTest is Test {
         newAllocations[1] = 50000;
 
         // update beneficiary settings fails when beneficiaries and repayment token arrays are different lengths
-        newRepaymentTokens = new address[](1);
-        newRepaymentTokens[0] = address(supportedToken1);
+        newCreditTokens = new address[](1);
+        newCreditTokens[0] = address(supportedToken1);
 
-        // make newRepaymentTokens too small
+        // make newCreditTokens too small
         vm.expectRevert(ISpigotedLine.InputArrayLengthsMustMatch.selector);
-        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newCreditTokens, newOutstandingDebts);
 
         // reset repayment tokens array to be same length as beneficiaries array
-        newRepaymentTokens = new address[](2);
-        newRepaymentTokens[0] = address(0);
-        newRepaymentTokens[1] = address(supportedToken1);
+        newCreditTokens = new address[](2);
+        newCreditTokens[0] = address(0);
+        newCreditTokens[1] = address(supportedToken1);
 
         // update beneficiary settings fails when beneficiaries and outstanding debts arrays are different lengths
         newOutstandingDebts = new uint256[](1);
         newOutstandingDebts[0] = 0;
 
-        // make newRepaymentTokens too small
+        // make newCreditTokens too small
         vm.expectRevert(ISpigotedLine.InputArrayLengthsMustMatch.selector);
-        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newCreditTokens, newOutstandingDebts);
 
     }
 
@@ -826,9 +826,9 @@ contract SecuredLineTest is Test {
         newAllocations[0] = 50000;
         newAllocations[1] = 50000;
 
-        address[] memory newRepaymentTokens = new address[](2);
-        newRepaymentTokens[0] = address(0);
-        newRepaymentTokens[1] = address(supportedToken1);
+        address[] memory newCreditTokens = new address[](2);
+        newCreditTokens[0] = address(0);
+        newCreditTokens[1] = address(supportedToken1);
 
         uint256 usdcDebtOwed = 100000;
         uint256[] memory newOutstandingDebts = new uint256[](2);
@@ -838,7 +838,7 @@ contract SecuredLineTest is Test {
         // update beneficiary settings the first time
         vm.startPrank(borrower);
         vm.expectRevert(abi.encodeWithSelector(ISpigotedLine.LineMustBeFirstBeneficiary.selector, newBeneficiaries[0]));
-        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newCreditTokens, newOutstandingDebts);
     }
 
     function test_cannot_update_beneficiary_settings_if_line_has_active_credit_positions() public {
@@ -854,9 +854,9 @@ contract SecuredLineTest is Test {
         newAllocations[0] = 40000;
         newAllocations[1] = 50000;
 
-        address[] memory newRepaymentTokens = new address[](2);
-        newRepaymentTokens[0] = address(0);
-        newRepaymentTokens[1] = address(supportedToken1);
+        address[] memory newCreditTokens = new address[](2);
+        newCreditTokens[0] = address(0);
+        newCreditTokens[1] = address(supportedToken1);
 
         uint256 usdcDebtOwed = 100000;
         uint256[] memory newOutstandingDebts = new uint256[](2);
@@ -870,7 +870,7 @@ contract SecuredLineTest is Test {
         // update beneficiary settings fails when sum of allocations less than 100000
         vm.startPrank(borrower);
         vm.expectRevert(abi.encodeWithSelector(ISpigotedLine.LineHasActiveCreditPositions.selector, 1));
-        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newCreditTokens, newOutstandingDebts);
     }
 
     function test_cannot_update_beneficiary_settings_if_allocations_do_not_sum_to_100() public {
@@ -886,9 +886,9 @@ contract SecuredLineTest is Test {
         newAllocations[0] = 40000;
         newAllocations[1] = 50000;
 
-        address[] memory newRepaymentTokens = new address[](2);
-        newRepaymentTokens[0] = address(0);
-        newRepaymentTokens[1] = address(supportedToken1);
+        address[] memory newCreditTokens = new address[](2);
+        newCreditTokens[0] = address(0);
+        newCreditTokens[1] = address(supportedToken1);
 
         uint256 usdcDebtOwed = 100000;
         uint256[] memory newOutstandingDebts = new uint256[](2);
@@ -898,7 +898,7 @@ contract SecuredLineTest is Test {
         // update beneficiary settings fails when sum of allocations less than 100000
         vm.startPrank(borrower);
         vm.expectRevert(abi.encodeWithSelector(ISpigotedLine.SumOfAllocationsMustBe100Percent.selector, newAllocations, 90000));
-        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newCreditTokens, newOutstandingDebts);
 
         // update beneficiary settings fails when sum of allocations greater than 100000
         newAllocations[0] = 60000;
@@ -906,7 +906,7 @@ contract SecuredLineTest is Test {
 
         vm.startPrank(borrower);
         vm.expectRevert(abi.encodeWithSelector(ISpigotedLine.SumOfAllocationsMustBe100Percent.selector, newAllocations, 110000));
-        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newCreditTokens, newOutstandingDebts);
 
     }
 
@@ -923,9 +923,9 @@ contract SecuredLineTest is Test {
         newAllocations[0] = 50000;
         newAllocations[1] = 50000;
 
-        address[] memory newRepaymentTokens = new address[](2);
-        newRepaymentTokens[0] = address(0);
-        newRepaymentTokens[1] = address(supportedToken1);
+        address[] memory newCreditTokens = new address[](2);
+        newCreditTokens[0] = address(0);
+        newCreditTokens[1] = address(supportedToken1);
 
         uint256 debtOwed = 100000;
         uint256[] memory newOutstandingDebts = new uint256[](2);
@@ -941,7 +941,7 @@ contract SecuredLineTest is Test {
 
         // credit positions cleared
         vm.startPrank(borrower);
-        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newCreditTokens, newOutstandingDebts);
         numCreditProposals = line.proposalCount();
         assertEq(numCreditProposals, 0);
         // TODO: add assertion to check that credit proposal id is not in the mutual consent proposals array
@@ -962,9 +962,9 @@ contract SecuredLineTest is Test {
         newAllocations[0] = 50000;
         newAllocations[1] = 50000;
 
-        address[] memory newRepaymentTokens = new address[](2);
-        newRepaymentTokens[0] = address(0);
-        newRepaymentTokens[1] = address(supportedToken1);
+        address[] memory newCreditTokens = new address[](2);
+        newCreditTokens[0] = address(0);
+        newCreditTokens[1] = address(supportedToken1);
 
         uint256 debtOwed = 100000;
         uint256[] memory newOutstandingDebts = new uint256[](2);
@@ -974,11 +974,11 @@ contract SecuredLineTest is Test {
         // attempting to update beneficiary settings fails because there is outstanding debt
         vm.startPrank(lender);
         vm.expectRevert(ILineOfCredit.CallerAccessDenied.selector);
-        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newCreditTokens, newOutstandingDebts);
         vm.stopPrank();
 
         vm.startPrank(borrower);
-        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newCreditTokens, newOutstandingDebts);
         vm.stopPrank();
 
     }
@@ -996,9 +996,9 @@ contract SecuredLineTest is Test {
         newAllocations[0] = 50000;
         newAllocations[1] = 50000;
 
-        address[] memory newRepaymentTokens = new address[](2);
-        newRepaymentTokens[0] = address(0);
-        newRepaymentTokens[1] = address(supportedToken1);
+        address[] memory newCreditTokens = new address[](2);
+        newCreditTokens[0] = address(0);
+        newCreditTokens[1] = address(supportedToken1);
 
         uint256 debtOwed = 100000;
         uint256[] memory newOutstandingDebts = new uint256[](2);
@@ -1007,7 +1007,7 @@ contract SecuredLineTest is Test {
 
         // update beneficiary settings to add outstanding debt
         vm.startPrank(borrower);
-        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newCreditTokens, newOutstandingDebts);
         vm.stopPrank();
 
         vm.startPrank(externalLender);
@@ -1054,9 +1054,9 @@ contract SecuredLineTest is Test {
         newAllocations[0] = 50000;
         newAllocations[1] = 50000;
 
-        address[] memory newRepaymentTokens = new address[](2);
-        newRepaymentTokens[0] = address(0);
-        newRepaymentTokens[1] = address(supportedToken1);
+        address[] memory newCreditTokens = new address[](2);
+        newCreditTokens[0] = address(0);
+        newCreditTokens[1] = address(supportedToken1);
 
         uint256 debtOwed = 100000;
         uint256[] memory newOutstandingDebts = new uint256[](2);
@@ -1065,13 +1065,13 @@ contract SecuredLineTest is Test {
 
         // update beneficiary settings to add outstanding debt
         vm.startPrank(borrower);
-        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newCreditTokens, newOutstandingDebts);
         vm.stopPrank();
 
         // update beneficiary settings fails because there is outstanding beneficiary debt
         vm.startPrank(borrower);
         vm.expectRevert(ISpigotedLine.LineHasBeneficiaryDebts.selector);
-        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newCreditTokens, newOutstandingDebts);
         vm.stopPrank();
 
     }
@@ -1089,9 +1089,9 @@ contract SecuredLineTest is Test {
         newAllocations[0] = 50000;
         newAllocations[1] = 50000;
 
-        address[] memory newRepaymentTokens = new address[](2);
-        newRepaymentTokens[0] = address(0);
-        newRepaymentTokens[1] = address(supportedToken1);
+        address[] memory newCreditTokens = new address[](2);
+        newCreditTokens[0] = address(0);
+        newCreditTokens[1] = address(supportedToken1);
 
         uint256 usdcDebtOwed = 100000;
         uint256[] memory newOutstandingDebts = new uint256[](2);
@@ -1100,18 +1100,18 @@ contract SecuredLineTest is Test {
 
         // update beneficiary settings the first time
         vm.startPrank(borrower);
-        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newCreditTokens, newOutstandingDebts);
 
-        (address locBennyOperator, uint256 locAllocation, address locRepaymentToken, uint256 locDebtOwed) = line.spigot().getBeneficiaryBasicInfo(address(line));
+        (address locBennyOperator, uint256 locAllocation, address locCreditToken, uint256 locDebtOwed) = line.spigot().getBeneficiaryBasicInfo(address(line));
         emit log_named_address('LoC Benny: ', locBennyOperator);
         emit log_named_uint('LoC Allocation: ', locAllocation);
-        emit log_named_address('LoC Repayment Token: ', locRepaymentToken);
+        emit log_named_address('LoC Credit Token: ', locCreditToken);
         emit log_named_uint('LoC Debt Owed: ', locDebtOwed);
 
-        (address elBennyOperator, uint256 elAllocation, address elRepaymentToken, uint256 elDebtOwed) = line.spigot().getBeneficiaryBasicInfo(address(externalLender));
+        (address elBennyOperator, uint256 elAllocation, address elCreditToken, uint256 elDebtOwed) = line.spigot().getBeneficiaryBasicInfo(address(externalLender));
         emit log_named_address('EL Benny: ', elBennyOperator);
         emit log_named_uint('EL Allocation: ', elAllocation);
-        emit log_named_address('EL Repayment Token: ', elRepaymentToken);
+        emit log_named_address('EL Credit Token: ', elCreditToken);
         emit log_named_uint('EL Debt Owed: ', elDebtOwed);
 
         assertEq(locBennyOperator, address(line));
@@ -1119,12 +1119,12 @@ contract SecuredLineTest is Test {
         assertEq(locAllocation, 50000);
         assertEq(elAllocation, 50000);
         assertEq(locAllocation + elAllocation, FULL_ALLOC);
-        assertEq(locRepaymentToken, address(0));
-        assertEq(elRepaymentToken, address(supportedToken1));
+        assertEq(locCreditToken, address(0));
+        assertEq(elCreditToken, address(supportedToken1));
         assertEq(locDebtOwed, 0);
         assertEq(elDebtOwed, usdcDebtOwed);
 
-        // console.log('LoC Beneficiary Basic Info: ', locBennyOperator, locAllocation, locRepaymentToken, locDebtOwed);
+        // console.log('LoC Beneficiary Basic Info: ', locBennyOperator, locAllocation, locCreditToken, locDebtOwed);
 
         vm.stopPrank();
     }
@@ -1146,9 +1146,9 @@ contract SecuredLineTest is Test {
         newAllocations[0] = 50000;
         newAllocations[1] = 50000;
 
-        address[] memory newRepaymentTokens = new address[](2);
-        newRepaymentTokens[0] = address(0);
-        newRepaymentTokens[1] = address(supportedToken1);
+        address[] memory newCreditTokens = new address[](2);
+        newCreditTokens[0] = address(0);
+        newCreditTokens[1] = address(supportedToken1);
 
         uint256 usdcDebtOwed = 100000;
         uint256[] memory newOutstandingDebts = new uint256[](2);
@@ -1156,7 +1156,7 @@ contract SecuredLineTest is Test {
         newOutstandingDebts[1] = usdcDebtOwed;
 
         vm.startPrank(borrower);
-        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newCreditTokens, newOutstandingDebts);
         vm.stopPrank();
 
         // reverts when not called by arbiter
@@ -1244,7 +1244,7 @@ contract SecuredLineTest is Test {
       line.depositAndClose();
       vm.stopPrank();
       // create and init new line with new modules
-      Spigot s = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
+      Spigot s = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, creditToken, _multisigAdmin);
       Escrow e = new Escrow(minCollateralRatio, address(oracle), arbiter, borrower, arbiter);
       SecuredLine l = new SecuredLine(
         address(oracle),
@@ -1287,7 +1287,7 @@ contract SecuredLineTest is Test {
       line.depositAndClose();
 
       // create and init new line with new modules
-      Spigot s = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
+      Spigot s = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, creditToken, _multisigAdmin);
       Escrow e = new Escrow(minCollateralRatio, address(oracle), arbiter, borrower, arbiter);
       SecuredLine l = new SecuredLine(
         address(oracle),

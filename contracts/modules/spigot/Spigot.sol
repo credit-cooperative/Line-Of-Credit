@@ -31,7 +31,7 @@ contract Spigot is ISpigot, ReentrancyGuard {
         address[] memory _startingBeneficiaries,
         uint256[] memory _startingAllocations,
         uint256[] memory _debtOwed,
-        address[] memory _repaymentToken,
+        address[] memory _creditToken,
         address _arbiter
         ) {
 
@@ -39,7 +39,7 @@ contract Spigot is ISpigot, ReentrancyGuard {
         require(_startingBeneficiaries.length == _startingAllocations.length, "Beneficiaries and allocations must be equal length");
         require(_startingBeneficiaries.length <= MAX_BENEFICIARIES, "Max beneficiaries");
         require(_startingBeneficiaries.length == _debtOwed.length, "Debt owed array and beneficiaries must be equal length");
-        require(_startingBeneficiaries.length == _repaymentToken.length, "Repayment token and beneficiaries must be equal length");
+        require(_startingBeneficiaries.length == _creditToken.length, "Repayment token and beneficiaries must be equal length");
         require(_startingBeneficiaries.length >= MIN_BENEFICIARIES, "Must have at least 1 beneficiary");
         require(_startingBeneficiaries[0] == _owner, "Owner must be the first beneficiary");
 
@@ -57,7 +57,7 @@ contract Spigot is ISpigot, ReentrancyGuard {
             state.beneficiaries.push(_startingBeneficiaries[i]);
             state.beneficiaryInfo[_startingBeneficiaries[i]].allocation = _startingAllocations[i];
             state.beneficiaryInfo[_startingBeneficiaries[i]].debtOwed = _debtOwed[i];
-            state.beneficiaryInfo[_startingBeneficiaries[i]].repaymentToken = _repaymentToken[i];
+            state.beneficiaryInfo[_startingBeneficiaries[i]].creditToken = _creditToken[i];
         }
 
         state.owner = _owner;
@@ -183,8 +183,8 @@ contract Spigot is ISpigot, ReentrancyGuard {
     }
 
     // TODO: add documentation
-    function updateBeneficiaryInfo(address beneficiary, address newOperator, uint256 allocation, address repaymentToken, uint256 outstandingDebt) external onlyOwnerOrArbiter {
-        state.updateBeneficiaryInfo(beneficiary, newOperator, allocation, repaymentToken, outstandingDebt);
+    function updateBeneficiaryInfo(address beneficiary, address newOperator, uint256 allocation, address creditToken, uint256 outstandingDebt) external onlyOwnerOrArbiter {
+        state.updateBeneficiaryInfo(beneficiary, newOperator, allocation, creditToken, outstandingDebt);
     }
 
     // TODO: add docuemntation
@@ -343,7 +343,7 @@ contract Spigot is ISpigot, ReentrancyGuard {
     function getBeneficiaryBasicInfo(address beneficiary) external view returns (
         address bennyOperator,
         uint256 allocation,
-        address repaymentToken,
+        address creditToken,
         uint256 debtOwed
     ) {
         return state.getBeneficiaryBasicInfo(beneficiary);
