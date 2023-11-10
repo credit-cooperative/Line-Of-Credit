@@ -493,12 +493,12 @@ library SpigotLib {
 
         // Transfer funds in distributions array to respective beneficiaries
         for (uint256 i = 0; i < distributions.length; i++) {
-            // if beneficiary is line, store tokens in ownerTokens mapping
-            if (i == 0 ) {
+            // if beneficiary is owner, store tokens in ownerTokens mapping
+            if (i == 0) {
                 self.ownerTokens[revToken] += distributions[i];
             }
 
-            // if beneficiary is not line, and credit token is same as revenue token, send tokens to beneficiary address
+            // if beneficiary is not owner, and credit token is same as revenue token, send tokens to beneficiary address
             if (i != 0 && repaymentTokens[i] == revToken) {
                 LineLib.sendOutTokenOrETH(revToken, self.beneficiaries[i],  distributions[i]);
             }
