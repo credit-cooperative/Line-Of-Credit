@@ -570,7 +570,8 @@ contract SpigotTest is Test {
         console.log('xxx - beneficiaries[2] balance: ', token.balanceOf(beneficiaries[2]));
 
         // amounts transferred to beneficiaries
-        assertEq(tokensToDistribute[0], token.balanceOf(beneficiaries[0]));
+        assertEq(tokensToDistribute[0], spigot.getOwnerTokens(address(token)));
+        assertEq(0, token.balanceOf(beneficiaries[0]));
         assertEq(tokensToDistribute[1], token.balanceOf(beneficiaries[1]));
         assertEq(tokensToDistribute[2], token.balanceOf(beneficiaries[2]));
 
@@ -625,7 +626,8 @@ contract SpigotTest is Test {
         console.log('xxx - beneficiaries[2] balance: ', token.balanceOf(beneficiaries[2]));
 
         // amounts transferred to beneficiaries
-        assertEq(tokensToDistribute[0], token.balanceOf(beneficiaries[0]));
+        assertEq(tokensToDistribute[0], spigot.getOwnerTokens(address(token)));
+        assertEq(0, token.balanceOf(beneficiaries[0]));
         assertEq(tokensToDistribute[1], token.balanceOf(beneficiaries[1]));
         assertEq(tokensToDistribute[2], token.balanceOf(beneficiaries[2]));
 
@@ -676,7 +678,8 @@ contract SpigotTest is Test {
         console.log('xxx - beneficiaries[2] balance: ', token.balanceOf(beneficiaries[2]));
 
         // amounts transferred to beneficiaries
-        assertEq(tokensToDistribute[0], token.balanceOf(beneficiaries[0]));
+        assertEq(tokensToDistribute[0], spigot.getOwnerTokens(address(token)));
+        assertEq(0, token.balanceOf(beneficiaries[0]));
         // assertEq(tokensToDistribute[1], 0);
         assertEq(tokensToDistribute[1], spigot.getBennyTokenAmount(beneficiaries[1], address(token))); // check that benny tokens has received distribution
         assertEq(tokensToDistribute[2], token.balanceOf(beneficiaries[2]));
@@ -729,7 +732,8 @@ contract SpigotTest is Test {
         console.log('xxx - beneficiaries[2] balance: ', token.balanceOf(beneficiaries[2]));
 
         // amounts transferred to beneficiaries
-        assertEq(tokensToDistribute[0], token.balanceOf(beneficiaries[0]));
+        assertEq(tokensToDistribute[0], spigot.getOwnerTokens(address(token)));
+        assertEq(0, token.balanceOf(beneficiaries[0]));
         // assertEq(tokensToDistribute[1], 0);
         assertEq(tokensToDistribute[1], spigot.getBennyTokenAmount(beneficiaries[1], address(token))); // check that benny tokens has received distribution
         assertEq(tokensToDistribute[2], token.balanceOf(beneficiaries[2]));
