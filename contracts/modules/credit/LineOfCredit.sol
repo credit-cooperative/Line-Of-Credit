@@ -396,15 +396,12 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     /// see ILineOfCredit.borrow
     function borrow(bytes32 id, uint256 amount, address to) external override nonReentrant whileActive onlyBorrower {
         Credit memory credit = _accrue(credits[id], id);
-
         if (!credit.isOpen) {
             revert PositionIsClosed();
         }
-
         if (amount > credit.deposit - credit.principal) {
             revert NoLiquidity();
         }
-
         credit.principal += amount;
 
         // save new debt before healthcheck and token transfer

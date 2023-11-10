@@ -9,13 +9,12 @@ import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
 
 import {Denominations} from "chainlink/Denominations.sol";
 import {ZeroEx} from "../mock/ZeroEx.sol";
-import {SimpleOracle} from "../mock/SimpleOracle.sol";
+// import {SimpleOracle} from "../mock/SimpleOracle.sol";
 import {Oracle} from "../modules/oracle/Oracle.sol";
 import {RevenueToken} from "../mock/RevenueToken.sol";
 import {SimpleRevenueContract} from "../mock/SimpleRevenueContract.sol";
 // import {ILineFactory} from "../interfaces/ILineFactory.sol";
 // import {LineFactory} from "../modules/factories/LineFactory.sol";
-import {SimpleOracle} from "../mock/SimpleOracle.sol";
 import {ModuleFactory} from "../modules/factories/ModuleFactory.sol";
 import {Spigot} from "../modules/spigot/Spigot.sol";
 import {Escrow} from "../modules/escrow/Escrow.sol";
@@ -36,6 +35,8 @@ import {ILineOfCredit} from "../interfaces/ILineOfCredit.sol";
 contract EthRevenue is Test {
     ModuleFactory moduleFactory;
     // LineFactory lineFactory;
+
+    Oracle oracle;
 
     Escrow escrow;
     Spigot spigot;
@@ -66,18 +67,18 @@ contract EthRevenue is Test {
     address private arbiter = makeAddr("arbiter");
     address private borrower = makeAddr("borrower");
     address private lender = makeAddr("lender");
+    address private externalLender = makeAddr("externalLender");
     address anyone = makeAddr("anyone");
-
-    address externalLender;
-    address _multisigAdmin;
 
     address[] beneficiaries;
     uint256[] allocations;
     uint256[] debtOwed;
     address[] repaymentToken;
 
-    uint256 constant initialBlockNumber = 16_082_690; // Nov-30-2022 12:05:23 PM +UTC
-    uint256 constant finalBlockNumber = 16_155_490; // Dec-24-2022 03:28:23 PM +UTC
+    // uint256 constant initialBlockNumber = 16_082_690; // Nov-30-2022 12:05:23 PM +UTC
+    // uint256 constant finalBlockNumber = 16_155_490; // Dec-24-2022 03:28:23 PM +UTC
+
+    uint256 constant initialBlockNumber = 18_536_670; // Nov-09-2023 12:05:23 PM +UTC
 
     uint256 constant BORROW_AMOUNT_DAI = 10_000 * 10**18; // $10k USD
 
@@ -103,10 +104,10 @@ contract EthRevenue is Test {
     RevenueToken supportedToken1;
     RevenueToken supportedToken2;
     RevenueToken unsupportedToken;
-    SimpleOracle oracle;
+    // SimpleOracle oracle;
     SecuredLine line;
     uint mintAmount = 100 ether;
-    uint32 minCollateralRatio = 10000; // 100%
+    uint32 minCollateralRatio = 0; // 0%
 
     uint256 FULL_ALLOC = 100000;
 
@@ -140,48 +141,23 @@ contract EthRevenue is Test {
 
         // address securedLine = lineFactory.deploySecuredLineWithConfig(params);
 
-        //TODO: Deploy LoC old-fashioned way
+        // Deploy LoC w/o Line Factory
+        beneficiaries = new address[](1);
+        beneficiaries[0] = arbiter;
 
-        // line = SecuredLine(payable(securedLine));
+        allocations = new uint256[](1);
+        allocations[0] = 100000;
 
-        // spigot = line.spigot();
-        // escrow = line.escrow();
-
-        borrower = address(20);
-        lender = address(10);
-        externalLender = address(30);
-        arbiter = address(this);
-        _multisigAdmin = address(0xdead);
-
-        beneficiaries = new address[](3);
-        beneficiaries[0] = address(this);
-        beneficiaries[1] = lender;
-        beneficiaries[2] = externalLender;
-
-        supportedToken1 = new RevenueToken();
-        supportedToken2 = new RevenueToken();
-        unsupportedToken = new RevenueToken();
-
-        allocations = new uint256[](3);
-        allocations[0] = 30000;
-        allocations[1] = 50000;
-        allocations[2] = 20000;
-
-        debtOwed = new uint256[](3);
+        debtOwed = new uint256[](1);
         debtOwed[0] = 0;
-        debtOwed[1] = 0;
-        debtOwed[2] = 0;
 
-        repaymentToken = new address[](3);
-        repaymentToken[0] = address(supportedToken1);
-        repaymentToken[1] = address(supportedToken1);
-        repaymentToken[2] = address(supportedToken1);
+        repaymentToken = new address[](1);
+        repaymentToken[0] = Denominations.ETH;
 
-        spigot = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, repaymentToken, arbiter);
-        oracle = new SimpleOracle(address(supportedToken1), address(supportedToken2));
+        spigot = new Spigot(arbiter, borrower, beneficiaries, allocations, debtOwed, repaymentToken, arbiter);
+        oracle = new Oracle(feedRegistry);
 
         escrow = new Escrow(minCollateralRatio, address(oracle), arbiter, borrower, arbiter);
-
         line = new SecuredLine(
           address(oracle),
           arbiter,
@@ -193,13 +169,17 @@ contract EthRevenue is Test {
           0
         );
 
+        vm.startPrank(arbiter);
         escrow.updateLine(address(line));
+        spigot.updateBeneficiaryInfo(address(line), address(line), allocations[0], repaymentToken[0], 0);
         spigot.updateOwner(address(line));
+        vm.stopPrank();
 
         line.init();
 
-        vm.prank(borrower);
+        vm.startPrank(borrower);
         revenueContract.transferOwnership(address(spigot));
+        vm.stopPrank();
 
         ISpigot.Setting memory settings = ISpigot.Setting({
             ownerSplit: ownerSplit,
@@ -208,7 +188,29 @@ contract EthRevenue is Test {
         });
 
         vm.startPrank(arbiter);
+
+
         line.addSpigot(address(revenueContract), settings);
+        vm.stopPrank();
+
+        vm.startPrank(borrower);
+
+        address[] memory newBeneficiaries = new address[](1);
+        newBeneficiaries[0] = address(line);
+
+        address[] memory newOperators = new address[](1);
+        newOperators[0] = address(line);
+
+        uint256[] memory newAllocations = new uint256[](1);
+        newAllocations[0] = 100000;
+
+        address[] memory newRepaymentTokens = new address[](1);
+        newRepaymentTokens[0] = address(0);
+
+        uint256[] memory newOutstandingDebts = new uint256[](1);
+
+        newOutstandingDebts[0] = 0;
+        line.updateBeneficiarySettings(newBeneficiaries, newOperators, newAllocations, newRepaymentTokens, newOutstandingDebts);
         vm.stopPrank();
 
         _setupSimulation();
@@ -239,22 +241,37 @@ contract EthRevenue is Test {
             abi.encode(SimpleRevenueContract.sendPushPayment.selector)
         );
         assertEq(address(spigot).balance, REVENUE_EARNED);
+        console.log('xxx - Spigot Balance 1A: ', address(spigot).balance);
+        console.log('xxx - REVENUE EARNED: ', REVENUE_EARNED);
+
+        // Distribute funds from the spigot to beneficiaries (just the line)
+        spigot.distributeFunds(Denominations.ETH);
 
         // owner split should be 10% of claimed revenue
-        ownerTokens = spigot.getLenderTokens(spigot.owner(), Denominations.ETH);
+        // ownerTokens = spigot.getLenderTokens(spigot.owner(), Denominations.ETH);
+        // ownerTokens =
+        console.log('xxx - arbiter: ', arbiter);
+        console.log('xxx - beneficiaries: ', spigot.getBeneficiaries()[0]);
+        console.log('xxx - spigot owner', spigot.owner());
+        console.log('xxx - line', address(line));
         emit log_named_uint("ownerTokens ETH", ownerTokens);
+        emit log_named_uint("line balance: ", address(line).balance);
         assertEq(ownerTokens, REVENUE_EARNED / ownerSplit);
 
         /*
             0x API call designating the sell amount:
             https://api.0x.org/swap/v1/quote?buyToken=DAI&sellToken=ETH&sellAmount=10000000000000000000
         */
-        bytes memory tradeData = hex"3598d8ab0000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000287b133bc7283b22ed000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000042c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20001f4a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000646b175474e89094c44da98b954eedeac495271d0f000000000000000000000000000000000000000000000000000000000000869584cd000000000000000000000000100000000000000000000000000000000000001100000000000000000000000000000000000000000000007754ade3b163ab43f7";
+        // bytes memory tradeData = hex"3598d8ab0000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000287b133bc7283b22ed000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000042c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20001f4a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000646b175474e89094c44da98b954eedeac495271d0f000000000000000000000000000000000000000000000000000000000000869584cd000000000000000000000000100000000000000000000000000000000000001100000000000000000000000000000000000000000000007754ade3b163ab43f7";
 
+        bytes memory tradeData = hex"415565b0000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000006b175474e89094c44da98b954eedeac495271d0f0000000000000000000000000000000000000000000000008ac7230489e80000000000000000000000000000000000000000000000000438ad0512babf90e4d200000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000012000000000000000000000000000000000000000000000000000000000000005000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000040000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000008ac7230489e8000000000000000000000000000000000000000000000000000000000000000000210000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000038000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20000000000000000000000006b175474e89094c44da98b954eedeac495271d0f00000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000340000000000000000000000000000000000000000000000000000000000000034000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000008ac7230489e80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000012556e69737761705633000000000000000000000000000000000000000000000000000000000000008ac7230489e8000000000000000000000000000000000000000000000000043a4c9f6c9ed3986b20000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000e592427a0aece92de3edee1f18e0157c05861564000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000042c02aaa39b223fe8d0a0e5c4f27ead9083c756cc20001f4a0b86991c6218b36c1d19d4a2e9eb0ce3606eb480000646b175474e89094c44da98b954eedeac495271d0f000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001b000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000010000000000000000000000006b175474e89094c44da98b954eedeac495271d0f0000000000000000000000000000000000000000000000019f9a59e41407864e000000000000000000000000ad01c20d5886137e056775af56915de824c8fce5000000000000000000000000000000000000000000000000000000000000001c000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000002000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee0000000000000000000000000000000000000000000000000000000000000000869584cd000000000000000000000000100000000000000000000000000000000000001100000000000000000000000000000000d5ecb478b8c3f91aed04d1f530c8a55e";
+
+        console.log('xxx - do I get here 1A');
         vm.startPrank(arbiter);
         tokensBought = line.claimAndTrade(Denominations.ETH, tradeData);
         vm.stopPrank();
 
+        console.log('xxx - do I get here 2A');
         ownerTokens = spigot.getLenderTokens(spigot.owner(), Denominations.ETH);
         assertEq(ownerTokens, 0);
         assertEq(line.unused(DAI), tokensBought);

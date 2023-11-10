@@ -182,7 +182,6 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
         if (msg.sender != arbiter) {
             revert CallerAccessDenied();
         }
-
         address targetToken = credits[ids[0]].token;
         uint256 newTokens = _claimAndTrade(claimToken, targetToken, zeroExTradeData);
 
@@ -211,7 +210,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
     ) internal returns (uint256) {
         if (claimToken == targetToken) {
             // same asset. dont trade
-            return spigot.distributeFunds(claimToken)[0];
+            return spigot.claimOwnerTokens(claimToken);
         } else {
             // trade revenue token for debt obligation
             (uint256 tokensBought, uint256 totalUnused) = SpigotedLineLib.claimAndTrade(
@@ -324,7 +323,6 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
             revert InputArrayLengthsMustMatch();
         }
 
-
         bool hasBeneficiaryDebtOutstanding = spigot.hasBeneficiaryDebtOutstanding();
 
         if (_beneficiaries[0] != address(this)) {
@@ -406,7 +404,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
 
     /// see ILineOfCredit.tradeable
     function tradeable(address token) external view returns (uint256) {
-        return unusedTokens[token] + spigot.getLenderTokens(token, spigot.owner());
+        return unusedTokens[token] + spigot.getOwnerTokens(token);
     }
 
     /// see ILineOfCredit.unused

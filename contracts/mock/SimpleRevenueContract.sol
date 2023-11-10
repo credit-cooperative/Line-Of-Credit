@@ -6,6 +6,9 @@ import {Denominations} from "chainlink/Denominations.sol";
 import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
 import {MutualConsent} from "../utils/MutualConsent.sol";
 
+ // TODO: Imports for development purpose only
+ import "forge-std/console.sol";
+
 contract SimpleRevenueContract is MutualConsent {
     address public owner;
     address public manager;
@@ -52,6 +55,7 @@ contract SimpleRevenueContract is MutualConsent {
     }
 
     function transferOwnership(address newOwner) external returns (bool) {
+        console.log('msg.sender, owner', msg.sender, owner);
         require(msg.sender == owner, "Revenue: Only owner can transfer");
         owner = newOwner;
         return true;

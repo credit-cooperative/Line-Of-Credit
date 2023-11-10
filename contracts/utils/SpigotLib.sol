@@ -19,7 +19,11 @@ struct SpigotState {
     address owner;
     address arbiter;
     address swapTarget;
+    /// @notice Total amount of revenue tokens held by the Spigot and available to be claimed by owner
+    mapping(address => uint256) ownerTokens; // token -> claimable
+    /// @notice Total amount of revenue tokens held by the Spigot and available to be claimed by operator
     mapping(address => uint256) operatorTokens;
+    // @notice Total amount of revenue tokens held by the Spigot and available to be distributed to beneficiaries
     mapping(address => uint256) allocationTokens;
     /// @notice Functions that the operator is allowed to run on all revenue contracts controlled by the Spigot
     mapping(bytes4 => bool) whitelistedFunctions; // function -> allowed
@@ -102,6 +106,27 @@ library SpigotLib {
 
 
         emit ClaimRevenue(token, claimed, allocationTokens, revenueContract);
+
+        return claimed;
+    }
+
+    /** see Spigot.claimOwnerTokens */
+    function claimOwnerTokens(SpigotState storage self, address token) external returns (uint256 claimed) {
+        if (msg.sender != self.owner) {
+            revert CallerAccessDenied();
+        }
+
+        claimed = self.ownerTokens[token];
+
+        if (claimed == 0) {
+            revert ClaimFailed();
+        }
+
+        self.ownerTokens[token] = 0; // reset before send to prevent reentrancy
+
+        LineLib.sendOutTokenOrETH(token, self.owner, claimed);
+
+        emit ClaimOwnerTokens(token, claimed, self.owner);
 
         return claimed;
     }
@@ -313,23 +338,26 @@ library SpigotLib {
         return true;
     }
 
+    // TODO: add docuemtnation
     // function that calls trade. pass in a lender address and it will trade their tokens for the desired token
     // TODO: add onlyBeneficiaryOrArbiter modifier, onlyArbiter modifier
     // TODO: how to handle if funds are for the line? should we just send them to the line? -- sent to line regardless of if it matches or not
     // TODO: does this have to sell all of the lender's tokens? or can it sell a portion? ideally, you want to sell the minimum necessary to repay the debt, and then transfer the remaining to the other beneficiaries
     // NOTE: trades all benny tokens for the lender's repayment token
     function tradeAndDistribute(SpigotState storage self, address lender, address sellToken, address payable swapTarget, bytes calldata zeroExTradeData) external returns (bool) {
+        address beneficiaryCreditToken = self.beneficiaryInfo[lender].repaymentToken;
+
         // called from
         uint256 amount = self.beneficiaryInfo[lender].bennyTokens[sellToken];
-        uint256 oldTokens = IERC20(self.beneficiaryInfo[lender].repaymentToken).balanceOf(address(this));
+        uint256 oldTokens = IERC20(beneficiaryCreditToken).balanceOf(address(this));
 
         // TODO: what forces the zeroExTradeData to contain the lender's repaymentToken?
         trade(amount, sellToken, swapTarget, zeroExTradeData);
 
-        uint256 boughtTokens = IERC20(self.beneficiaryInfo[lender].repaymentToken).balanceOf(address(this)) - oldTokens;
+        uint256 boughtTokens = IERC20(beneficiaryCreditToken).balanceOf(address(this)) - oldTokens;
         if (boughtTokens <= self.beneficiaryInfo[lender].debtOwed){
             self.beneficiaryInfo[lender].debtOwed -= boughtTokens;
-            IERC20(self.beneficiaryInfo[lender].repaymentToken).safeTransfer(lender, boughtTokens);
+            IERC20(beneficiaryCreditToken).safeTransfer(lender, boughtTokens);
         } else if (boughtTokens > self.beneficiaryInfo[lender].debtOwed) {
             uint256 excessTokens = boughtTokens - self.beneficiaryInfo[lender].debtOwed;
 
@@ -339,17 +367,17 @@ library SpigotLib {
             self.beneficiaryInfo[lender].allocation = 0;
 
             // transfer the debtOwed amount to the lender
-            IERC20(self.beneficiaryInfo[lender].repaymentToken).safeTransfer(lender, self.beneficiaryInfo[lender].debtOwed);
+            IERC20(beneficiaryCreditToken).safeTransfer(lender, self.beneficiaryInfo[lender].debtOwed);
 
             // Spread the lender's allocation across the beneficiaries with outstanding debt
             (uint256[] memory allocations, uint256[] memory outstandingDebts, ) = _getBennySettings(self);
             _resetAllocations(allocations, outstandingDebts, allocationToSpread);
 
             // Transfer the excess repayment tokens to the Spigot
-            self.allocationTokens[self.beneficiaryInfo[lender].repaymentToken] += excessTokens;
+            self.allocationTokens[beneficiaryCreditToken] += excessTokens;
 
             // Call distributeFunds to distribute excess tokens to the other beneficiaries w/ outstanding debt
-            _distributeFunds(self, self.beneficiaryInfo[lender].repaymentToken); // bought tokens
+            _distributeFunds(self, beneficiaryCreditToken); // bought tokens
         }
 
         return true;
@@ -368,6 +396,8 @@ library SpigotLib {
     }
 
     function _distributeFunds(SpigotState storage self, address revToken) internal returns (uint256[] memory distributions) {
+
+        console.log('xxx - revToken: ', revToken);
 
         // get balance of revenue token to distribute
         uint256 _tokensToDistribute = self.allocationTokens[revToken];
@@ -439,12 +469,15 @@ library SpigotLib {
 
             // reset allocations
             allocations = _resetAllocations(allocations, outstandingDebts, allocationToSpread);
-
+            console.log('xxx - distributions[0]', distributions[0]);
+            console.log('xxx - allocations[0]', allocations[0]);
             // add excessTokens to _tokensToDistribute if there are no more tokens to distribute
             if (excessTokens > 0 && _tokensToDistribute == 0) {
                 _tokensToDistribute += excessTokens;
                 excessTokens = 0;
             }
+            console.log('xxx - excessTokens', excessTokens);
+            console.log('xxx - _tokensToDistribute', _tokensToDistribute);
         }
 
         // Set allocations and debtOwed in state
@@ -462,13 +495,14 @@ library SpigotLib {
         for (uint256 i = 0; i < distributions.length; i++) {
             // if beneficiary is line, or credit token is same as revenue token, transfer funds
             if (i == 0 || repaymentTokens[i] == revToken) {
-                IERC20(revToken).safeTransfer(self.beneficiaries[i], distributions[i]);
+                LineLib.sendOutTokenOrETH(revToken, self.beneficiaries[i],  distributions[i]);
             }
             // otherwise, store funds in bennyTokens struct
             else {
                 self.beneficiaryInfo[self.beneficiaries[i]].bennyTokens[revToken] += distributions[i];
             }
         }
+
 
         return distributions;
     }
@@ -749,6 +783,8 @@ library SpigotLib {
     event ClaimRevenue(address indexed token, uint256 indexed amount, uint256 ownerTokens, address revenueContract);
 
     event ClaimLenderTokens(address indexed token, uint256 indexed amount, address lender);
+
+    event ClaimOwnerTokens(address indexed token, uint256 indexed amount, address owner);
 
     event ClaimOperatorTokens(address indexed token, uint256 indexed amount, address operator);
 

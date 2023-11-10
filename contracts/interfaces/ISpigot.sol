@@ -74,6 +74,8 @@ interface ISpigot {
 
     // owner funcs
 
+    function claimOwnerTokens(address token) external returns (uint256 claimed);
+
     function claimOperatorTokens(address token) external returns (uint256);
 
     function distributeFunds(address token) external returns (uint256[] memory);
@@ -116,6 +118,8 @@ interface ISpigot {
     function operator() external view returns (address);
 
     function isWhitelisted(bytes4 func) external view returns (bool);
+
+    function getOwnerTokens(address token) external view returns (uint256);
 
     function getLenderTokens(address token, address lender) external view returns (uint256);
 

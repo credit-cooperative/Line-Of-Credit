@@ -129,6 +129,16 @@ contract Spigot is ISpigot, ReentrancyGuard {
     }
 
     /**
+     * @notice  - Allows Spigot Owner to claim escrowed revenue tokens
+     * @dev     - callable by `owner`
+     * @param token     - address of revenue token that is being escrowed by spigot
+     * @return claimed  -  The amount of tokens claimed by the `owner`
+     */
+    function claimOwnerTokens(address token) external nonReentrant returns (uint256 claimed) {
+        return state.claimOwnerTokens(token);
+    }
+
+    /**
      * @notice - Allows Spigot Operator to claim escrowed revenue tokens
      * @dev - callable by `operator`
      * @param token - address of revenue token that is being escrowed by spigot
@@ -237,6 +247,20 @@ contract Spigot is ISpigot, ReentrancyGuard {
         return state.removeSpigot(revenueContract);
     }
 
+    // TODO: update this documentation
+    /**
+     * @notice  - Changes the revenue split between the Treasury and the Owner based upon the status of the Line of Credit
+     *          - or otherwise if the Owner and Borrower wish to change the split.
+     * @dev     - callable by `owner`
+     * @param revenueContract - Address of spigoted revenue generating contract
+     * @param ownerSplit - new % split to give owner
+     */
+
+    function updateOwnerSplit(address revenueContract, uint8 ownerSplit) external returns (bool) {
+        return state.updateOwnerSplit(revenueContract, ownerSplit);
+    }
+
+
     /**
      * @notice  - Update Owner role of Spigot contract.
      *          - New Owner receives revenue stream split and can control Spigot
@@ -275,17 +299,11 @@ contract Spigot is ISpigot, ReentrancyGuard {
 
     /**
      * @notice  - Retrieve amount of revenue tokens escrowed waiting for claim
-     /**
-     * @notice  - Changes the revenue split between the Treasury and the Owner based upon the status of the Line of Credit
-     *          - or otherwise if the Owner and Borrower wish to change the split.
-     * @dev     - callable by `owner`
-     * @param revenueContract - Address of spigoted revenue generating contract
-     * @param ownerSplit - new % split to give owner
+     * @param token - Revenue token that is being garnished from spigots
      */
-
-    function updateOwnerSplit(address revenueContract, uint8 ownerSplit) external returns (bool) {
-        return state.updateOwnerSplit(revenueContract, ownerSplit);
-    }
+     function getOwnerTokens(address token) external view returns (uint256) {
+        return state.ownerTokens[token];
+     }
 
     /**
      * @notice - Retrieve amount of revenue tokens escrowed waiting for claim

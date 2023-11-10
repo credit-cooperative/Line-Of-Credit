@@ -242,7 +242,7 @@ contract SpigotTest is Test {
 
         assertEq(roundingFix > 1, false);
         assertEq(
-            spigot.getLenderTokens(_token, beneficiaries[2]),
+            spigot.getOwnerTokens(_token),
             ownerTokens,
             'Invalid escrow amount for spigot revenue'
         );
@@ -426,7 +426,7 @@ contract SpigotTest is Test {
         spigot.claimRevenue(revenueContract, address(token), claimData);
         assertSpigotSplits(address(token), totalRevenue);
 
-        uint256 claimed = spigot.distributeFunds(address(token))[1];
+        uint256 claimed = spigot.claimOwnerTokens(address(token));
         (uint256 maxRevenue,) = getMaxRevenue(totalRevenue);
 
         assertEq(
@@ -451,7 +451,7 @@ contract SpigotTest is Test {
         vm.expectRevert(ISpigot.CallerAccessDenied.selector);
 
         // claim fails
-        spigot.distributeFunds(address(token))[1];
+        spigot.claimOwnerTokens(address(token));
     }
 
     function test_claimOperatorTokens_AsOperator(uint256 totalRevenue, uint8 _split) public {
@@ -523,7 +523,7 @@ contract SpigotTest is Test {
         spigot.claimRevenue(revenueContract, address(token), claimData); // collect majority of revenue
         spigot.claimRevenue(revenueContract, address(token), claimData); // collect remained
 
-        spigot.distributeFunds(address(token))[1];       // should pass bc no unlciamed revenue
+        spigot.claimOwnerTokens(address(token)); // should pass bc no unlciamed revenue
     }
 
     function test_claimEscrow_UnregisteredToken() public {
