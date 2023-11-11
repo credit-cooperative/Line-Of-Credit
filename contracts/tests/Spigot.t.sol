@@ -53,7 +53,7 @@ contract SpigotTest is Test {
     address[] beneficiaries;
     uint256[] allocations;
     uint256[] debtOwed;
-    address[] repaymentToken;
+    address[] creditToken;
 
 
     function setUp() public {
@@ -83,10 +83,10 @@ contract SpigotTest is Test {
         debtOwed[2] = 100000;
 
         // make an array of length 3 and type address where each member is se to supportedToken1
-        repaymentToken = new address[](3);
-        repaymentToken[0] = address(0);
-        repaymentToken[1] = address(token);
-        repaymentToken[2] = address(token);
+        creditToken = new address[](3);
+        creditToken[0] = address(0);
+        creditToken[1] = address(token);
+        creditToken[2] = address(token);
 
         _initSpigot(
             address(token),
@@ -574,7 +574,8 @@ contract SpigotTest is Test {
         console.log('xxx - beneficiaries[2] balance: ', token.balanceOf(beneficiaries[2]));
 
         // amounts transferred to beneficiaries
-        assertEq(tokensToDistribute[0], token.balanceOf(beneficiaries[0]));
+        assertEq(tokensToDistribute[0], spigot.getOwnerTokens(address(token)));
+        assertEq(0, token.balanceOf(beneficiaries[0]));
         assertEq(tokensToDistribute[1], token.balanceOf(beneficiaries[1]));
         assertEq(tokensToDistribute[2], token.balanceOf(beneficiaries[2]));
 
@@ -606,8 +607,8 @@ contract SpigotTest is Test {
         vm.startPrank(arbiter);
         console.log('xxx - Beneficiary: ', beneficiaries[1]);
         console.log('xxx - Allocation: ', allocations[1]);
-        console.log('xxx - Repayment token: ', repaymentToken[1]);
-        spigot.updateBeneficiaryInfo(beneficiaries[1], beneficiaries[1], allocations[1], repaymentToken[1], 200000);
+        console.log('xxx - Repayment token: ', creditToken[1]);
+        spigot.updateBeneficiaryInfo(beneficiaries[1], beneficiaries[1], allocations[1], creditToken[1], 200000);
         vm.stopPrank();
 
         // 3 beneficiaries
@@ -629,7 +630,8 @@ contract SpigotTest is Test {
         console.log('xxx - beneficiaries[2] balance: ', token.balanceOf(beneficiaries[2]));
 
         // amounts transferred to beneficiaries
-        assertEq(tokensToDistribute[0], token.balanceOf(beneficiaries[0]));
+        assertEq(tokensToDistribute[0], spigot.getOwnerTokens(address(token)));
+        assertEq(0, token.balanceOf(beneficiaries[0]));
         assertEq(tokensToDistribute[1], token.balanceOf(beneficiaries[1]));
         assertEq(tokensToDistribute[2], token.balanceOf(beneficiaries[2]));
 
@@ -680,7 +682,8 @@ contract SpigotTest is Test {
         console.log('xxx - beneficiaries[2] balance: ', token.balanceOf(beneficiaries[2]));
 
         // amounts transferred to beneficiaries
-        assertEq(tokensToDistribute[0], token.balanceOf(beneficiaries[0]));
+        assertEq(tokensToDistribute[0], spigot.getOwnerTokens(address(token)));
+        assertEq(0, token.balanceOf(beneficiaries[0]));
         // assertEq(tokensToDistribute[1], 0);
         assertEq(tokensToDistribute[1], spigot.getBennyTokenAmount(beneficiaries[1], address(token))); // check that benny tokens has received distribution
         assertEq(tokensToDistribute[2], token.balanceOf(beneficiaries[2]));
@@ -733,7 +736,8 @@ contract SpigotTest is Test {
         console.log('xxx - beneficiaries[2] balance: ', token.balanceOf(beneficiaries[2]));
 
         // amounts transferred to beneficiaries
-        assertEq(tokensToDistribute[0], token.balanceOf(beneficiaries[0]));
+        assertEq(tokensToDistribute[0], spigot.getOwnerTokens(address(token)));
+        assertEq(0, token.balanceOf(beneficiaries[0]));
         // assertEq(tokensToDistribute[1], 0);
         assertEq(tokensToDistribute[1], spigot.getBennyTokenAmount(beneficiaries[1], address(token))); // check that benny tokens has received distribution
         assertEq(tokensToDistribute[2], token.balanceOf(beneficiaries[2]));

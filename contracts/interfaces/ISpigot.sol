@@ -13,7 +13,7 @@ interface ISpigot {
     struct Beneficiary {
         address bennyOperator;
         uint256 allocation;
-        address repaymentToken;
+        address creditToken;
         uint256 debtOwed;
         mapping(address => uint256) bennyTokens;
     }
@@ -86,7 +86,7 @@ interface ISpigot {
 
     function removeSpigot(address revenueContract) external returns (bool);
 
-    function updateBeneficiaryInfo(address beneficiary, address newOperator, uint256 newAllocation, address newRepaymentToken, uint256 newOutstandingDebt) external;
+    function updateBeneficiaryInfo(address beneficiary, address newOperator, uint256 newAllocation, address newCreditToken, uint256 newOutstandingDebt) external;
 
     // stakeholder funcs
 
@@ -107,7 +107,7 @@ interface ISpigot {
     function getBeneficiaryBasicInfo(address beneficiary) external view returns (
         address bennyOperator,
         uint256 allocation,
-        address repaymentToken,
+        address creditToken,
         uint256 debtOwed
     );
 

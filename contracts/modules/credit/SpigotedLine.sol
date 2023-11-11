@@ -317,9 +317,9 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
     // NOTES: allocations cannot sum to greater than 100000
     // TODO: emit AmendBeneficiaries(address(this), spigot, beneficiaries);
     // NOTE: only works with existing beneificiaries. Need to add/remove beneficiares before calling this function
-    function updateBeneficiarySettings(address[] calldata _beneficiaries, address[] calldata _operators, uint256[] calldata _allocations, address[] calldata _repaymentTokens, uint256[] calldata _outstandingDebts) external onlyBorrower {
+    function updateBeneficiarySettings(address[] calldata _beneficiaries, address[] calldata _operators, uint256[] calldata _allocations, address[] calldata _creditTokens, uint256[] calldata _outstandingDebts) external onlyBorrower {
 
-        if (_beneficiaries.length != _operators.length || _beneficiaries.length != _allocations.length || _beneficiaries.length != _repaymentTokens.length || _beneficiaries.length != _outstandingDebts.length) {
+        if (_beneficiaries.length != _operators.length || _beneficiaries.length != _allocations.length || _beneficiaries.length != _creditTokens.length || _beneficiaries.length != _outstandingDebts.length) {
             revert InputArrayLengthsMustMatch();
         }
 
@@ -367,7 +367,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
 
             // update the beneficiary settings
             if (i > 0) {
-                spigot.updateBeneficiaryInfo(_beneficiaries[i], _operators[i], _allocations[i], _repaymentTokens[i], _outstandingDebts[i]);
+                spigot.updateBeneficiaryInfo(_beneficiaries[i], _operators[i], _allocations[i], _creditTokens[i], _outstandingDebts[i]);
 
             // line is the first beneficiary and cannot have a repayment token or beneficiary debt
             } else {

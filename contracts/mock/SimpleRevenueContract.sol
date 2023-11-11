@@ -55,7 +55,6 @@ contract SimpleRevenueContract is MutualConsent {
     }
 
     function transferOwnership(address newOwner) external returns (bool) {
-        console.log('msg.sender, owner', msg.sender, owner);
         require(msg.sender == owner, "Revenue: Only owner can transfer");
         owner = newOwner;
         return true;

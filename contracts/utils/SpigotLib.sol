@@ -344,14 +344,18 @@ library SpigotLib {
     // TODO: how to handle if funds are for the line? should we just send them to the line? -- sent to line regardless of if it matches or not
     // TODO: does this have to sell all of the lender's tokens? or can it sell a portion? ideally, you want to sell the minimum necessary to repay the debt, and then transfer the remaining to the other beneficiaries
     // NOTE: trades all benny tokens for the lender's repayment token
+    // TODO: should this function use LineLib.sendOutTokenOrETH and LineLib.getBalance?
     function tradeAndDistribute(SpigotState storage self, address lender, address sellToken, address payable swapTarget, bytes calldata zeroExTradeData) external returns (bool) {
-        address beneficiaryCreditToken = self.beneficiaryInfo[lender].repaymentToken;
+        address beneficiaryCreditToken = self.beneficiaryInfo[lender].creditToken;
 
         // called from
         uint256 amount = self.beneficiaryInfo[lender].bennyTokens[sellToken];
-        uint256 oldTokens = IERC20(beneficiaryCreditToken).balanceOf(address(this));
 
-        // TODO: what forces the zeroExTradeData to contain the lender's repaymentToken?
+        // TODO: need function to get balance of sellToken
+        // uint256 oldTokens = IERC20(beneficiaryCreditToken).balanceOf(address(this));
+        uint256 oldTokens = LineLib.getBalance(beneficiaryCreditToken);
+
+        // TODO: what forces the zeroExTradeData to contain the lender's creditToken?
         trade(amount, sellToken, swapTarget, zeroExTradeData);
 
         uint256 boughtTokens = IERC20(beneficiaryCreditToken).balanceOf(address(this)) - oldTokens;
@@ -383,16 +387,16 @@ library SpigotLib {
         return true;
     }
 
-   function _getBennySettings(SpigotState storage self) internal view returns (uint256[] memory allocations, uint256[] memory outstandingDebts, address[] memory repaymentTokens) {
+   function _getBennySettings(SpigotState storage self) internal view returns (uint256[] memory allocations, uint256[] memory outstandingDebts, address[] memory creditTokens) {
         uint256[] memory allocations = new uint256[](self.beneficiaries.length);
-        address[] memory repaymentTokens = new address[](self.beneficiaries.length);
+        address[] memory creditTokens = new address[](self.beneficiaries.length);
         uint256[] memory outstandingDebts = new uint256[](self.beneficiaries.length);
         for (uint256 i = 0; i < self.beneficiaries.length; i++) {
             allocations[i] = self.beneficiaryInfo[self.beneficiaries[i]].allocation;
             outstandingDebts[i] = self.beneficiaryInfo[self.beneficiaries[i]].debtOwed;
-            repaymentTokens[i] = self.beneficiaryInfo[self.beneficiaries[i]].repaymentToken;
+            creditTokens[i] = self.beneficiaryInfo[self.beneficiaries[i]].creditToken;
         }
-        return (allocations, outstandingDebts, repaymentTokens);
+        return (allocations, outstandingDebts, creditTokens);
     }
 
     function _distributeFunds(SpigotState storage self, address revToken) internal returns (uint256[] memory distributions) {
@@ -411,7 +415,7 @@ library SpigotLib {
 
         // get current beneficiary settings for all beneficiaries
         // TODO: this should be a helper function
-      (uint256[] memory allocations, uint256[] memory outstandingDebts, address[] memory repaymentTokens) = _getBennySettings(self);
+      (uint256[] memory allocations, uint256[] memory outstandingDebts, address[] memory creditTokens) = _getBennySettings(self);
 
         // TODO: remove logic for numBeneficiaries and numRepaidBeneficiaries
         uint256 numBeneficiaries = self.beneficiaries.length;
@@ -435,7 +439,7 @@ library SpigotLib {
                 }
 
                 // check if revtoken is the same as beneficiary repayment token
-                else if (revToken == repaymentTokens[i]) {
+                else if (revToken == creditTokens[i]) {
                     // if distribution amount exceeds debt, set debt and allocations to zero
                     console.log('xxx - outstanding debts: ', outstandingDebts[i]);
                     if (beneficiaryDistribution > outstandingDebts[i]){
@@ -455,7 +459,7 @@ library SpigotLib {
                 }
 
                 // if revToken different than beneficiary repayment token
-                else if (revToken != repaymentTokens[i]) {
+                else if (revToken != creditTokens[i]) {
                     distributions[i] += beneficiaryDistribution;
                 }
 
@@ -499,7 +503,7 @@ library SpigotLib {
             }
 
             // if beneficiary is not owner, and credit token is same as revenue token, send tokens to beneficiary address
-            if (i != 0 && repaymentTokens[i] == revToken) {
+            if (i != 0 && creditTokens[i] == revToken) {
                 LineLib.sendOutTokenOrETH(revToken, self.beneficiaries[i],  distributions[i]);
             }
             // otherwise, store funds in bennyTokens struct
@@ -686,11 +690,11 @@ library SpigotLib {
 
     // TODO: add docuementation
     // TODO: needs restrictions on who/when can be called
-    // function updateRepaymentToken(SpigotState storage self, address[] calldata _newToken) external {
+    // function updateCreditToken(SpigotState storage self, address[] calldata _newToken) external {
 
     //     for (uint256 i = 0; i < self.beneficiaries.length; i++) {
     //         require(_newToken[i] != address(0), "Invalid token");
-    //         self.beneficiaryInfo[self.beneficiaries[i]].repaymentToken = _newToken[i];
+    //         self.beneficiaryInfo[self.beneficiaries[i]].creditToken = _newToken[i];
     //     }
     // }
 
@@ -699,18 +703,18 @@ library SpigotLib {
     // TODO: add documentation
     // TODO: needs restrictions on who/when can be called
 
-    function updateBeneficiaryInfo(SpigotState storage self, address beneficiary, address newOperator, uint256 allocation, address repaymentToken, uint256 outstandingDebt) external {
+    function updateBeneficiaryInfo(SpigotState storage self, address beneficiary, address newOperator, uint256 allocation, address creditToken, uint256 outstandingDebt) external {
         require(beneficiary != address(0), "Invalid beneficiary");
         require(newOperator != address(0), "Invalid operator");
         if (msg.sender != self.owner && msg.sender != self.arbiter) {
             revert CallerAccessDenied();
         }
         // require(allocation > 0, "Invalid allocation");
-        // require(repaymentToken != address(0), "Invalid repayment token");
+        // require(creditToken != address(0), "Invalid repayment token");
 
         self.beneficiaryInfo[beneficiary].bennyOperator = newOperator;
         self.beneficiaryInfo[beneficiary].allocation = allocation;
-        self.beneficiaryInfo[beneficiary].repaymentToken = repaymentToken;
+        self.beneficiaryInfo[beneficiary].creditToken = creditToken;
         self.beneficiaryInfo[beneficiary].debtOwed = outstandingDebt;
 
         // TODO: cannnot delete mapping entirely. need to iterate over to delete if necessary
@@ -761,7 +765,7 @@ library SpigotLib {
     // TODO: add documentation
     function getBeneficiaryBasicInfo(SpigotState storage self, address beneficiary) external view returns (address, uint256, address, uint256) {
         ISpigot.Beneficiary storage b = self.beneficiaryInfo[beneficiary];
-        return (b.bennyOperator, b.allocation, b.repaymentToken, b.debtOwed);
+        return (b.bennyOperator, b.allocation, b.creditToken, b.debtOwed);
     }
 
     // TODO: add documentation
