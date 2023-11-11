@@ -59,6 +59,7 @@ contract SpigotTest is Test {
     function setUp() public {
         owner = address(this);
         operator = address(10);
+        borrower = address(11);
 
         // make an array of addresses using the owner var, operator var and 3rd new address
         beneficiaries = new address[](3);
@@ -483,7 +484,7 @@ contract SpigotTest is Test {
         assertSpigotSplits(address(token), totalRevenue);
 
 
-        vm.prank(operator);
+        vm.prank(borrower);
         uint256 claimed = spigot.claimOperatorTokens(address(token));
         (uint256 maxRevenue,) = getMaxRevenue(totalRevenue);
 
@@ -524,6 +525,7 @@ contract SpigotTest is Test {
         bytes memory claimData;
         spigot.claimRevenue(revenueContract, address(token), claimData); // collect majority of revenue
         spigot.claimRevenue(revenueContract, address(token), claimData); // collect remained
+        spigot.distributeFunds(address(token)); // distribute remaining revenue
 
         spigot.claimOwnerTokens(address(token)); // should pass bc no unlciamed revenue
     }
@@ -1098,10 +1100,12 @@ contract SpigotTest is Test {
         spigot = new Spigot(address(this), borrower);
         spigot.initialize(beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
 
+        spigot.addSpigot(address(revenueContract), settings);
+
         ISpigot.Setting memory altSettings = ISpigot.Setting(50, bytes4(""), bytes4("1234"));
 
         vm.expectRevert(SpigotLib.SpigotSettingsExist.selector);
-         spigot.addSpigot(address(revenueContract), altSettings);
+        spigot.addSpigot(address(revenueContract), altSettings);
     }
 
 }
