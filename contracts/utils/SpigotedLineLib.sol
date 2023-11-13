@@ -3,6 +3,9 @@
 
  pragma solidity ^0.8.16;
 
+ // TODO: Imports for development purpose only
+ import "forge-std/console.sol";
+
 import {ISpigot} from "../interfaces/ISpigot.sol";
 import {ISpigotedLine} from "../interfaces/ISpigotedLine.sol";
 import {LineLib} from "../utils/LineLib.sol";
@@ -80,11 +83,15 @@ library SpigotedLineLib {
         // @dev claim has to be called after we get balance
         // reverts if there are no tokens to claim
         uint256 claimed = ISpigot(spigot).claimOwnerTokens(claimToken);
-
+        console.log('xxx - claimed: ', claimed);
+        console.log('xxx - claimed + unused: ', claimed + unused);
         trade(claimed + unused, claimToken, swapTarget, zeroExTradeData);
 
         // underflow revert ensures we have more tokens than we started with
+        console.log('xxx - targetToken balance: ', LineLib.getBalance(targetToken));
+        console.log('xxx - targetToken: ', targetToken);
         uint256 tokensBought = LineLib.getBalance(targetToken) - oldTargetTokens;
+        console.log('xxx - tokensBought: ', tokensBought);
 
         if (tokensBought == 0) {
             revert TradeFailed();
@@ -141,7 +148,9 @@ library SpigotedLineLib {
     ) public returns (bool) {
         if (sellToken == Denominations.ETH) {
             // if claiming/trading eth send as msg.value to dex
+            console.log('xxx - sellToken: ', sellToken);
             (bool success, ) = swapTarget.call{value: amount}(zeroExTradeData);
+            console.log('xxx - trade success: ', success);
             if (!success) {
                 revert TradeFailed();
             }
