@@ -142,8 +142,7 @@ contract EthRevenue is Test {
         // address securedLine = lineFactory.deploySecuredLineWithConfig(params);
 
         // Deploy LoC w/o Line Factory
-        beneficiaries = new address[](1);
-        beneficiaries[0] = arbiter;
+
 
         allocations = new uint256[](1);
         allocations[0] = 100000;
@@ -154,7 +153,7 @@ contract EthRevenue is Test {
         creditToken = new address[](1);
         creditToken[0] = Denominations.ETH;
 
-        spigot = new Spigot(arbiter, borrower, beneficiaries, allocations, debtOwed, creditToken, arbiter);
+        spigot = new Spigot(address(this), borrower);
         oracle = new Oracle(feedRegistry);
 
         escrow = new Escrow(minCollateralRatio, address(oracle), arbiter, borrower, arbiter);
@@ -168,6 +167,11 @@ contract EthRevenue is Test {
           150 days,
           0
         );
+
+        beneficiaries = new address[](1);
+        beneficiaries[0] = address(line);
+
+        spigot.initialize(beneficiaries, allocations, debtOwed, repaymentToken, arbiter);
 
         vm.startPrank(arbiter);
         escrow.updateLine(address(line));

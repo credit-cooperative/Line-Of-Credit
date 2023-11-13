@@ -80,9 +80,7 @@ contract SpigotedLineTest is Test, Events {
         arbiter = address(this);
         _multisigAdmin = address(0xdead);
 
-        beneficiaries = new address[](2);
-        beneficiaries[0] = address(this);
-        beneficiaries[1] = externalLender;
+        
 
         dex = new ZeroEx();
         creditToken = new RevenueToken();
@@ -103,7 +101,7 @@ contract SpigotedLineTest is Test, Events {
         // creditTokens[2] = address(revenueToken);
 
         oracle = new SimpleOracle(address(revenueToken), address(creditToken));
-        spigot = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, creditTokens, arbiter);
+        spigot = new Spigot(address(this), borrower);
 
         line = new SpigotedLine(
           address(oracle),
@@ -115,7 +113,11 @@ contract SpigotedLineTest is Test, Events {
           ownerSplit
         );
 
-        spigot.updateOwner(address(line));
+        beneficiaries = new address[](2);
+        beneficiaries[0] = address(line);
+        beneficiaries[1] = externalLender;
+
+        spigot.initialize(beneficiaries, allocations, debtOwed, repaymentToken, arbiter);
 
         line.init();
 

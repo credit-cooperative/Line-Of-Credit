@@ -60,11 +60,6 @@ contract SecuredLineTest is Test {
         arbiter = address(this);
         _multisigAdmin = address(0xdead);
 
-        beneficiaries = new address[](3);
-        beneficiaries[0] = address(this);
-        beneficiaries[1] = lender;
-        beneficiaries[2] = externalLender;
-
         supportedToken1 = new RevenueToken();
         supportedToken2 = new RevenueToken();
         unsupportedToken = new RevenueToken();
@@ -84,7 +79,7 @@ contract SecuredLineTest is Test {
         creditToken[1] = address(supportedToken1);
         creditToken[2] = address(supportedToken1);
 
-        spigot = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, creditToken, arbiter);
+        spigot = new Spigot(address(this), borrower);
         oracle = new SimpleOracle(address(supportedToken1), address(supportedToken2));
 
         escrow = new Escrow(minCollateralRatio, address(oracle), arbiter, borrower, arbiter);
@@ -100,8 +95,13 @@ contract SecuredLineTest is Test {
           0
         );
 
+        beneficiaries = new address[](3);
+        beneficiaries[0] = address(line);
+        beneficiaries[1] = lender;
+        beneficiaries[2] = externalLender;
+
         escrow.updateLine(address(line));
-        spigot.updateOwner(address(line));
+        spigot.initialize(beneficiaries, allocations, debtOwed, repaymentToken, arbiter);
 
         line.init();
         // assertEq(uint(line.init()), uint(LineLib.STATUS.ACTIVE));
@@ -174,7 +174,7 @@ contract SecuredLineTest is Test {
     }
 
     function test_line_is_uninitilized_on_deployment() public {
-        Spigot s = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, creditToken, _multisigAdmin);
+        Spigot s = new Spigot(address(this), borrower);
         Escrow e = new Escrow(minCollateralRatio, address(oracle), arbiter, borrower, arbiter);
         SecuredLine l = new SecuredLine(
             address(oracle),
@@ -186,6 +186,8 @@ contract SecuredLineTest is Test {
             150 days,
             0
         );
+
+
         // assertEq(uint(l.init()), uint(LineLib.STATUS.UNINITIALIZED));
 
         // spigot fails first because we need it more
@@ -205,7 +207,7 @@ contract SecuredLineTest is Test {
 
     function test_line_is_uninitilized_if_escrow_not_owned() public {
         address mock = address(new MockLine(0, address(3)));
-        Spigot s = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, creditToken, _multisigAdmin);
+        Spigot s = new Spigot(address(this), borrower);
         Escrow e = new Escrow(minCollateralRatio, address(oracle), mock, borrower, arbiter);
         SecuredLine l = new SecuredLine(
             address(oracle),
@@ -218,8 +220,11 @@ contract SecuredLineTest is Test {
             0
         );
 
+        beneficiaries[0] = address(line);
+
+
         // configure other modules
-        s.updateOwner(address(l));
+        s.initialize(beneficiaries, allocations, debtOwed, repaymentToken, arbiter);
 
         // assertEq(uint(l.init()), uint(LineLib.STATUS.UNINITIALIZED));
         vm.expectRevert(abi.encodeWithSelector(ILineOfCredit.BadModule.selector, address(e)));
@@ -227,7 +232,7 @@ contract SecuredLineTest is Test {
     }
 
     function test_line_is_uninitilized_if_spigot_not_owned() public {
-        Spigot s = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, creditToken, _multisigAdmin);
+        Spigot s = new Spigot(address(this), borrower);
         Escrow e = new Escrow(minCollateralRatio, address(oracle), address(this), borrower, arbiter);
         SecuredLine l = new SecuredLine(
             address(oracle),
@@ -1244,7 +1249,7 @@ contract SecuredLineTest is Test {
       line.depositAndClose();
       vm.stopPrank();
       // create and init new line with new modules
-      Spigot s = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, creditToken, _multisigAdmin);
+      Spigot s = new Spigot(address(this), borrower);
       Escrow e = new Escrow(minCollateralRatio, address(oracle), arbiter, borrower, arbiter);
       SecuredLine l = new SecuredLine(
         address(oracle),
@@ -1257,8 +1262,9 @@ contract SecuredLineTest is Test {
         0
       );
 
+      beneficiaries[0] = address(l);
       e.updateLine(address(l));
-      s.updateOwner(address(l));
+      s.initialize(beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
       l.init();
 
       // giving our modules should fail because taken already
@@ -1287,7 +1293,7 @@ contract SecuredLineTest is Test {
       line.depositAndClose();
 
       // create and init new line with new modules
-      Spigot s = new Spigot(address(this), borrower, beneficiaries, allocations, debtOwed, creditToken, _multisigAdmin);
+      Spigot s = new Spigot(address(this), borrower);
       Escrow e = new Escrow(minCollateralRatio, address(oracle), arbiter, borrower, arbiter);
       SecuredLine l = new SecuredLine(
         address(oracle),

@@ -62,6 +62,8 @@ interface ISpigot {
 
     error NoTokensToDistribute();
 
+    error NotInitialized();
+
     // ops funcs
 
     function claimRevenue(
