@@ -73,7 +73,7 @@ contract EthRevenue is Test {
     address[] beneficiaries;
     uint256[] allocations;
     uint256[] debtOwed;
-    address[] creditToken;
+    address[] creditTokens;
 
     // uint256 constant initialBlockNumber = 16_082_690; // Nov-30-2022 12:05:23 PM +UTC
     // uint256 constant finalBlockNumber = 16_155_490; // Dec-24-2022 03:28:23 PM +UTC
@@ -150,8 +150,8 @@ contract EthRevenue is Test {
         debtOwed = new uint256[](1);
         debtOwed[0] = 0;
 
-        creditToken = new address[](1);
-        creditToken[0] = Denominations.ETH;
+        creditTokens = new address[](1);
+        creditTokens[0] = Denominations.ETH;
 
         spigot = new Spigot(address(this), borrower);
         oracle = new Oracle(feedRegistry);
@@ -171,11 +171,11 @@ contract EthRevenue is Test {
         beneficiaries = new address[](1);
         beneficiaries[0] = address(line);
 
-        spigot.initialize(beneficiaries, allocations, debtOwed, repaymentToken, arbiter);
+        spigot.initialize(beneficiaries, allocations, debtOwed, creditTokens, arbiter);
 
         vm.startPrank(arbiter);
         escrow.updateLine(address(line));
-        spigot.updateBeneficiaryInfo(address(line), address(line), allocations[0], creditToken[0], 0);
+        spigot.updateBeneficiaryInfo(address(line), address(line), allocations[0], creditTokens[0], 0);
         spigot.updateOwner(address(line));
         vm.stopPrank();
 

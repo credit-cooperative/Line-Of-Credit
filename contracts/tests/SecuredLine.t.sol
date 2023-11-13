@@ -51,7 +51,7 @@ contract SecuredLineTest is Test {
     address[] beneficiaries;
     uint256[] allocations;
     uint256[] debtOwed;
-    address[] creditToken;
+    address[] creditTokens;
 
     function setUp() public {
         borrower = address(20);
@@ -74,10 +74,10 @@ contract SecuredLineTest is Test {
         debtOwed[1] = 0;
         debtOwed[2] = 0;
 
-        creditToken = new address[](3);
-        creditToken[0] = address(supportedToken1);
-        creditToken[1] = address(supportedToken1);
-        creditToken[2] = address(supportedToken1);
+        creditTokens = new address[](3);
+        creditTokens[0] = address(supportedToken1);
+        creditTokens[1] = address(supportedToken1);
+        creditTokens[2] = address(supportedToken1);
 
         spigot = new Spigot(address(this), borrower);
         oracle = new SimpleOracle(address(supportedToken1), address(supportedToken2));
@@ -101,7 +101,7 @@ contract SecuredLineTest is Test {
         beneficiaries[2] = externalLender;
 
         escrow.updateLine(address(line));
-        spigot.initialize(beneficiaries, allocations, debtOwed, repaymentToken, arbiter);
+        spigot.initialize(beneficiaries, allocations, debtOwed, creditTokens, arbiter);
 
         line.init();
         // assertEq(uint(line.init()), uint(LineLib.STATUS.ACTIVE));
@@ -224,7 +224,7 @@ contract SecuredLineTest is Test {
 
 
         // configure other modules
-        s.initialize(beneficiaries, allocations, debtOwed, repaymentToken, arbiter);
+        s.initialize(beneficiaries, allocations, debtOwed, creditTokens, arbiter);
 
         // assertEq(uint(l.init()), uint(LineLib.STATUS.UNINITIALIZED));
         vm.expectRevert(abi.encodeWithSelector(ILineOfCredit.BadModule.selector, address(e)));
@@ -1264,7 +1264,7 @@ contract SecuredLineTest is Test {
 
       beneficiaries[0] = address(l);
       e.updateLine(address(l));
-      s.initialize(beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
+      s.initialize(beneficiaries, allocations, debtOwed, creditTokens, _multisigAdmin);
       l.init();
 
       // giving our modules should fail because taken already

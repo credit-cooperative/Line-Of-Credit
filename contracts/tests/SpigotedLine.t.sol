@@ -80,7 +80,7 @@ contract SpigotedLineTest is Test, Events {
         arbiter = address(this);
         _multisigAdmin = address(0xdead);
 
-        
+
 
         dex = new ZeroEx();
         creditToken = new RevenueToken();
@@ -117,7 +117,7 @@ contract SpigotedLineTest is Test, Events {
         beneficiaries[0] = address(line);
         beneficiaries[1] = externalLender;
 
-        spigot.initialize(beneficiaries, allocations, debtOwed, repaymentToken, arbiter);
+        spigot.initialize(beneficiaries, allocations, debtOwed, creditTokens, arbiter);
 
         line.init();
 

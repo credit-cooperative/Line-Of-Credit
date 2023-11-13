@@ -198,8 +198,8 @@ contract Spigot is ISpigot, ReentrancyGuard {
     }
 
     // TODO: add documentation
-    function updateBeneficiaryInfo(address beneficiary, address newOperator, uint256 allocation, address repaymentToken, uint256 outstandingDebt) external isInitialized  onlyOwnerOrArbiter {
-        state.updateBeneficiaryInfo(beneficiary, newOperator, allocation, repaymentToken, outstandingDebt);
+    function updateBeneficiaryInfo(address beneficiary, address newOperator, uint256 allocation, address creditToken, uint256 outstandingDebt) external isInitialized  onlyOwnerOrArbiter {
+        state.updateBeneficiaryInfo(beneficiary, newOperator, allocation, creditToken, outstandingDebt);
     }
 
     // TODO: add docuemntation
