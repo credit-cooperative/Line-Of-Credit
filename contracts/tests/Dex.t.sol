@@ -126,7 +126,6 @@ contract EthRevenue is Test {
         // create fork at specific block (16_082_690) so we always know the price
         mainnetFork = vm.createFork(MAINNET_RPC_URL, initialBlockNumber);
         vm.selectFork(mainnetFork);
-
         revenueContract = new SimpleRevenueContract(borrower, Denominations.ETH);
 
         moduleFactory = new ModuleFactory();
@@ -170,17 +169,15 @@ contract EthRevenue is Test {
 
         beneficiaries = new address[](1);
         beneficiaries[0] = address(line);
-
         spigot.initialize(beneficiaries, allocations, debtOwed, creditTokens, arbiter);
 
         vm.startPrank(arbiter);
         escrow.updateLine(address(line));
+        // TODO: is this necessary given the spigot was initialized?
         spigot.updateBeneficiaryInfo(address(line), address(line), allocations[0], creditTokens[0], 0);
-        spigot.updateOwner(address(line));
         vm.stopPrank();
 
         line.init();
-
         vm.startPrank(borrower);
         revenueContract.transferOwnership(address(spigot));
         vm.stopPrank();
