@@ -183,6 +183,27 @@ library SpigotLib {
         return true;
     }
 
+    function repay(SpigotState storage self, address lender, uint256 amount) external returns (ISpigot.Beneficiary memory){
+
+        // check if lender has outtstanding debt, subtract amount from that debt and then send the amount to the lender address
+        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+            if (self.beneficiaries[i] == lender){
+                if (self.beneficiaryInfo[lender].outstandingDebt > 0){
+                    if (amount > self.beneficiaryInfo[lender].outstandingDebt ){
+                        revert AmountExceedsDebt();
+                    } else {
+                        self.beneficiaryInfo[lender].outstandingDebt -= amount;
+                        IERC20(self.beneficiaryInfo[lender].creditToken).safeTransfer(lender, amount);
+                    }
+                }
+                else if (beneficiaryInfo[lender].outstandingDebt == 0){
+                    revert NoDebtOutstanding();
+                }
+            }
+        }
+        revert LenderNotFound();
+    }
+
     /** see Spigot.addSpigot */
     function addSpigot(
         SpigotState storage self,
