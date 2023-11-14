@@ -3,6 +3,9 @@
 
  pragma solidity ^0.8.16;
 
+ // TODO: Imports for development purpose only
+ import "forge-std/console.sol";
+
 import {ISpigot} from "../interfaces/ISpigot.sol";
 import {ISpigotedLine} from "../interfaces/ISpigotedLine.sol";
 import {LineLib} from "../utils/LineLib.sol";
@@ -80,7 +83,6 @@ library SpigotedLineLib {
         // @dev claim has to be called after we get balance
         // reverts if there are no tokens to claim
         uint256 claimed = ISpigot(spigot).claimOwnerTokens(claimToken);
-
         trade(claimed + unused, claimToken, swapTarget, zeroExTradeData);
 
         // underflow revert ensures we have more tokens than we started with
