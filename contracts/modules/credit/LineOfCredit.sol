@@ -466,7 +466,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         id = CreditLib.computeId(address(this), lender, token);
 
         // MUST not double add the credit line. once lender is set it cant be deleted even if position is closed.
-        if (credits[id].lender != address(0)) {
+        if (credits[id].lender != address(0) && credits[id].isOpen) {
             revert PositionExists();
         }
 
