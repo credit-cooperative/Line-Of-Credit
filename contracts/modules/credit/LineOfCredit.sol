@@ -471,7 +471,6 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         }
 
         credits[id] = CreditLib.create(id, amount, lender, token, address(oracle));
-
         ids.push(id); // add lender to end of repayment queue
 
         unchecked {

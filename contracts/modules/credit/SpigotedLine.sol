@@ -317,7 +317,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
     // NOTES: allocations cannot sum to greater than 100000
     // TODO: emit AmendBeneficiaries(address(this), spigot, beneficiaries);
     // NOTE: only works with existing beneificiaries. Need to add/remove beneficiares before calling this function
-    function updateBeneficiarySettings(address[] calldata _beneficiaries, address[] calldata _operators, uint256[] calldata _allocations, address[] calldata _creditTokens, uint256[] calldata _outstandingDebts) external onlyBorrower {
+    function updateBeneficiarySettings(address[] calldata _beneficiaries, address[] calldata _operators, uint256[] calldata _allocations, address[] calldata _creditTokens, uint256[] calldata _outstandingDebts) external onlyBorrowerOrArbiter {
 
         if (_beneficiaries.length != _operators.length || _beneficiaries.length != _allocations.length || _beneficiaries.length != _creditTokens.length || _beneficiaries.length != _outstandingDebts.length) {
             revert InputArrayLengthsMustMatch();
