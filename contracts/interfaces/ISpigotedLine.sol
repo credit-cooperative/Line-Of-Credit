@@ -151,5 +151,8 @@ interface ISpigotedLine {
      */
     function tradeable(address token) external returns (uint256);
 
+    // TODO: add documentation
+    function updateBeneficiarySettings(address[] calldata beneficiaries, address[] calldata operators, uint256[] calldata allocations, address[] calldata creditTokens, uint256[] calldata outstandingDebts) external;
+
     function spigot() external returns (ISpigot);
 }
