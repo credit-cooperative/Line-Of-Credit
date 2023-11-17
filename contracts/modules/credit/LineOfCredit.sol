@@ -473,6 +473,10 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         credits[id] = CreditLib.create(id, amount, lender, token, address(oracle));
         ids.push(id); // add lender to end of repayment queue
 
+        // if positions was 1st in Q, cycle to next valid position
+        if (ids[0] == bytes32(0)) ids.stepQ();
+
+        // TODO: remove this
         unchecked {
             ++count;
         }
