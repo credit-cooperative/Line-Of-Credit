@@ -2,6 +2,8 @@
 // Copyright: https://github.com/credit-cooperative/Line-Of-Credit/blob/master/COPYRIGHT.md
 
  pragma solidity ^0.8.16;
+// TODO: Imports for development purpose only
+import "forge-std/console.sol";
 
 import {ReentrancyGuard} from "openzeppelin/utils/ReentrancyGuard.sol";
 import {LineLib} from "../utils/LineLib.sol";
@@ -12,12 +14,17 @@ import {Denominations} from "chainlink/Denominations.sol";
 
 struct SpigotState {
     address[] beneficiaries; // Claims on the repayment
-    mapping(address => ISpigot.Beneficiary)  beneficiaryInfo; // beneficiary -> info
+    mapping(address => ISpigot.Beneficiary) beneficiaryInfo; // beneficiary -> info
     address operator;
     address owner;
-    address admin;
+    address arbiter;
     address swapTarget;
+    /// @notice Total amount of revenue tokens held by the Spigot and available to be claimed by owner
+    mapping(address => uint256) ownerTokens; // token -> claimable
+    /// @notice Total amount of revenue tokens held by the Spigot and available to be claimed by operator
     mapping(address => uint256) operatorTokens;
+    // @notice Total amount of revenue tokens held by the Spigot and available to be distributed to beneficiaries
+    mapping(address => uint256) allocationTokens;
     /// @notice Functions that the operator is allowed to run on all revenue contracts controlled by the Spigot
     mapping(bytes4 => bool) whitelistedFunctions; // function -> allowed
     /// @notice Configurations for revenue contracts related to the split of revenue, access control to claiming revenue tokens and transfer of Spigot ownership
@@ -48,10 +55,9 @@ library SpigotLib {
         }
 
         uint256 existingBalance = LineLib.getBalance(token);
-
         if (self.settings[revenueContract].claimFunction == bytes4(0)) {
             // push payments
-            revert PushPayment();
+            claimed = existingBalance - self.operatorTokens[token] - self.allocationTokens[token] - getEscrowedTokens(self,token);
 
             // underflow revert ensures we have more tokens than we started with and actually claimed revenue
         } else {
@@ -90,11 +96,36 @@ library SpigotLib {
         claimed = _claimRevenue(self, revenueContract, token, data);
 
         // splits revenue stream according to Spigot settings
-        uint256 operatorTokens = claimed - ((claimed * self.settings[revenueContract].ownerSplit) / 100);
+        uint256 allocationTokens = (claimed * self.settings[revenueContract].ownerSplit) / 100;
         // update escrowed balance
-        self.operatorTokens[token] = self.operatorTokens[token] + operatorTokens;
+        self.allocationTokens[token] = self.allocationTokens[token] + allocationTokens;
+        if (claimed > allocationTokens) {
+            self.operatorTokens[token] = self.operatorTokens[token] + (claimed - allocationTokens);
+        }
 
-        emit ClaimRevenue(token, claimed, operatorTokens, revenueContract);
+
+        emit ClaimRevenue(token, claimed, allocationTokens, revenueContract);
+
+        return claimed;
+    }
+
+    /** see Spigot.claimOwnerTokens */
+    function claimOwnerTokens(SpigotState storage self, address token) external returns (uint256 claimed) {
+        if (msg.sender != self.owner) {
+            revert CallerAccessDenied();
+        }
+
+        claimed = self.ownerTokens[token];
+
+        if (claimed == 0) {
+            revert ClaimFailed();
+        }
+
+        self.ownerTokens[token] = 0; // reset before send to prevent reentrancy
+
+        LineLib.sendOutTokenOrETH(token, self.owner, claimed);
+
+        emit ClaimOwnerTokens(token, claimed, self.owner);
 
         return claimed;
     }
@@ -272,6 +303,8 @@ library SpigotLib {
         );
     }
 
+    // TODO: update this comment
+    // TODO: make this an internal function?
     /**
      * @dev                     - priviliged internal function!
      * @notice                  - dumb func that executes arbitry code against a target contract
@@ -304,74 +337,232 @@ library SpigotLib {
         return true;
     }
 
+    // TODO: add docuemtnation
     // function that calls trade. pass in a lender address and it will trade their tokens for the desired token
-    function tradeAndClaim(SpigotState storage self, address lender, address sellToken, address payable swapTarget, bytes calldata zeroExTradeData) external returns (bool) {
+    // TODO: add onlyBeneficiaryOrArbiter modifier, onlyArbiter modifier
+    // TODO: how to handle if funds are for the line? should we just send them to the line? -- sent to line regardless of if it matches or not
+    // TODO: does this have to sell all of the lender's tokens? or can it sell a portion? ideally, you want to sell the minimum necessary to repay the debt, and then transfer the remaining to the other beneficiaries
+    // NOTE: trades all benny tokens for the lender's repayment token
+    // TODO: should this function use LineLib.sendOutTokenOrETH and LineLib.getBalance?
+    function tradeAndDistribute(SpigotState storage self, address lender, address sellToken, address payable swapTarget, bytes calldata zeroExTradeData) external returns (bool) {
+        address beneficiaryCreditToken = self.beneficiaryInfo[lender].creditToken;
+
         // called from
         uint256 amount = self.beneficiaryInfo[lender].bennyTokens[sellToken];
-        uint256 oldTokens = IERC20(self.beneficiaryInfo[lender].repaymentToken).balanceOf(address(this));
 
+        // TODO: need function to get balance of sellToken
+        // uint256 oldTokens = IERC20(beneficiaryCreditToken).balanceOf(address(this));
+        uint256 oldTokens = LineLib.getBalance(beneficiaryCreditToken);
+
+        // TODO: what forces the zeroExTradeData to contain the lender's creditToken?
         trade(amount, sellToken, swapTarget, zeroExTradeData);
 
-        uint256 boughtTokens = IERC20(self.beneficiaryInfo[lender].repaymentToken).balanceOf(address(this)) - oldTokens;
-
+        uint256 boughtTokens = IERC20(beneficiaryCreditToken).balanceOf(address(this)) - oldTokens;
         if (boughtTokens <= self.beneficiaryInfo[lender].debtOwed){
             self.beneficiaryInfo[lender].debtOwed -= boughtTokens;
-            IERC20(self.beneficiaryInfo[lender].repaymentToken).safeTransfer(lender, boughtTokens);
-        } else if (boughtTokens > self.beneficiaryInfo[lender].debtOwed){
-            IERC20(self.beneficiaryInfo[lender].repaymentToken).safeTransfer(lender, self.beneficiaryInfo[lender].debtOwed);
-            self.operatorTokens[self.beneficiaryInfo[lender].repaymentToken] = self.operatorTokens[self.beneficiaryInfo[lender].repaymentToken] + (boughtTokens - self.beneficiaryInfo[lender].debtOwed);
+            IERC20(beneficiaryCreditToken).safeTransfer(lender, boughtTokens);
+        } else if (boughtTokens > self.beneficiaryInfo[lender].debtOwed) {
+            uint256 excessTokens = boughtTokens - self.beneficiaryInfo[lender].debtOwed;
+
+            // set the lender's debt owed and allocation to zero
+            uint256 allocationToSpread = self.beneficiaryInfo[lender].allocation;
             self.beneficiaryInfo[lender].debtOwed = 0;
+            self.beneficiaryInfo[lender].allocation = 0;
+
+            // transfer the debtOwed amount to the lender
+            IERC20(beneficiaryCreditToken).safeTransfer(lender, self.beneficiaryInfo[lender].debtOwed);
+
+            // Spread the lender's allocation across the beneficiaries with outstanding debt
+            (uint256[] memory allocations, uint256[] memory outstandingDebts, ) = _getBennySettings(self);
+            _resetAllocations(allocations, outstandingDebts, allocationToSpread);
+
+            // Transfer the excess repayment tokens to the Spigot
+            self.allocationTokens[beneficiaryCreditToken] += excessTokens;
+
+            // Call distributeFunds to distribute excess tokens to the other beneficiaries w/ outstanding debt
+            _distributeFunds(self, beneficiaryCreditToken); // bought tokens
         }
 
         return true;
     }
 
-    function _distributeFunds(SpigotState storage self, address revToken) internal returns (uint256[] memory feeBalances) {
+   function _getBennySettings(SpigotState storage self) internal view returns (uint256[] memory allocations, uint256[] memory outstandingDebts, address[] memory creditTokens) {
+        uint256[] memory allocations = new uint256[](self.beneficiaries.length);
+        address[] memory creditTokens = new address[](self.beneficiaries.length);
+        uint256[] memory outstandingDebts = new uint256[](self.beneficiaries.length);
+        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+            allocations[i] = self.beneficiaryInfo[self.beneficiaries[i]].allocation;
+            outstandingDebts[i] = self.beneficiaryInfo[self.beneficiaries[i]].debtOwed;
+            creditTokens[i] = self.beneficiaryInfo[self.beneficiaries[i]].creditToken;
+        }
+        return (allocations, outstandingDebts, creditTokens);
+    }
 
-        uint256 _currentBalance;
-        uint256[] memory feeBalances = new uint256[](self.beneficiaries.length);
+    // TODO: remove console.logs
+    function _distributeFunds(SpigotState storage self, address revToken) internal returns (uint256[] memory distributions) {
 
-        _currentBalance = IERC20(revToken).balanceOf(address(this)) - self.operatorTokens[revToken] - getEscrowedTokens(self, revToken);
+        // console.log('xxx - revToken: ', revToken);
 
-        if (_currentBalance > 0){
+        // get balance of revenue token to distribute
+        uint256 _tokensToDistribute = self.allocationTokens[revToken];
 
-            uint256[] memory allocations = new uint256[](self.beneficiaries.length);
+        // return array of amounts to distribute to each beneficiary
+        uint256[] memory distributions = new uint256[](self.beneficiaries.length);
 
-            for (uint256 i = 0; i < self.beneficiaries.length; i++) {
-                allocations[i] = self.beneficiaryInfo[self.beneficiaries[i]].allocation;
-            }
-            // feeBalances[0] is fee sent to smartTreasury
-            feeBalances = _amountsFromAllocations(allocations, _currentBalance);
+        if (_tokensToDistribute == 0) {
+            revert NoTokensToDistribute();
+        }
 
-            for (uint256 i = 0; i < self.beneficiaries.length; i++){
-                uint256 debt = self.beneficiaryInfo[self.beneficiaries[i]].debtOwed;
+        // get current beneficiary settings for all beneficiaries
+        // TODO: this should be a helper function
+      (uint256[] memory allocations, uint256[] memory outstandingDebts, address[] memory creditTokens) = _getBennySettings(self);
 
-                if (i == 1){
-                    IERC20(revToken).safeTransfer(self.beneficiaries[i], feeBalances[i]);
+        // TODO: remove logic for numBeneficiaries and numRepaidBeneficiaries
+        // uint256 numBeneficiaries = self.beneficiaries.length;
+        // uint256 numRepaidBeneficiaries = 1;
+
+        // console.log('xxx - FIRST tokensToDistribute: ', _tokensToDistribute);
+        // while there are tokens to distribute and there are still beneficiaries with debt
+        uint256 excessTokens = 0;
+        // uint256 count = 0;
+        while (_tokensToDistribute > 0) { // && count < 5  && numRepaidBeneficiaries < numBeneficiaries
+            // console.log('\nxxx - tokensToDistribute: ', _tokensToDistribute);
+            uint256 allocatedTokens = 0;
+            uint256 allocationToSpread = 0;
+            for (uint256 i = 0; i < distributions.length; i++) {
+                uint256 beneficiaryDistribution = (allocations[i] * _tokensToDistribute) / (100000);
+                // console.log('\nxxx - i', i);
+                // console.log('xxx - beneficiary distribution: ', beneficiaryDistribution);
+                // if first beneficiary, send all tokens
+                if (i == 0) {
+                    distributions[i] += beneficiaryDistribution;
                 }
-                // check if revtoken is the same as beneficiary desired token
-                if (self.beneficiaryInfo[self.beneficiaries[i]].repaymentToken == revToken){
-                    // TODO: I think this can be a helper
-                    if (feeBalances[i] <= debt){
-                        IERC20(revToken).safeTransfer(self.beneficiaries[i], feeBalances[i]);
-                        self.beneficiaryInfo[self.beneficiaries[i]].debtOwed -= feeBalances[i];
-                    } else if (feeBalances[i] > debt){
-                        IERC20(revToken).safeTransfer(self.beneficiaries[i], debt);
-                        self.operatorTokens[revToken] += (feeBalances[i] - debt);
-                        self.beneficiaryInfo[self.beneficiaries[i]].debtOwed = 0;
+
+                // check if revtoken is the same as beneficiary repayment token
+                else if (revToken == creditTokens[i]) {
+                    // if distribution amount exceeds debt, set debt and allocations to zero
+                    // console.log('xxx - outstanding debts: ', outstandingDebts[i]);
+                    if (beneficiaryDistribution > outstandingDebts[i]){
+                        excessTokens += (beneficiaryDistribution - outstandingDebts[i]);
+                        // console.log('xxx - excess tokens: ', excessTokens);
+                        beneficiaryDistribution = outstandingDebts[i];
+                        outstandingDebts[i] = 0; // set beneficiary debt to zero
+                        allocationToSpread += allocations[i];
+                        allocations[i] = 0; // set beneficiary allocation to zero
+                        distributions[i] += beneficiaryDistribution;
+                        // numRepaidBeneficiaries += 1;
                     }
-
-                } else if (self.beneficiaryInfo[self.beneficiaries[i]].repaymentToken != revToken){
-                    self.beneficiaryInfo[self.beneficiaries[i]].bennyTokens[revToken] = self.beneficiaryInfo[self.beneficiaries[i]].bennyTokens[revToken] + feeBalances[i];
+                    else {
+                        distributions[i] += beneficiaryDistribution;
+                        outstandingDebts[i] -= beneficiaryDistribution;
+                    }
                 }
 
+                // if revToken different than beneficiary repayment token
+                else if (revToken != creditTokens[i]) {
+                    distributions[i] += beneficiaryDistribution;
+                }
 
+                allocatedTokens += beneficiaryDistribution; //
+                // console.log('xxx - allocatedTokens: ', allocatedTokens);
+                // console.log('xxx - distributions: ', distributions[i]);
+            }
+            // count += 1;
+            _tokensToDistribute -= excessTokens; // add excess tokens back
+            _tokensToDistribute -= allocatedTokens; // subtract allocated tokens
+
+            // reset allocations
+            allocations = _resetAllocations(allocations, outstandingDebts, allocationToSpread);
+            // console.log('xxx - distributions[0]', distributions[0]);
+            // console.log('xxx - allocations[0]', allocations[0]);
+            // add excessTokens to _tokensToDistribute if there are no more tokens to distribute
+            if (excessTokens > 0 && _tokensToDistribute == 0) {
+                _tokensToDistribute += excessTokens;
+                excessTokens = 0;
+            }
+            // console.log('xxx - excessTokens', excessTokens);
+            // console.log('xxx - _tokensToDistribute', _tokensToDistribute);
+        }
+
+        // Set allocations and debtOwed in state
+        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+            self.beneficiaryInfo[self.beneficiaries[i]].allocation = allocations[i];
+            self.beneficiaryInfo[self.beneficiaries[i]].debtOwed = outstandingDebts[i];
+        }
+
+        // distribute excess tokens to the first beneficiary (the owner of the Spigot)
+        distributions[0] += excessTokens;
+
+        self.allocationTokens[revToken] = 0; // set allocation tokens to zero
+
+        // Transfer funds in distributions array to respective beneficiaries
+        for (uint256 i = 0; i < distributions.length; i++) {
+            // if beneficiary is owner, store tokens in ownerTokens mapping
+            if (i == 0) {
+                self.ownerTokens[revToken] += distributions[i];
+            }
+
+            // if beneficiary is not owner, and credit token is same as revenue token, send tokens to beneficiary address
+            if (i != 0 && creditTokens[i] == revToken) {
+                LineLib.sendOutTokenOrETH(revToken, self.beneficiaries[i],  distributions[i]);
+            }
+            // otherwise, store funds in bennyTokens struct
+            else {
+                self.beneficiaryInfo[self.beneficiaries[i]].bennyTokens[revToken] += distributions[i];
             }
         }
-        return feeBalances;
+
+
+        return distributions;
+    }
+
+    function _resetAllocations(uint256[] memory allocations, uint256[] memory outstandingDebts, uint256 allocationToSpread) internal view returns (uint256[] memory newAllocations) {
+
+        // allocations must sum to 100000
+        // uint256 total = 0;
+        // for (uint256 i = 0; i < allocations.length; i++) {
+        //     total += allocations[i];
+        //     console.log('xxx - original allocation: ', allocations[i]);
+        // }
+        // require(total == 100000, "Sum must be 100000");
+        uint256 total = 100000;
+
+        // Cannot reset allocations if only owner or there is nothing to spread
+        if (allocations.length <= 1 || allocationToSpread == 0) {
+            return allocations;
+        }
+
+        // console.log('xxx - allocationToSpread', allocationToSpread);
+
+        // Save the value to be redistributed and set the index's value to 0
+        total -= allocationToSpread; // Update total to the sum of the remaining elements
+
+        // Distribute the value proportionally
+        if (total > 0) {
+            for (uint256 i = 0; i < allocations.length; i++) {
+                if (i == 0 || outstandingDebts[i] != 0) {
+                    // Calculate the proportional amount for each element
+                    uint256 proportionalAmount = (allocations[i] * allocationToSpread) / total;
+                    // Add the proportional amount to the current element
+                    allocations[i] += proportionalAmount;
+                }
+            }
+        }
+        // Handle any rounding errors by adding the difference to the first element
+        uint256 newTotal = 0;
+        for (uint256 i = 0; i < allocations.length; i++) {
+            // console.log('xxx - new allocation: ', allocations[i]);
+            newTotal += allocations[i];
+        }
+        if (newTotal < 100000) {
+            allocations[0] += (100000 - newTotal);
+        }
+
+        return allocations;
     }
 
     function _amountsFromAllocations(uint256[] memory _allocations, uint256 total) internal pure returns (uint256[] memory newAmounts) {
+
         newAmounts = new uint256[](_allocations.length);
         uint256 currBalance;
         uint256 allocatedBalance;
@@ -389,20 +580,19 @@ library SpigotLib {
     }
 
     function getLenderTokens(SpigotState storage self, address token, address lender) external view returns (uint256) {
-        uint256 total;
-        total = IERC20(token).balanceOf(address(this)) - self.operatorTokens[token];
+        uint256 total = 0;
 
-        total += total * self.beneficiaryInfo[lender].allocation / 100000;
-        total -= getEscrowedTokens(self, token);
+        // lender token allocation
+        total += self.allocationTokens[token] * self.beneficiaryInfo[lender].allocation / 100000;
         total += self.beneficiaryInfo[lender].bennyTokens[token];
         return total;
     }
 
     function hasBeneficiaryDebtOutstanding(SpigotState storage self) external view returns (bool) {
-        bool hasDebtOwed = true;
+        bool hasDebtOwed = false;
         for (uint256 i = 0; i < self.beneficiaries.length; i++) {
-            if (self.beneficiaryInfo[self.beneficiaries[i]].debtOwed == 0){
-                hasDebtOwed = false;
+            if (self.beneficiaryInfo[self.beneficiaries[i]].debtOwed > 0){
+                hasDebtOwed = true;
             }
         }
         return hasDebtOwed;
@@ -442,20 +632,28 @@ library SpigotLib {
         }
     }
 
+    // TODO: add documentation
+    function deleteBeneficiaries(SpigotState storage self) external {
+        if (msg.sender != self.owner && msg.sender != self.arbiter) {
+            revert CallerAccessDenied();
+        }
+        delete self.beneficiaries;
+    }
 
 
     // TODO: add docuementation
-    function addBeneficiaryAddress(SpigotState storage self, address _newBeneficiary, uint256[] calldata _newAllocation) external {
+    function addBeneficiaryAddress(SpigotState storage self, address _newBeneficiary) external {
         require(self.beneficiaries.length < 5, "Max beneficiaries");
-        require(_newBeneficiary!=address(0), "beneficiary cannot be 0 address");
+        require(_newBeneficiary != address(0), "beneficiary cannot be zero address");
+        if (msg.sender != self.owner && msg.sender != self.arbiter) {
+            revert CallerAccessDenied();
+        }
 
         for (uint256 i = 0; i < self.beneficiaries.length; i++) {
             require(self.beneficiaries[i] != _newBeneficiary, "Duplicate beneficiary");
         }
 
         self.beneficiaries.push(_newBeneficiary);
-
-        _setSplitAllocation(self, _newAllocation);
     }
 
     // TODO: add documentation
@@ -492,28 +690,89 @@ library SpigotLib {
 
     // TODO: add docuementation
     // TODO: needs restrictions on who/when can be called
-    // function updateRepaymentToken(SpigotState storage self, address[] calldata _newToken) external {
+    // function updateCreditToken(SpigotState storage self, address[] calldata _newToken) external {
 
     //     for (uint256 i = 0; i < self.beneficiaries.length; i++) {
     //         require(_newToken[i] != address(0), "Invalid token");
-    //         self.beneficiaryInfo[self.beneficiaries[i]].repaymentToken = _newToken[i];
+    //         self.beneficiaryInfo[self.beneficiaries[i]].creditToken = _newToken[i];
     //     }
     // }
 
+
+
     // TODO: add documentation
     // TODO: needs restrictions on who/when can be called
-    // function updateBeneficiaryInfo(SpigotState storage self, address beneficiary, address newOperator, uint256 newAllocation, address newRepaymentToken, uint256 newOutstandingDebt) external {
 
-    //     // Delete the existing Beneficiary to reset bennyTokens mapping
-    //     delete self.beneficiaryInfo[beneficiary];
+    function updateBeneficiaryInfo(SpigotState storage self, address beneficiary, address newOperator, uint256 allocation, address creditToken, uint256 outstandingDebt) external {
+        require(beneficiary != address(0), "Invalid beneficiary");
+        require(newOperator != address(0), "Invalid operator");
+        if (msg.sender != self.owner && msg.sender != self.arbiter) {
+            revert CallerAccessDenied();
+        }
+        // require(allocation > 0, "Invalid allocation");
+        // require(creditToken != address(0), "Invalid repayment token");
 
-    //     // update variables
-    //     self.beneficiaryInfo[beneficiary].bennyOperator = newOperator;
-    //     self.beneficiaryInfo[beneficiary].allocation = newAllocation;
-    //     self.beneficiaryInfo[beneficiary].repaymentToken = newRepaymentToken;
-    //     self.beneficiaryInfo[beneficiary].debtOwed = newOutstandingDebt;
+        self.beneficiaryInfo[beneficiary].bennyOperator = newOperator;
+        self.beneficiaryInfo[beneficiary].allocation = allocation;
+        self.beneficiaryInfo[beneficiary].creditToken = creditToken;
+        self.beneficiaryInfo[beneficiary].debtOwed = outstandingDebt;
 
-    // }
+        // TODO: cannnot delete mapping entirely. need to iterate over to delete if necessary
+        // delete self.beneficiaryInfo[beneficiary].bennyTokens;
+
+    }
+
+    // TODO: add documentation
+    // Notes:
+    // - onlyArbiter can call this function
+    // - arbiter can unilaterally remove an external credit position (i.e. beneficiary)
+    // - arbiter sets beneficiary's debt to 0, removes beneficiary from array, and
+    //   transfers allocation back to the owner of the Spigot (i.e. Line of Credit)
+    // - does not maintain order of the beneficiaries array as the order has no significance
+    function removeBeneficiary(SpigotState storage self, address beneficiary) external {
+        require(beneficiary != address(0), "Invalid beneficiary");
+        require(beneficiary != self.beneficiaries[0], "Cannot remove owner from beneficiaries");
+        if (msg.sender != self.arbiter) {
+            revert CallerAccessDenied();
+        }
+
+        // set the debt owed to 0
+        self.beneficiaryInfo[beneficiary].debtOwed = 0;
+
+        // get the beneficiary allocation
+        uint256 beneficiaryAllocation = self.beneficiaryInfo[beneficiary].allocation;
+
+        // remove from Beneficiary struct
+        delete self.beneficiaryInfo[beneficiary];
+
+        // add the beneficiaries allocation to the owner's allocation (the first beneficiary)
+
+        self.beneficiaryInfo[self.beneficiaries[0]].allocation += beneficiaryAllocation;
+        // remove the beneficiary from the beneficiaries array
+        uint length = self.beneficiaries.length;
+        for (uint i = 0; i < length; i++) {
+            if (self.beneficiaries[i] == beneficiary) {
+                self.beneficiaries[i] = self.beneficiaries[length - 1];
+                self.beneficiaries.pop();
+                break;
+            }
+        }
+
+    }
+
+    // Getters
+
+    // TODO: add documentation
+    function getBeneficiaryBasicInfo(SpigotState storage self, address beneficiary) external view returns (address, uint256, address, uint256) {
+        ISpigot.Beneficiary storage b = self.beneficiaryInfo[beneficiary];
+        return (b.bennyOperator, b.allocation, b.creditToken, b.debtOwed);
+    }
+
+    // TODO: add documentation
+    function getBennyTokenAmount(SpigotState storage self, address beneficiary, address token) external view returns (uint256) {
+        return self.beneficiaryInfo[beneficiary].bennyTokens[token];
+    }
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -533,6 +792,8 @@ library SpigotLib {
     event ClaimRevenue(address indexed token, uint256 indexed amount, uint256 ownerTokens, address revenueContract);
 
     event ClaimLenderTokens(address indexed token, uint256 indexed amount, address lender);
+
+    event ClaimOwnerTokens(address indexed token, uint256 indexed amount, address owner);
 
     event ClaimOperatorTokens(address indexed token, uint256 indexed amount, address operator);
 
@@ -565,6 +826,8 @@ library SpigotLib {
     error BadSetting();
 
     error InvalidRevenueContract();
+
+    error NoTokensToDistribute();
 
     error SpigotSettingsExist();
 

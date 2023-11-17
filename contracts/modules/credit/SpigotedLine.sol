@@ -3,6 +3,9 @@
 
  pragma solidity ^0.8.16;
 
+// TODO: Imports for development purpose only
+import "forge-std/console.sol";
+
 import {Denominations} from "chainlink/Denominations.sol";
 import {LineOfCredit} from "./LineOfCredit.sol";
 import {LineLib} from "../../utils/LineLib.sol";
@@ -179,7 +182,6 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
         if (msg.sender != arbiter) {
             revert CallerAccessDenied();
         }
-
         address targetToken = credits[ids[0]].token;
         uint256 newTokens = _claimAndTrade(claimToken, targetToken, zeroExTradeData);
 
@@ -208,7 +210,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
     ) internal returns (uint256) {
         if (claimToken == targetToken) {
             // same asset. dont trade
-            return spigot.distributeFunds(claimToken)[1];
+            return spigot.claimOwnerTokens(claimToken);
         } else {
             // trade revenue token for debt obligation
             (uint256 tokensBought, uint256 totalUnused) = SpigotedLineLib.claimAndTrade(
@@ -299,7 +301,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
     function extend(uint256 ttlExtension) external onlyBorrower virtual override returns (bool) {
         bool hasBeneficiaryDebtOutstanding = spigot.hasBeneficiaryDebtOutstanding();
 
-        if (count == 0 && hasBeneficiaryDebtOutstanding) {
+        if (count == 0 && !hasBeneficiaryDebtOutstanding) {
             if (proposalCount > 0) {
                 _clearProposals();
             }
@@ -315,33 +317,70 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
     // NOTES: allocations cannot sum to greater than 100000
     // TODO: emit AmendBeneficiaries(address(this), spigot, beneficiaries);
     // NOTE: only works with existing beneificiaries. Need to add/remove beneficiares before calling this function
-    // function updateBeneficiarySettings(address[] calldata _beneficiaries, address[] calldata _operators, uint256[] calldata _allocations, address[] calldata _repaymentTokens, uint256[] calldata _outstandingDebts) external onlyBorrower {
+    function updateBeneficiarySettings(address[] calldata _beneficiaries, address[] calldata _operators, uint256[] calldata _allocations, address[] calldata _creditTokens, uint256[] calldata _outstandingDebts) external onlyBorrowerOrArbiter {
 
-    //     if (_beneficiaries[0] != address(this)) {
-    //         revert LineMustBeFirstBeneficiary(_beneficiaries[0]);
-    //     }
+        if (_beneficiaries.length != _operators.length || _beneficiaries.length != _allocations.length || _beneficiaries.length != _creditTokens.length || _beneficiaries.length != _outstandingDebts.length) {
+            revert InputArrayLengthsMustMatch();
+        }
 
-    //     if (_outstandingDebts[0] > 0) {
-    //         revert LineBeneficiaryDebtMustBeZero(_outstandingDebts[0]);
-    //     }
+        bool hasBeneficiaryDebtOutstanding = spigot.hasBeneficiaryDebtOutstanding();
 
-    //     // TODO: needs to check that outstanding debt to beneficiaries is 0
-    //     if (count == 0) {
-    //         if (proposalCount > 0) {
-    //             _clearProposals();
-    //         }
+        if (_beneficiaries[0] != address(this)) {
+            revert LineMustBeFirstBeneficiary(_beneficiaries[0]);
+        }
 
-    //         for (uint256 i = 0; i < _beneficiaries.length; i++) {
+        // TODO: line should not have a repayment token either
+        if (_outstandingDebts[0] > 0) {
+            revert LineBeneficiaryDebtMustBeZero(_outstandingDebts[0]);
+        }
 
-    //             spigot.updateBeneficiaryInfo(_beneficiaries[i], _operators[i], _allocations[i], _repaymentTokens[i], _outstandingDebts[i]);
+        if (count != 0) {
+            revert LineHasActiveCreditPositions(count);
+        }
 
-    //         }
-    //     }
-    // }
+        if (hasBeneficiaryDebtOutstanding) {
+            revert LineHasBeneficiaryDebts();
+        }
 
-    // function updateBeneficiaryOperator(address beneficiary, address newOperator) external {
+        // Sum of allocations array cannot exceed 100%
+        uint256 sumOfAllocations = 0;
+        for (uint256 i=0; i<_allocations.length; i++) {
+            sumOfAllocations += _allocations[i];
+        }
 
-    // }
+        if (sumOfAllocations != 100000) {
+            revert SumOfAllocationsMustBe100Percent(_allocations, sumOfAllocations);
+        }
+
+        // Clear existing addCredit() proposals
+        if (proposalCount > 0) {
+            _clearProposals();
+        }
+
+        // set beneficiaries array to length zero
+        spigot.deleteBeneficiaries();
+
+        // iterate through the new beneficiaries array and add each new beneficiary to the array
+        for (uint256 i = 0; i < _beneficiaries.length; i++) {
+            // add new beneficiary to the array
+            spigot.addBeneficiaryAddress(_beneficiaries[i]);
+
+            // update the beneficiary settings
+            if (i > 0) {
+                spigot.updateBeneficiaryInfo(_beneficiaries[i], _operators[i], _allocations[i], _creditTokens[i], _outstandingDebts[i]);
+
+            // line is the first beneficiary and cannot have a repayment token or beneficiary debt
+            } else {
+                spigot.updateBeneficiaryInfo(_beneficiaries[i], address(this), _allocations[i], address(0), 0);
+            }
+        }
+    }
+
+
+
+    function updateBeneficiaryOperator(address beneficiary, address newOperator) external {
+
+    }
 
     /// see ISpigotedLine.sweep
     function sweep(address to, address token, uint256 amount) external nonReentrant returns (uint256) {
@@ -365,7 +404,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
 
     /// see ILineOfCredit.tradeable
     function tradeable(address token) external view returns (uint256) {
-        return unusedTokens[token] + spigot.getLenderTokens(token, spigot.owner());
+        return unusedTokens[token] + spigot.getOwnerTokens(token);
     }
 
     /// see ILineOfCredit.unused

@@ -19,13 +19,14 @@ contract ModuleFactory is IModuleFactory {
      */
     function deploySpigot(
         address owner,
+        address operator,
         address[] calldata _startingBeneficiaries,
         uint256[] calldata _startingAllocations,
         uint256[] calldata _debtOwed,
-        address[] calldata _repaymentToken,
+        address[] calldata _creditToken,
         address _adminMultisig
     ) external returns (address module) {
-        module = address(new Spigot(owner, _startingBeneficiaries, _startingAllocations, _debtOwed, _repaymentToken, _adminMultisig));
+        module = address(new Spigot(owner, operator));
         emit DeployedSpigot(module, owner, _startingBeneficiaries[0]);
     }
 
