@@ -99,7 +99,6 @@ library SpigotLib {
         uint256 allocationTokens = (claimed * self.settings[revenueContract].ownerSplit) / 100;
         // update escrowed balance
         self.allocationTokens[token] = self.allocationTokens[token] + allocationTokens;
-
         if (claimed > allocationTokens) {
             self.operatorTokens[token] = self.operatorTokens[token] + (claimed - allocationTokens);
         }
@@ -399,9 +398,10 @@ library SpigotLib {
         return (allocations, outstandingDebts, creditTokens);
     }
 
+    // TODO: remove console.logs
     function _distributeFunds(SpigotState storage self, address revToken) internal returns (uint256[] memory distributions) {
 
-        console.log('xxx - revToken: ', revToken);
+        // console.log('xxx - revToken: ', revToken);
 
         // get balance of revenue token to distribute
         uint256 _tokensToDistribute = self.allocationTokens[revToken];
@@ -418,21 +418,21 @@ library SpigotLib {
       (uint256[] memory allocations, uint256[] memory outstandingDebts, address[] memory creditTokens) = _getBennySettings(self);
 
         // TODO: remove logic for numBeneficiaries and numRepaidBeneficiaries
-        uint256 numBeneficiaries = self.beneficiaries.length;
-        uint256 numRepaidBeneficiaries = 1;
+        // uint256 numBeneficiaries = self.beneficiaries.length;
+        // uint256 numRepaidBeneficiaries = 1;
 
-        console.log('xxx - FIRST tokensToDistribute: ', _tokensToDistribute);
+        // console.log('xxx - FIRST tokensToDistribute: ', _tokensToDistribute);
         // while there are tokens to distribute and there are still beneficiaries with debt
         uint256 excessTokens = 0;
         // uint256 count = 0;
         while (_tokensToDistribute > 0) { // && count < 5  && numRepaidBeneficiaries < numBeneficiaries
-            console.log('\nxxx - tokensToDistribute: ', _tokensToDistribute);
+            // console.log('\nxxx - tokensToDistribute: ', _tokensToDistribute);
             uint256 allocatedTokens = 0;
             uint256 allocationToSpread = 0;
             for (uint256 i = 0; i < distributions.length; i++) {
                 uint256 beneficiaryDistribution = (allocations[i] * _tokensToDistribute) / (100000);
-                console.log('\nxxx - i', i);
-                console.log('xxx - beneficiary distribution: ', beneficiaryDistribution);
+                // console.log('\nxxx - i', i);
+                // console.log('xxx - beneficiary distribution: ', beneficiaryDistribution);
                 // if first beneficiary, send all tokens
                 if (i == 0) {
                     distributions[i] += beneficiaryDistribution;
@@ -441,16 +441,16 @@ library SpigotLib {
                 // check if revtoken is the same as beneficiary repayment token
                 else if (revToken == creditTokens[i]) {
                     // if distribution amount exceeds debt, set debt and allocations to zero
-                    console.log('xxx - outstanding debts: ', outstandingDebts[i]);
+                    // console.log('xxx - outstanding debts: ', outstandingDebts[i]);
                     if (beneficiaryDistribution > outstandingDebts[i]){
                         excessTokens += (beneficiaryDistribution - outstandingDebts[i]);
-                        console.log('xxx - excess tokens: ', excessTokens);
+                        // console.log('xxx - excess tokens: ', excessTokens);
                         beneficiaryDistribution = outstandingDebts[i];
                         outstandingDebts[i] = 0; // set beneficiary debt to zero
                         allocationToSpread += allocations[i];
                         allocations[i] = 0; // set beneficiary allocation to zero
                         distributions[i] += beneficiaryDistribution;
-                        numRepaidBeneficiaries += 1;
+                        // numRepaidBeneficiaries += 1;
                     }
                     else {
                         distributions[i] += beneficiaryDistribution;
@@ -464,8 +464,8 @@ library SpigotLib {
                 }
 
                 allocatedTokens += beneficiaryDistribution; //
-                console.log('xxx - allocatedTokens: ', allocatedTokens);
-                console.log('xxx - distributions: ', distributions[i]);
+                // console.log('xxx - allocatedTokens: ', allocatedTokens);
+                // console.log('xxx - distributions: ', distributions[i]);
             }
             // count += 1;
             _tokensToDistribute -= excessTokens; // add excess tokens back
@@ -473,15 +473,15 @@ library SpigotLib {
 
             // reset allocations
             allocations = _resetAllocations(allocations, outstandingDebts, allocationToSpread);
-            console.log('xxx - distributions[0]', distributions[0]);
-            console.log('xxx - allocations[0]', allocations[0]);
+            // console.log('xxx - distributions[0]', distributions[0]);
+            // console.log('xxx - allocations[0]', allocations[0]);
             // add excessTokens to _tokensToDistribute if there are no more tokens to distribute
             if (excessTokens > 0 && _tokensToDistribute == 0) {
                 _tokensToDistribute += excessTokens;
                 excessTokens = 0;
             }
-            console.log('xxx - excessTokens', excessTokens);
-            console.log('xxx - _tokensToDistribute', _tokensToDistribute);
+            // console.log('xxx - excessTokens', excessTokens);
+            // console.log('xxx - _tokensToDistribute', _tokensToDistribute);
         }
 
         // Set allocations and debtOwed in state
@@ -532,7 +532,7 @@ library SpigotLib {
             return allocations;
         }
 
-        console.log('xxx - allocationToSpread', allocationToSpread);
+        // console.log('xxx - allocationToSpread', allocationToSpread);
 
         // Save the value to be redistributed and set the index's value to 0
         total -= allocationToSpread; // Update total to the sum of the remaining elements
@@ -551,7 +551,7 @@ library SpigotLib {
         // Handle any rounding errors by adding the difference to the first element
         uint256 newTotal = 0;
         for (uint256 i = 0; i < allocations.length; i++) {
-            console.log('xxx - new allocation: ', allocations[i]);
+            // console.log('xxx - new allocation: ', allocations[i]);
             newTotal += allocations[i];
         }
         if (newTotal < 100000) {
