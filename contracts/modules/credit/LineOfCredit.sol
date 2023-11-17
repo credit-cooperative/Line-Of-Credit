@@ -49,9 +49,12 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     /// @notice - current amount of active positions (aka non-null ids) in `ids` list
     uint256 public count;
 
-    /// @notice - positions ids of all open credit lines.
+    /// @notice - array of tranches, where each tranche is an array of positions ids of all open credit lines.
     /// @dev    - may contain null elements
-    bytes32[] public ids;
+    bytes32[][] public ids;
+
+    // @notice - information for all tranches
+    Tranche[] public tranches;
 
     /// @notice id -> position data
     mapping(bytes32 => Credit) public credits;
@@ -103,7 +106,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     }
 
     modifier whileBorrowing() {
-        if (count == 0 || credits[ids[0]].principal == 0) {
+        if (count == 0 || credits[ids[0][0]].principal == 0) {
             revert NotBorrowing();
         }
         _;
@@ -219,7 +222,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         // Liquidate if all credit lines aren't closed by deadline
         if (block.timestamp >= deadline && count != 0) {
-            emit Default(ids[0]); // can query all defaulted positions offchain once event picked up
+            emit Default(ids[0][0]); // can query all defaulted positions offchain once event picked up
             return LineLib.STATUS.LIQUIDATABLE;
         }
 
@@ -251,6 +254,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         return _updateOutstandingDebt();
     }
 
+    // TODO: update this to handle ids as a 2d array
     function _updateOutstandingDebt() internal returns (uint256 principal, uint256 interest) {
         // use full length not count because positions might not be packed in order
         uint256 len = ids.length;
@@ -258,7 +262,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         bytes32 id;
         for (uint256 i; i < len; ++i) {
-            id = ids[i];
+            id = ids[i][0]; // TODO: fix this error since ids is now a 2d array
 
             // null element in array from closing a position. skip for gas savings
             if (id == bytes32(0)) {
@@ -282,13 +286,35 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
     /// see ILineOfCredit.accrueInterest
     function accrueInterest() external override {
-        uint256 len = ids.length;
+        uint256 numTranches = ids.length;
         bytes32 id;
-        for (uint256 i; i < len; ++i) {
-            id = ids[i];
-            Credit memory credit = credits[id];
-            credits[id] = _accrue(credit, id);
+        for (uint256 i; i < numTranches; ++i) {
+            uint256 numCredits = ids[i].length;
+            for (uint256 j; j < numCredits; ++j) {
+                id = ids[i][j];
+                Credit memory credit = credits[id];
+                credits[id] = _accrue(credit, id);
+            }
         }
+    }
+
+
+    /// see ILineOfCredit.addTranche
+    function createTranche(address token, uint256 creditLimit) external onlyBorrower {
+        _createTranche(token, creditLimit);
+
+    }
+
+    function _createTranche(address token, uint256 creditLimit) internal {
+        (bool passed, bytes memory result) = token.call(abi.encodeWithSignature("decimals()"));
+
+        if (!passed || result.length == 0) {
+            revert InvalidTokenDecimals();
+        }
+
+        uint8 decimals = abi.decode(result, (uint8));
+
+        tranches.push(Tranche(token, decimals, creditLimit, 0));
     }
 
     /// see ILineOfCredit.addCredit
@@ -297,9 +323,10 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         uint128 frate,
         uint256 amount,
         address token,
-        address lender
+        address lender,
+        uint256 creditLimit
     ) external payable override nonReentrant whileActive mutualConsent(lender, borrower) returns (bytes32) {
-        bytes32 id = _createCredit(lender, token, amount);
+        bytes32 id = _createCredit(lender, token, amount, creditLimit);
 
         _setRates(id, drate, frate);
 
@@ -341,9 +368,10 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     // REPAYMENT //
     ///////////////
 
+    // TODO: make this repay an entire tranche
     /// see ILineOfCredit.depositAndClose
     function depositAndClose() external payable override nonReentrant whileBorrowing onlyBorrowerOrArbiter {
-        bytes32 id = ids[0];
+        bytes32 id = ids[0][0];
         Credit memory credit = _accrue(credits[id], id);
 
         // Borrower deposits the outstanding balance not already repaid
@@ -372,9 +400,10 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         emit CloseLine(address(this));
     }
 
+    // TODO: make this repay an entire tranche
     /// see ILineOfCredit.depositAndRepay
     function depositAndRepay(uint256 amount) external payable override nonReentrant whileBorrowing {
-        bytes32 id = ids[0];
+        bytes32 id = ids[0][0];
         Credit memory credit = _accrue(credits[id], id);
 
         if (amount > credit.principal + credit.interestAccrued) {
@@ -431,7 +460,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     }
 
     /**
-     * @notice  - Steps the Queue be replacing the first element with the next valid credit line's ID
+     * @notice  - Steps the Queue by replacing the first element with the next valid credit line's ID
      * @dev     - Only works if the first element in the queue is null
      */
     function stepQ() external {
@@ -462,7 +491,29 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
      * @param token - ERC20 token that is being lent and borrower
      * @param amount - amount of tokens lender will initially deposit
      */
-    function _createCredit(address lender, address token, uint256 amount) internal returns (bytes32 id) {
+    function _createCredit(address lender, address token, uint256 amount, uint256 creditLimit) internal returns (bytes32 id) {
+
+        // subscribe to an existing tranche
+        if (creditLimit == 0) {
+            Tranche memory tranche = tranches[tranches.length - 1];
+
+            // there must be at least one tranche
+            if (tranches.length == 0) {
+                revert NoTranches();
+            }
+
+            // cannot oversubscribe to tranche
+            if (tranche.amountSubscribed + amount > tranche.creditLimit) {
+                revert TrancheOversubscribed(amount, tranche.creditLimit - tranche.amountSubscribed);
+            }
+
+            tranche.amountSubscribed += amount;
+        }
+        // create a new tranche
+        else {
+            _createTranche(token, creditLimit);
+        }
+
         id = CreditLib.computeId(address(this), lender, token);
 
         // MUST not double add the credit line. once lender is set it cant be deleted even if position is closed.
@@ -472,7 +523,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         credits[id] = CreditLib.create(id, amount, lender, token, address(oracle));
 
-        ids.push(id); // add lender to end of repayment queue
+        ids[ids.length - 1].push(id); // add lender to last tranche within repayment queue
 
         // if positions was 1st in Q, cycle to next valid position
         if (ids[0] == bytes32(0)) ids.stepQ();

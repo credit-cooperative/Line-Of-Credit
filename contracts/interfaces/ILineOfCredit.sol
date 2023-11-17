@@ -20,6 +20,14 @@ interface ILineOfCredit {
         bool isOpen; // Status of position
     }
 
+    // Tranche data
+    struct Tranche {
+        address token; // the credit token for all positions within the tranche
+        uint8 decimals; // decimals of tranche credit token
+        uint256 creditLimit; // the maximum amount of credit that can be drawn down from the tranche
+        uint256 amountSubscribed; // the amount of credit deployed to the tranche
+    }
+
     // General Events
     event UpdateStatus(uint256 indexed status); // store as normal uint so it can be indexed in subgraph
 
@@ -81,6 +89,11 @@ interface ILineOfCredit {
     // Tokens
     error TokenTransferFailed();
     error NoTokenPrice();
+    error InvalidTokenDecimals();
+
+    // Tranches
+    error NoTranches();
+    error TrancheOversubscribed(uint256 amount, uint256 amountRemaining);
 
     // Line
     error BadModule(address module);

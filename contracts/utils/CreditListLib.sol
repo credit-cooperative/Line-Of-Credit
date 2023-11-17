@@ -20,7 +20,7 @@ library CreditListLib {
      * @dev     - assumes `id` is stored only once in the `positions` array. if `id` occurs twice, debt would be double counted.
      * @param ids           - all current credit lines on the Line of Credit facility
      * @param id            - the hash id of the credit line to be removed from active ids after removePosition() has run
-     * @return newPositions - all active credit lines on the Line of Credit facility after the `id` has been removed [Bob - consider renaming to newIds
+     * @return newPositions - all active credit lines on the Line of Credit facility after the `id` has been removed
      */
     function removePosition(bytes32[] storage ids, bytes32 id) external returns (bool) {
         uint256 len = ids.length;
