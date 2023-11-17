@@ -396,15 +396,12 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     /// see ILineOfCredit.borrow
     function borrow(bytes32 id, uint256 amount, address to) external override nonReentrant whileActive onlyBorrower {
         Credit memory credit = _accrue(credits[id], id);
-
         if (!credit.isOpen) {
             revert PositionIsClosed();
         }
-
         if (amount > credit.deposit - credit.principal) {
             revert NoLiquidity();
         }
-
         credit.principal += amount;
 
         // save new debt before healthcheck and token transfer
@@ -469,7 +466,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         id = CreditLib.computeId(address(this), lender, token);
 
         // MUST not double add the credit line. once lender is set it cant be deleted even if position is closed.
-        if (credits[id].lender != address(0)) {
+        if (credits[id].lender != address(0) && credits[id].isOpen) {
             revert PositionExists();
         }
 
@@ -477,6 +474,10 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         ids.push(id); // add lender to end of repayment queue
 
+        // if positions was 1st in Q, cycle to next valid position
+        if (ids[0] == bytes32(0)) ids.stepQ();
+
+        // TODO: remove this
         unchecked {
             ++count;
         }

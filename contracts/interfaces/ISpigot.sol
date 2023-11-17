@@ -13,7 +13,7 @@ interface ISpigot {
     struct Beneficiary {
         address bennyOperator;
         uint256 allocation;
-        address repaymentToken;
+        address creditToken;
         uint256 debtOwed;
         mapping(address => uint256) bennyTokens;
     }
@@ -60,6 +60,10 @@ interface ISpigot {
 
     error InvalidRevenueContract();
 
+    error NoTokensToDistribute();
+
+    error NotInitialized();
+
     // ops funcs
 
     function claimRevenue(
@@ -72,6 +76,8 @@ interface ISpigot {
 
     // owner funcs
 
+    function claimOwnerTokens(address token) external returns (uint256 claimed);
+
     function claimOperatorTokens(address token) external returns (uint256);
 
     function distributeFunds(address token) external returns (uint256[] memory);
@@ -80,7 +86,7 @@ interface ISpigot {
 
     function removeSpigot(address revenueContract) external returns (bool);
 
-    // function updateBeneficiaryInfo(address beneficiary, address newOperator, uint256 newAllocation, address newRepaymentToken, uint256 newOutstandingDebt) external;
+    function updateBeneficiaryInfo(address beneficiary, address newOperator, uint256 newAllocation, address newCreditToken, uint256 newOutstandingDebt) external;
 
     // stakeholder funcs
 
@@ -92,12 +98,30 @@ interface ISpigot {
 
     function updateWhitelistedFunction(bytes4 func, bool allowed) external returns (bool);
 
+    function deleteBeneficiaries() external;
+
+    function addBeneficiaryAddress(address beneficiary) external;
+
     // Getters
+
+    function getBeneficiaryBasicInfo(address beneficiary) external view returns (
+        address bennyOperator,
+        uint256 allocation,
+        address creditToken,
+        uint256 debtOwed
+    );
+
+    function getBennyTokenAmount(address beneficiary, address token) external view returns (uint256);
+
+    function beneficiaries() external view returns (address[] memory);
+
     function owner() external view returns (address);
 
     function operator() external view returns (address);
 
     function isWhitelisted(bytes4 func) external view returns (bool);
+
+    function getOwnerTokens(address token) external view returns (uint256);
 
     function getLenderTokens(address token, address lender) external view returns (uint256);
 

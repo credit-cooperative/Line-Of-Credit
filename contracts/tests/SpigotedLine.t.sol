@@ -5,6 +5,8 @@
 
 import "forge-std/Test.sol";
 import { Denominations } from "chainlink/Denominations.sol";
+// TODO: Imports for development purpose only
+import "forge-std/console.sol";
 
 import { ZeroEx } from "../mock/ZeroEx.sol";
 import { SimpleOracle } from "../mock/SimpleOracle.sol";
@@ -59,12 +61,13 @@ contract SpigotedLineTest is Test, Events {
     address borrower;
     address arbiter;
     address lender;
+    address externalLender;
     address _multisigAdmin;
 
     address[] beneficiaries;
     uint256[] allocations;
     uint256[] debtOwed;
-    address[] repaymentToken;
+    address[] creditTokens;
 
     address private testaddr = makeAddr("test");
     SimpleOracle private oracle;
@@ -73,38 +76,32 @@ contract SpigotedLineTest is Test, Events {
 
         borrower = address(20);
         lender = address(10);
+        externalLender = address(30);
         arbiter = address(this);
         _multisigAdmin = address(0xdead);
 
-        beneficiaries = new address[](3);
-        beneficiaries[0] = borrower;
-        beneficiaries[1] = address(this);
-        beneficiaries[2] = lender;
+
 
         dex = new ZeroEx();
         creditToken = new RevenueToken();
         revenueToken = new RevenueToken();
 
-        /// make an array of length 3 and type uint256 where all 3 amounts add up to 100000
-        allocations = new uint256[](3);
-        allocations[0] = 0;
-        allocations[1] = 20000;
-        allocations[2] = 80000;
+        allocations = new uint256[](2);
+        allocations[0] = 50000;
+        allocations[1] = 50000;
 
-        // make an array of length 3 and type uint256 with random amounts for each member. name it debtOwed
-        debtOwed = new uint256[](3);
+        debtOwed = new uint256[](2);
         debtOwed[0] = 0;
-        debtOwed[1] = 10000;
-        debtOwed[2] = 80000;
+        debtOwed[1] = 100000;
+        // debtOwed[2] = 80000;
 
-        // make an array of length 3 and type address where each member is se to supportedToken1
-        repaymentToken = new address[](3);
-        repaymentToken[0] = address(revenueToken);
-        repaymentToken[1] = address(revenueToken);
-        repaymentToken[2] = address(revenueToken);
+        creditTokens = new address[](2);
+        creditTokens[0] = address(revenueToken);
+        creditTokens[1] = address(revenueToken);
+        // creditTokens[2] = address(revenueToken);
 
         oracle = new SimpleOracle(address(revenueToken), address(creditToken));
-        spigot = new Spigot(address(this), beneficiaries, allocations, debtOwed, repaymentToken,  _multisigAdmin);
+        spigot = new Spigot(address(this), borrower);
 
         line = new SpigotedLine(
           address(oracle),
@@ -116,15 +113,19 @@ contract SpigotedLineTest is Test, Events {
           ownerSplit
         );
 
-        spigot.updateOwner(address(line));
+        beneficiaries = new address[](2);
+        beneficiaries[0] = address(line);
+        beneficiaries[1] = externalLender;
+
+        spigot.initialize(beneficiaries, allocations, debtOwed, creditTokens, arbiter);
 
         line.init();
 
         _mintAndApprove();
 
         _createCredit(address(revenueToken), address(creditToken), revenueContract);
-        // revenue go brrrrrrr
         spigot.claimRevenue(address(revenueContract), address(revenueToken), "");
+
     }
 
     function _generateRevenueAndClaim(uint256 revenue) internal {

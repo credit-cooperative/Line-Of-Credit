@@ -18,12 +18,15 @@ contract SpigotTest is Test {
 
     // spigot contracts/configurations to test against
     RevenueToken private token;
+    RevenueToken private revenueToken2;
     address private revenueContract;
     Spigot private spigot;
     ISpigot.Setting private settings;
 
     // Named vars for common inputs
     uint256 constant MAX_REVENUE = type(uint256).max / 100;
+    uint256 constant FULL_ALLOC = 100000;
+
     // function signatures for mock revenue contract to pass as params to spigot
     bytes4 constant opsFunc =
         SimpleRevenueContract.doAnOperationsThing.selector;
@@ -50,38 +53,40 @@ contract SpigotTest is Test {
     address[] beneficiaries;
     uint256[] allocations;
     uint256[] debtOwed;
-    address[] repaymentToken;
+    address[] creditTokens;
 
 
     function setUp() public {
         owner = address(this);
         operator = address(10);
+        borrower = address(11);
 
         // make an array of addresses using the owner var, operator var and 3rd new address
         beneficiaries = new address[](3);
-        beneficiaries[0] = operator;
-        beneficiaries[1] = owner;
-        beneficiaries[2] = address(20);
+        beneficiaries[0] = owner;
+        beneficiaries[1] = address(20);
+        beneficiaries[2] = address(21);
 
         token = new RevenueToken();
+        revenueToken2 = new RevenueToken();
 
         /// make an array of length 3 and type uint256 where all 3 amounts add up to 100000
         allocations = new uint256[](3);
-        allocations[0] = 0;
-        allocations[1] = 20000;
-        allocations[2] = 80000;
+        allocations[0] = 33333;
+        allocations[1] = 33333;
+        allocations[2] = 33334;
 
         // make an array of length 3 and type uint256 with random amounts for each member. name it debtOwed
         debtOwed = new uint256[](3);
         debtOwed[0] = 0;
-        debtOwed[1] = 10000;
-        debtOwed[2] = 80000;
+        debtOwed[1] = 100000;
+        debtOwed[2] = 100000;
 
         // make an array of length 3 and type address where each member is se to supportedToken1
-        repaymentToken = new address[](3);
-        repaymentToken[0] = address(token);
-        repaymentToken[1] = address(token);
-        repaymentToken[2] = address(token);
+        creditTokens = new address[](3);
+        creditTokens[0] = address(0);
+        creditTokens[1] = address(token);
+        creditTokens[2] = address(token);
 
         _initSpigot(
             address(token),
@@ -109,7 +114,9 @@ contract SpigotTest is Test {
 
         settings = ISpigot.Setting(split, claimFunc, newOwnerFunc);
 
-        spigot = new Spigot(address(this), beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
+        spigot = new Spigot(address(this), borrower);
+
+        spigot.initialize(beneficiaries, allocations, debtOwed, creditTokens, _multisigAdmin);
 
         // add spigot for revenue contract
         require(
@@ -238,7 +245,7 @@ contract SpigotTest is Test {
 
         assertEq(roundingFix > 1, false);
         assertEq(
-            spigot.getLenderTokens(_token, beneficiaries[2]),
+            spigot.getOwnerTokens(_token),
             ownerTokens,
             'Invalid escrow amount for spigot revenue'
         );
@@ -422,7 +429,7 @@ contract SpigotTest is Test {
         spigot.claimRevenue(revenueContract, address(token), claimData);
         assertSpigotSplits(address(token), totalRevenue);
 
-        uint256 claimed = spigot.distributeFunds(address(token))[1];
+        uint256 claimed = spigot.claimOwnerTokens(address(token));
         (uint256 maxRevenue,) = getMaxRevenue(totalRevenue);
 
         assertEq(
@@ -447,7 +454,7 @@ contract SpigotTest is Test {
         vm.expectRevert(ISpigot.CallerAccessDenied.selector);
 
         // claim fails
-        spigot.distributeFunds(address(token))[1];
+        spigot.claimOwnerTokens(address(token));
     }
 
     function test_claimOperatorTokens_AsOperator(uint256 totalRevenue, uint8 _split) public {
@@ -477,7 +484,7 @@ contract SpigotTest is Test {
         assertSpigotSplits(address(token), totalRevenue);
 
 
-        vm.prank(operator);
+        vm.prank(borrower);
         uint256 claimed = spigot.claimOperatorTokens(address(token));
         (uint256 maxRevenue,) = getMaxRevenue(totalRevenue);
 
@@ -518,8 +525,9 @@ contract SpigotTest is Test {
         bytes memory claimData;
         spigot.claimRevenue(revenueContract, address(token), claimData); // collect majority of revenue
         spigot.claimRevenue(revenueContract, address(token), claimData); // collect remained
+        spigot.distributeFunds(address(token)); // distribute remaining revenue
 
-        spigot.distributeFunds(address(token))[1];       // should pass bc no unlciamed revenue
+        spigot.claimOwnerTokens(address(token)); // should pass bc no unlciamed revenue
     }
 
     function test_claimEscrow_UnregisteredToken() public {
@@ -534,6 +542,240 @@ contract SpigotTest is Test {
         // will always return 0 if you can't claim revenue for token
         // spigot.claimEscrow(address(fakeToken));
     }
+
+
+    // Distribute Funds
+
+    // TODO: handle rounding issues
+    function test_distributeFunds_repays_all_beneficiaries_with_same_repayment_token() public {
+
+        // Single
+        // 1 beneficiary: the spigot owner
+
+        // 2 beneficiaries
+
+        // 3 beneficiaries
+        // send 400000 revenue tokens to the Spigot
+        token.mint(address(spigot), 400000);
+        spigot.claimRevenue(revenueContract, address(token), "");
+        emit log_named_uint("spigot balance", token.balanceOf(address(spigot)));
+        uint256[] memory tokensToDistribute = spigot.distributeFunds(address(token));
+        console.log('xxx - tokensToDistribute[0]: ', tokensToDistribute[0]);
+        console.log('xxx - tokensToDistribute[1]: ', tokensToDistribute[1]);
+        console.log('xxx - tokensToDistribute[2]: ', tokensToDistribute[2]);
+
+        // distributions array
+        assertEq(tokensToDistribute[0], 200000);
+        assertEq(tokensToDistribute[1], 100000);
+        assertEq(tokensToDistribute[2], 100000);
+
+        console.log('xxx - beneficiaries[0] balance: ', token.balanceOf(beneficiaries[0]));
+        console.log('xxx - beneficiaries[1] balance: ', token.balanceOf(beneficiaries[1]));
+        console.log('xxx - beneficiaries[2] balance: ', token.balanceOf(beneficiaries[2]));
+
+        // amounts transferred to beneficiaries
+        assertEq(tokensToDistribute[0], spigot.getOwnerTokens(address(token)));
+        assertEq(0, token.balanceOf(beneficiaries[0]));
+        assertEq(tokensToDistribute[1], token.balanceOf(beneficiaries[1]));
+        assertEq(tokensToDistribute[2], token.balanceOf(beneficiaries[2]));
+
+        // allocations and debtOwed arrays
+        // TODO: distributions array: [2000, 1000, 1000]
+        // TODO: allocations array: [100 (owner), 0, 0]
+        (, uint256 ownerAllocation, , uint256 ownerDebtOwed) = spigot.getBeneficiaryBasicInfo(beneficiaries[0]);
+        (, uint256 el1Allocation, , uint256 el1DebtOwed ) = spigot.getBeneficiaryBasicInfo(beneficiaries[1]);
+        (, uint256 el2Allocation, , uint256 el2DebtOwed) = spigot.getBeneficiaryBasicInfo(beneficiaries[2]);
+        assertEq(ownerAllocation, FULL_ALLOC);
+        assertEq(el1Allocation, 0);
+        assertEq(el2Allocation, 0);
+
+        assertEq(ownerDebtOwed, 0);
+        assertEq(el1DebtOwed, 0);
+        assertEq(el2DebtOwed, 0);
+
+    }
+
+    // TODO: handle rounding issues
+    function test_distributeFunds_partial_repayment_beneficiaries_with_same_repayment_token() public {
+
+        // Single
+        // 1 beneficiary: the spigot owner
+
+        // 2 beneficiaries
+
+        // Set 2nd beneficiaries outstanding debt to 200000
+        vm.startPrank(arbiter);
+        console.log('xxx - Beneficiary: ', beneficiaries[1]);
+        console.log('xxx - Allocation: ', allocations[1]);
+        console.log('xxx - Repayment token: ', creditTokens[1]);
+        spigot.updateBeneficiaryInfo(beneficiaries[1], beneficiaries[1], allocations[1], creditTokens[1], 200000);
+        vm.stopPrank();
+
+        // 3 beneficiaries
+        // send 400000 revenue tokens to the Spigot
+        token.mint(address(spigot), 400000);
+        spigot.claimRevenue(revenueContract, address(token), "");
+        emit log_named_uint("spigot balance", token.balanceOf(address(spigot)));
+        uint256[] memory tokensToDistribute = spigot.distributeFunds(address(token));
+        console.log('xxx - tokensToDistribute[0]: ', tokensToDistribute[0]);
+        console.log('xxx - tokensToDistribute[1]: ', tokensToDistribute[1]);
+        console.log('xxx - tokensToDistribute[2]: ', tokensToDistribute[2]);
+        // distributions array
+        assertEq(tokensToDistribute[0], 150000);
+        assertEq(tokensToDistribute[1], 150000);
+        assertEq(tokensToDistribute[2], 100000);
+
+        console.log('xxx - beneficiaries[0] balance: ', token.balanceOf(beneficiaries[0]));
+        console.log('xxx - beneficiaries[1] balance: ', token.balanceOf(beneficiaries[1]));
+        console.log('xxx - beneficiaries[2] balance: ', token.balanceOf(beneficiaries[2]));
+
+        // amounts transferred to beneficiaries
+        assertEq(tokensToDistribute[0], spigot.getOwnerTokens(address(token)));
+        assertEq(0, token.balanceOf(beneficiaries[0]));
+        assertEq(tokensToDistribute[1], token.balanceOf(beneficiaries[1]));
+        assertEq(tokensToDistribute[2], token.balanceOf(beneficiaries[2]));
+
+        // // allocations and debtOwed arrays
+        // // TODO: distributions array: [2000, 1000, 1000]
+        // // TODO: allocations array: [100 (owner), 0, 0]
+        (, uint256 ownerAllocation, , uint256 ownerDebtOwed) = spigot.getBeneficiaryBasicInfo(beneficiaries[0]);
+        (, uint256 el1Allocation, , uint256 el1DebtOwed ) = spigot.getBeneficiaryBasicInfo(beneficiaries[1]);
+        (, uint256 el2Allocation, , uint256 el2DebtOwed) = spigot.getBeneficiaryBasicInfo(beneficiaries[2]);
+        console.log('xxx - ownerDebtOwed: ', ownerDebtOwed);
+        console.log('xxx - el1DebtOwed: ', el1DebtOwed);
+        console.log('xxx - el2DebtOwed: ', el2DebtOwed);
+        assertEq(ownerAllocation, FULL_ALLOC / 2);
+        assertEq(el1Allocation, FULL_ALLOC / 2);
+        assertEq(el2Allocation, 0);
+
+        assertEq(ownerDebtOwed, 0);
+        assertEq(el1DebtOwed, 50000);
+        assertEq(el2DebtOwed, 0);
+
+    }
+
+    // TODO: handle rounding issues
+    function test_distributeFunds_fully_repays_beneficiaries_with_different_repayment_tokens() public {
+        // Set 2nd beneficiaries outstanding debt to 200000
+        vm.startPrank(arbiter);
+        uint256 revenueToken2DebtOwed = 100000;
+        spigot.updateBeneficiaryInfo(beneficiaries[1], beneficiaries[1], allocations[1], address(revenueToken2), revenueToken2DebtOwed);
+        vm.stopPrank();
+
+        // 3 beneficiaries
+        // send 400000 revenue tokens to the Spigot
+        token.mint(address(spigot), 400000);
+        spigot.claimRevenue(revenueContract, address(token), "");
+        emit log_named_uint("spigot balance", token.balanceOf(address(spigot)));
+        uint256[] memory tokensToDistribute = spigot.distributeFunds(address(token));
+        console.log('xxx - tokensToDistribute[0]: ', tokensToDistribute[0]);
+        console.log('xxx - tokensToDistribute[1]: ', tokensToDistribute[1]);
+        console.log('xxx - tokensToDistribute[2]: ', tokensToDistribute[2]);
+        // distributions array
+        assertEq(tokensToDistribute[0], 150000);
+        assertEq(tokensToDistribute[1], 150000);
+        assertEq(tokensToDistribute[2], 100000);
+
+        console.log('xxx - beneficiaries[0] balance: ', token.balanceOf(beneficiaries[0]));
+        console.log('xxx - beneficiaries[1] balance: ', token.balanceOf(beneficiaries[1]));
+        console.log('xxx - beneficiaries[1] bennyTokens: ', spigot.getBennyTokenAmount(beneficiaries[1], address(token)));
+        console.log('xxx - beneficiaries[2] balance: ', token.balanceOf(beneficiaries[2]));
+
+        // amounts transferred to beneficiaries
+        assertEq(tokensToDistribute[0], spigot.getOwnerTokens(address(token)));
+        assertEq(0, token.balanceOf(beneficiaries[0]));
+        // assertEq(tokensToDistribute[1], 0);
+        assertEq(tokensToDistribute[1], spigot.getBennyTokenAmount(beneficiaries[1], address(token))); // check that benny tokens has received distribution
+        assertEq(tokensToDistribute[2], token.balanceOf(beneficiaries[2]));
+
+        // // allocations and debtOwed arrays
+        // // TODO: distributions array: [2000, 1000, 1000]
+        // // TODO: allocations array: [100 (owner), 0, 0]
+        (, uint256 ownerAllocation, , uint256 ownerDebtOwed) = spigot.getBeneficiaryBasicInfo(beneficiaries[0]);
+        (, uint256 el1Allocation, , uint256 el1DebtOwed ) = spigot.getBeneficiaryBasicInfo(beneficiaries[1]);
+        (, uint256 el2Allocation, , uint256 el2DebtOwed) = spigot.getBeneficiaryBasicInfo(beneficiaries[2]);
+        console.log('xxx - ownerDebtOwed: ', ownerDebtOwed);
+        console.log('xxx - el1DebtOwed: ', el1DebtOwed);
+        console.log('xxx - el2DebtOwed: ', el2DebtOwed);
+        assertEq(ownerAllocation, FULL_ALLOC / 2);
+        assertEq(el1Allocation, FULL_ALLOC / 2);
+        assertEq(el2Allocation, 0);
+
+        assertEq(ownerDebtOwed, 0);
+        assertEq(el1DebtOwed, revenueToken2DebtOwed);
+        assertEq(el2DebtOwed, 0);
+
+    }
+
+    // TODO: handle rounding issues
+    function test_distributeFunds_partial_repayment_beneficiaries_with_different_repayment_tokens() public {
+        // Set 2nd beneficiaries outstanding debt to 200000
+        vm.startPrank(arbiter);
+        uint256 revenueToken2DebtOwed = 100000;
+        spigot.updateBeneficiaryInfo(beneficiaries[1], beneficiaries[1], allocations[1], address(revenueToken2), revenueToken2DebtOwed);
+        vm.stopPrank();
+
+        // 3 beneficiaries
+        // send 400000 revenue tokens to the Spigot
+        token.mint(address(spigot), 200000);
+        spigot.claimRevenue(revenueContract, address(token), "");
+        emit log_named_uint("spigot balance", token.balanceOf(address(spigot)));
+        uint256[] memory tokensToDistribute = spigot.distributeFunds(address(token));
+        console.log('xxx - tokensToDistribute[0]: ', tokensToDistribute[0]);
+        console.log('xxx - tokensToDistribute[1]: ', tokensToDistribute[1]);
+        console.log('xxx - tokensToDistribute[2]: ', tokensToDistribute[2]);
+
+        // distributions array
+        assertEq(tokensToDistribute[0], 66666);
+        assertEq(tokensToDistribute[1], 66666);
+        assertEq(tokensToDistribute[2], 66668);
+
+        console.log('xxx - beneficiaries[0] balance: ', token.balanceOf(beneficiaries[0]));
+        console.log('xxx - beneficiaries[1] balance: ', token.balanceOf(beneficiaries[1]));
+        console.log('xxx - beneficiaries[1] bennyTokens: ', spigot.getBennyTokenAmount(beneficiaries[1], address(token)));
+        console.log('xxx - beneficiaries[2] balance: ', token.balanceOf(beneficiaries[2]));
+
+        // amounts transferred to beneficiaries
+        assertEq(tokensToDistribute[0], spigot.getOwnerTokens(address(token)));
+        assertEq(0, token.balanceOf(beneficiaries[0]));
+        // assertEq(tokensToDistribute[1], 0);
+        assertEq(tokensToDistribute[1], spigot.getBennyTokenAmount(beneficiaries[1], address(token))); // check that benny tokens has received distribution
+        assertEq(tokensToDistribute[2], token.balanceOf(beneficiaries[2]));
+
+        // // allocations and debtOwed arrays
+        // // TODO: distributions array: [2000, 1000, 1000]
+        // // TODO: allocations array: [100 (owner), 0, 0]
+        (, uint256 ownerAllocation, , uint256 ownerDebtOwed) = spigot.getBeneficiaryBasicInfo(beneficiaries[0]);
+        (, uint256 el1Allocation, , uint256 el1DebtOwed ) = spigot.getBeneficiaryBasicInfo(beneficiaries[1]);
+        (, uint256 el2Allocation, , uint256 el2DebtOwed) = spigot.getBeneficiaryBasicInfo(beneficiaries[2]);
+        console.log('xxx - ownerDebtOwed: ', ownerDebtOwed);
+        console.log('xxx - el1DebtOwed: ', el1DebtOwed);
+        console.log('xxx - el2DebtOwed: ', el2DebtOwed);
+        assertEq(ownerAllocation, 33333);
+        assertEq(el1Allocation, 33333);
+        assertEq(el2Allocation, 33334);
+
+        assertEq(ownerDebtOwed, 0);
+        assertEq(el1DebtOwed, revenueToken2DebtOwed);
+        assertEq(el2DebtOwed, 33332);
+    }
+
+    // TODO: update tests for claimRevenue() with new logic for allocatedTokens
+    // TODO: test distributeFunds() where the owner/line is the only beneficiary in the array
+    // TODO: test distributeFunds() + trade functionality repays debts for each beneficiary (i.e. external lender)
+
+    function test_trade_and_distribute_fully_repays_beneficiary_debt() public {
+
+    }
+
+    function test_trade_and_distribute_partially_repays_beneficiary_debt() public {
+
+    }
+
+    // TODO: test distributeFunds + original Spigot trade functionality repays credit positions on Line of Credit
+        // claimAndTrade
+        // useAndRepay
+        // claimAndRepay
 
     // Spigot initialization
 
@@ -847,7 +1089,8 @@ contract SpigotTest is Test {
 
         settings = ISpigot.Setting(10, bytes4(""), bytes4("1234"));
 
-        spigot = new Spigot(address(this), beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
+        spigot = new Spigot(address(this), borrower);
+        spigot.initialize(beneficiaries, allocations, debtOwed, creditTokens, _multisigAdmin);
 
         vm.expectRevert(SpigotLib.InvalidRevenueContract.selector);
         spigot.addSpigot(address(spigot), settings);
@@ -858,14 +1101,15 @@ contract SpigotTest is Test {
 
         settings = ISpigot.Setting(10, bytes4(""), bytes4("1234"));
 
-        spigot = new Spigot(address(this), beneficiaries, allocations, debtOwed, repaymentToken, _multisigAdmin);
+        spigot = new Spigot(address(this), borrower);
+        spigot.initialize(beneficiaries, allocations, debtOwed, creditTokens, _multisigAdmin);
 
         spigot.addSpigot(address(revenueContract), settings);
 
         ISpigot.Setting memory altSettings = ISpigot.Setting(50, bytes4(""), bytes4("1234"));
 
         vm.expectRevert(SpigotLib.SpigotSettingsExist.selector);
-         spigot.addSpigot(address(revenueContract), altSettings);
+        spigot.addSpigot(address(revenueContract), altSettings);
     }
 
 }

@@ -15,9 +15,17 @@ interface ISpigotedLine {
 
     error ReservesOverdrawn(address token, uint256 amountAvailable);
 
+    error InputArrayLengthsMustMatch();
+
     error LineMustBeFirstBeneficiary(address beneficiary);
 
     error LineBeneficiaryDebtMustBeZero(uint256 debt);
+
+    error SumOfAllocationsMustBe100Percent(uint256[] allocations, uint256 sumOfAllocations);
+
+    error LineHasActiveCreditPositions(uint256 numActiveCreditPositions);
+
+    error LineHasBeneficiaryDebts();
 
     /**
      * @notice - Log how many revenue tokens were traded for credit tokens.
@@ -142,6 +150,9 @@ interface ISpigotedLine {
      * @return amount    - amount of unused + claimable revenue tokens available to trade for credit tokens or credit tokens availble to repay debt with
      */
     function tradeable(address token) external returns (uint256);
+
+    // TODO: add documentation
+    function updateBeneficiarySettings(address[] calldata beneficiaries, address[] calldata operators, uint256[] calldata allocations, address[] calldata creditTokens, uint256[] calldata outstandingDebts) external;
 
     function spigot() external returns (ISpigot);
 }
