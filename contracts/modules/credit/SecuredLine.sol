@@ -61,6 +61,7 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
         }
     }
 
+    // TODO: adjust this function to handle tranches instead of ids
     //  see IEscrowedLine.liquidate
     function liquidate(uint256 amount, address targetToken) external returns (uint256) {
         if (msg.sender != arbiter) {
@@ -71,7 +72,7 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
         }
 
         // send tokens to arbiter for OTC sales
-        return _liquidate(ids[0], amount, targetToken, msg.sender);
+        return _liquidate(ids[0][0], amount, targetToken, msg.sender);
     }
 
     function _healthcheck() internal override(EscrowedLine, LineOfCredit) returns (LineLib.STATUS) {

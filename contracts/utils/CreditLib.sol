@@ -108,6 +108,7 @@ library CreditLib {
         uint256 amount,
         address lender,
         address token,
+        uint256 trancheIndex,
         address oracle
     ) external returns (ILineOfCredit.Credit memory credit) {
         int price = IOracle(oracle).getLatestAnswer(token);
@@ -127,6 +128,7 @@ library CreditLib {
             lender: lender,
             token: token,
             decimals: decimals,
+            tranche: trancheIndex,
             deposit: amount,
             principal: 0,
             interestAccrued: 0,

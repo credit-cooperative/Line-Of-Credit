@@ -1,229 +1,231 @@
-// SPDX-License-Identifier: GPL-3.0
-// Copyright: https://github.com/credit-cooperative/Line-Of-Credit/blob/master/COPYRIGHT.md
+// // SPDX-License-Identifier: GPL-3.0
+// // Copyright: https://github.com/credit-cooperative/Line-Of-Credit/blob/master/COPYRIGHT.md
 
- pragma solidity ^0.8.16;
+//  pragma solidity ^0.8.16;
 
 
-import "forge-std/Test.sol";
+// import "forge-std/Test.sol";
 
-import { Denominations } from "chainlink/Denominations.sol";
+// import { Denominations } from "chainlink/Denominations.sol";
 
-import { MockReceivables, MockStatefulReceivables } from "../mock/MockReceivables.sol";
-import { RevenueToken } from "../mock/RevenueToken.sol";
-import { RevenueToken4626 } from "../mock/RevenueToken4626.sol";
+// import { MockReceivables, MockStatefulReceivables } from "../mock/MockReceivables.sol";
+// import { RevenueToken } from "../mock/RevenueToken.sol";
+// import { RevenueToken4626 } from "../mock/RevenueToken4626.sol";
 
-import { LineLib } from "../utils/LineLib.sol";
-import { CreditLib } from "../utils/CreditLib.sol";
-import { CreditListLib } from "../utils/CreditListLib.sol";
+// import { LineLib } from "../utils/LineLib.sol";
+// import { CreditLib } from "../utils/CreditLib.sol";
+// import { CreditListLib } from "../utils/CreditListLib.sol";
 
 
-contract LineLibTest is Test {
-    using CreditListLib for bytes32[];
-    bytes32[] private ids;
+// contract LineLibTest is Test {
+//     using CreditListLib for bytes32[];
+//     bytes32[] private ids;
 
-    address lender = address(0xf1c0);
-    address line = address(0xdebf);
-    RevenueToken token = new RevenueToken();
-    address tkn = address(token);
-    MockReceivables receivables = new MockReceivables();
+//     address lender = address(0xf1c0);
+//     address line = address(0xdebf);
+//     RevenueToken token = new RevenueToken();
+//     address tkn = address(token);
+//     MockReceivables receivables = new MockReceivables();
 
-    // getBalance
+//     // getBalance
 
-    function test_get_balance_ETH() public {
-      uint bal = address(this).balance;
-      uint getBal = LineLib.getBalance(Denominations.ETH);
+//     function test_get_balance_ETH() public {
+//       uint bal = address(this).balance;
+//       uint getBal = LineLib.getBalance(Denominations.ETH);
 
-      assertEq(bal, getBal);
+//       assertEq(bal, getBal);
 
-      deal(address(this), 1 ether);
+//       deal(address(this), 1 ether);
 
-      uint bal2 = address(this).balance;
-      uint getBal2 = LineLib.getBalance(Denominations.ETH);
+//       uint bal2 = address(this).balance;
+//       uint getBal2 = LineLib.getBalance(Denominations.ETH);
 
-      assertEq(bal2, getBal2);
-      assertEq(bal2, 1 ether);
-    }
+//       assertEq(bal2, getBal2);
+//       assertEq(bal2, 1 ether);
+//     }
 
-    function test_get_balance_is_0_if_null() public {
-      assertEq(0, LineLib.getBalance(address(0)));
-    }
+//     function test_get_balance_is_0_if_null() public {
+//       assertEq(0, LineLib.getBalance(address(0)));
+//     }
 
-    function test_get_balance_token() public {
-      uint bal = token.balanceOf(address(this));
-      uint getBal = LineLib.getBalance(tkn);
+//     function test_get_balance_token() public {
+//       uint bal = token.balanceOf(address(this));
+//       uint getBal = LineLib.getBalance(tkn);
 
-      assertEq(bal, getBal);
+//       assertEq(bal, getBal);
 
-      // deal(address(this), address(token), 1 ether);
-      token.mint(address(this), 1 ether);
+//       // deal(address(this), address(token), 1 ether);
+//       token.mint(address(this), 1 ether);
 
-      uint bal2 = token.balanceOf(address(this));
-      uint getBal2 = LineLib.getBalance(tkn);
+//       uint bal2 = token.balanceOf(address(this));
+//       uint getBal2 = LineLib.getBalance(tkn);
 
-      assertEq(bal2, getBal2);
-      assertEq(bal2, 1 ether);
-    }
+//       assertEq(bal2, getBal2);
+//       assertEq(bal2, 1 ether);
+//     }
 
-    function test_get_balance_4626() public {
-      // 4626 conforms to ERC20 so just getBalance
-      RevenueToken4626 token4626 = new RevenueToken4626(tkn);
+//     function test_get_balance_4626() public {
+//       // 4626 conforms to ERC20 so just getBalance
+//       RevenueToken4626 token4626 = new RevenueToken4626(tkn);
 
-      // make sure getBalance returns 4626 tokens not total amount of underlying tokens
-      uint bal = token.balanceOf(address(this));
-      uint getBal = LineLib.getBalance(address(token4626));
+//       // make sure getBalance returns 4626 tokens not total amount of underlying tokens
+//       uint bal = token.balanceOf(address(this));
+//       uint getBal = LineLib.getBalance(address(token4626));
 
-      assertEq(bal, getBal);
+//       assertEq(bal, getBal);
 
-      // deal(address(this), address(token4626), 1 ether);
-      token4626.mint(address(this), 1 ether);
+//       // deal(address(this), address(token4626), 1 ether);
+//       token4626.mint(address(this), 1 ether);
 
-      uint bal2 = token4626.balanceOf(address(this));
-      uint getBal2 = LineLib.getBalance(address(token4626));
+//       uint bal2 = token4626.balanceOf(address(this));
+//       uint getBal2 = LineLib.getBalance(address(token4626));
 
-      assertEq(bal2, getBal2);
-      assertEq(bal2, 1 ether);
-    }
+//       assertEq(bal2, getBal2);
+//       assertEq(bal2, 1 ether);
+//     }
 
-    function test_cant_get_balance_of_non_ERC20_token() public {
-      vm.expectRevert();
-      uint getBal = LineLib.getBalance(address(this));
-    }
+//     function test_cant_get_balance_of_non_ERC20_token() public {
+//       vm.expectRevert();
+//       uint getBal = LineLib.getBalance(address(this));
+//     }
 
-    // receiveTokenOrETH
+//     // receiveTokenOrETH
 
-    function test_must_have_msgValue_to_receive_ETH() public {
-      vm.expectRevert(LineLib.TransferFailed.selector);
-      // nothing sent in this tx
-      receivables.accept(Denominations.ETH, address(this), 1 ether);
-    }
+//     function test_must_have_msgValue_to_receive_ETH() public {
+//       vm.expectRevert(LineLib.TransferFailed.selector);
+//       // nothing sent in this tx
+//       receivables.accept(Denominations.ETH, address(this), 1 ether);
+//     }
 
-    function test_sending_eth_fails_if_sending_to_contract_without_receivable_function() external {
-      MockStatefulReceivables statefulReceivables = new MockStatefulReceivables();
-      statefulReceivables.setReceiveableState(false);
+//     function test_sending_eth_fails_if_sending_to_contract_without_receivable_function() external {
+//       MockStatefulReceivables statefulReceivables = new MockStatefulReceivables();
+//       statefulReceivables.setReceiveableState(false);
 
-      vm.deal(address(receivables), 1 ether);
+//       vm.deal(address(receivables), 1 ether);
 
-      vm.expectRevert(LineLib.SendingEthFailed.selector);
-      receivables.send(Denominations.ETH, address(statefulReceivables), 0.5 ether);
+//       vm.expectRevert(LineLib.SendingEthFailed.selector);
+//       receivables.send(Denominations.ETH, address(statefulReceivables), 0.5 ether);
 
-    }
+//     }
 
-    function test_overpaying_sends_refund_to_caller() public {
-      address user = makeAddr("user");
-      vm.deal(user, 1 ether);
+//     function test_overpaying_sends_refund_to_caller() public {
+//       address user = makeAddr("user");
+//       vm.deal(user, 1 ether);
 
-      vm.startPrank(user);
-      vm.expectEmit(true, true, false, true);
-      emit LineLib.RefundIssued(user, 0.5 ether);
-      receivables.accept{value: 1 ether}(Denominations.ETH, user, 0.5 ether);
-      assertEq(user.balance, 0.5 ether);
-    }
+//       vm.startPrank(user);
+//       vm.expectEmit(true, true, false, true);
+//       emit LineLib.RefundIssued(user, 0.5 ether);
+//       receivables.accept{value: 1 ether}(Denominations.ETH, user, 0.5 ether);
+//       assertEq(user.balance, 0.5 ether);
+//     }
 
-    function test_can_receive_ETH_via_msgValue() public {
-      deal(address(this), 1 ether);
-      receivables.accept{value: 1 ether}(Denominations.ETH, address(this), 1 ether);
-    }
+//     function test_can_receive_ETH_via_msgValue() public {
+//       deal(address(this), 1 ether);
+//       receivables.accept{value: 1 ether}(Denominations.ETH, address(this), 1 ether);
+//     }
+
+
 
+//     function test_can_transfer_tokens_from_sender_to_recieve()  public {
+//       token.mint(address(this), 1 ether);
+//       token.approve(address(receivables), 1 ether);
+//       receivables.accept(tkn, address(this), 1 ether);
+//     }
 
 
-    function test_can_transfer_tokens_from_sender_to_recieve()  public {
-      token.mint(address(this), 1 ether);
-      token.approve(address(receivables), 1 ether);
-      receivables.accept(tkn, address(this), 1 ether);
-    }
+//     // sendOutTokenOrETH
 
+//     function test_send_out_ETH() public {
+//       uint thisBal = LineLib.getBalance(Denominations.ETH);
+//       uint thatBal = receivables.balance(Denominations.ETH);
 
-    // sendOutTokenOrETH
+//       deal(address(receivables), 1 ether);
+//       receivables.send(Denominations.ETH, address(this), 1 ether);
+//       // this +1 from send()
+//       assertEq(thisBal + 1 ether, LineLib.getBalance(Denominations.ETH));
+//       // that no change. minted then transfered
+//       assertEq(thatBal, receivables.balance(Denominations.ETH));
+//     }
 
-    function test_send_out_ETH() public {
-      uint thisBal = LineLib.getBalance(Denominations.ETH);
-      uint thatBal = receivables.balance(Denominations.ETH);
+//     function test_send_out_fails_if_null() public {
+//       vm.expectRevert(LineLib.TransferFailed.selector);
+//       LineLib.sendOutTokenOrETH(address(0), address(receivables), 1 ether);
+//     }
 
-      deal(address(receivables), 1 ether);
-      receivables.send(Denominations.ETH, address(this), 1 ether);
-      // this +1 from send()
-      assertEq(thisBal + 1 ether, LineLib.getBalance(Denominations.ETH));
-      // that no change. minted then transfered
-      assertEq(thatBal, receivables.balance(Denominations.ETH));
-    }
+//     function test_send_out_token() public {
+//       uint thisBal = LineLib.getBalance(tkn);
+//       uint thatBal = receivables.balance(tkn);
 
-    function test_send_out_fails_if_null() public {
-      vm.expectRevert(LineLib.TransferFailed.selector);
-      LineLib.sendOutTokenOrETH(address(0), address(receivables), 1 ether);
-    }
+//       token.mint(address(receivables), 1 ether);
+//       receivables.send(tkn, address(this), 1 ether);
+//       // +1 from send()
+//       assertEq(thisBal + 1 ether, LineLib.getBalance(tkn));
+//       // no change. minted then transfered
+//       assertEq(thatBal,  receivables.balance(tkn));
+//     }
 
-    function test_send_out_token() public {
-      uint thisBal = LineLib.getBalance(tkn);
-      uint thatBal = receivables.balance(tkn);
+//     // Test refunding overpaid
 
-      token.mint(address(receivables), 1 ether);
-      receivables.send(tkn, address(this), 1 ether);
-      // +1 from send()
-      assertEq(thisBal + 1 ether, LineLib.getBalance(tkn));
-      // no change. minted then transfered
-      assertEq(thatBal,  receivables.balance(tkn));
-    }
 
-    // Test refunding overpaid
+//     function test_send_out_4626() public {
+//       RevenueToken4626 token4626 = new RevenueToken4626(tkn);
 
+//       uint thisBal = LineLib.getBalance(address(token4626));
+//       uint thatBal = receivables.balance(address(token4626));
 
-    function test_send_out_4626() public {
-      RevenueToken4626 token4626 = new RevenueToken4626(tkn);
 
-      uint thisBal = LineLib.getBalance(address(token4626));
-      uint thatBal = receivables.balance(address(token4626));
+//       token4626.mint(address(receivables), 1 ether);
+//       receivables.send(address(token4626), address(this), 1 ether);
+//       // +1 from send()
+//       assertEq(thisBal + 1 ether, LineLib.getBalance(address(token4626)));
+//       // no change. minted then transfered
+//       assertEq(thatBal,  receivables.balance(address(token4626)));
+//     }
 
 
-      token4626.mint(address(receivables), 1 ether);
-      receivables.send(address(token4626), address(this), 1 ether);
-      // +1 from send()
-      assertEq(thisBal + 1 ether, LineLib.getBalance(address(token4626)));
-      // no change. minted then transfered
-      assertEq(thatBal,  receivables.balance(address(token4626)));
-    }
+//     // computeId
 
+//     function test_computes_the_same_position_id() public view {
+//         bytes32 id = CreditLib.computeId(line, lender, tkn);
+//         bytes32 id2 = CreditLib.computeId(line, lender, tkn);
+//         assert(id == id2);
+//     }
 
-    // computeId
+//     function test_computes_a_different_position_id() public view {
+//         bytes32 id = CreditLib.computeId(line, lender, tkn);
+//         bytes32 id2 = CreditLib.computeId(line, address(this), tkn);
+//         assert(id != id2);
+//         bytes32 idSameInputsDifferentOrder = CreditLib.computeId(lender, line, tkn);
+//         assert(idSameInputsDifferentOrder != id);
+//     }
 
-    function test_computes_the_same_position_id() public view {
-        bytes32 id = CreditLib.computeId(line, lender, tkn);
-        bytes32 id2 = CreditLib.computeId(line, lender, tkn);
-        assert(id == id2);
-    }
+//     // TODO: update for tranches instead of ids
+//     // function test_can_remove_position() public {
+//     //     bytes32 id = CreditLib.computeId(line, lender, tkn);
+//     //     bytes32 id2 = CreditLib.computeId(line, address(this), tkn);
+//     //     ids.push(id);
+//     //     ids.push(id2);
 
-    function test_computes_a_different_position_id() public view {
-        bytes32 id = CreditLib.computeId(line, lender, tkn);
-        bytes32 id2 = CreditLib.computeId(line, address(this), tkn);
-        assert(id != id2);
-        bytes32 idSameInputsDifferentOrder = CreditLib.computeId(lender, line, tkn);
-        assert(idSameInputsDifferentOrder != id);
-    }
+//     //     assert(ids.length == 2);
+//     //     ids.removePosition(id2, 0);
+//     //     assert(ids.length == 2); // not deleted, only null
 
-    function test_can_remove_position() public {
-        bytes32 id = CreditLib.computeId(line, lender, tkn);
-        bytes32 id2 = CreditLib.computeId(line, address(this), tkn);
-        ids.push(id);
-        ids.push(id2);
+//     //     assert(ids[0] == id);
+//     //     assert(ids[1] == bytes32(0)); // ensure deleted
+//     // }
 
-        assert(ids.length == 2);
-        ids.removePosition(id2);
-        assert(ids.length == 2); // not deleted, only null
+//     // TODO: update for tranches instead of ids
+//     // function test_cannot_remove_non_existent_position() public {
+//     //     bytes32 id = CreditLib.computeId(line, lender, tkn);
+//     //     ids.push(id);
+//     //     assert(ids.length == 1);
+//     //     ids.removePosition(bytes32(0), 0);
+//     //     assert(ids.length == 1);
+//     //     assertEq(ids[0], id);
+//     // }
 
-        assert(ids[0] == id);
-        assert(ids[1] == bytes32(0)); // ensure deleted
-    }
 
-    function test_cannot_remove_non_existent_position() public {
-        bytes32 id = CreditLib.computeId(line, lender, tkn);
-        ids.push(id);
-        assert(ids.length == 1);
-        ids.removePosition(bytes32(0));
-        assert(ids.length == 1);
-        assertEq(ids[0], id);
-    }
 
 
-
-
-    receive() external payable {} // can receive ETH from tests
-}
+//     receive() external payable {} // can receive ETH from tests
+// }

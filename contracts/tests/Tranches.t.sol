@@ -152,12 +152,14 @@ contract SecuredLineTest is Test {
 
     }
 
-    function _addCredit(address token, uint256 amount, address lender) public {
+    function _addCredit(address token, uint256 amount, address lender, uint256 creditLimit) public {
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, amount, token, lender);
+        line.addCredit(dRate, fRate, amount, token, lender, creditLimit);
+        console.log('xxx - Do I make it 1?');
         vm.stopPrank();
         vm.startPrank(lender);
-        line.addCredit(dRate, fRate, amount, token, lender);
+        line.addCredit(dRate, fRate, amount, token, lender, creditLimit);
+        console.log('xxx - Do I make it 2?');
         vm.stopPrank();
     }
 
@@ -194,7 +196,7 @@ contract SecuredLineTest is Test {
         // 2. Fund Line of Credit and Borrow
         // Lender proposes credit position
         // Borrower accepts credit position
-        _addCredit(address(supportedToken1), 100 ether, lender1);
+        _addCredit(address(supportedToken1), 100 ether, lender1, 200 ether);
 
         // // Borrower borrows from line
         // vm.startPrank(borrower);

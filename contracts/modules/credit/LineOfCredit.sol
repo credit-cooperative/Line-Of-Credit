@@ -316,6 +316,9 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         uint8 decimals = abi.decode(result, (uint8));
 
         tranches.push(Tranche(token, decimals, creditLimit, 0));
+
+        bytes32[] memory newTranche;
+        ids.push(newTranche);
     }
 
     /// see ILineOfCredit.addCredit
@@ -328,9 +331,9 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         uint256 creditLimit
     ) external payable override nonReentrant whileActive mutualConsent(lender, borrower) returns (bytes32) {
         bytes32 id = _createCredit(lender, token, amount, creditLimit);
-
+        console.log('AAA - how many times?');
         _setRates(id, drate, frate);
-
+        console.log('AAB - how many times?');
         LineLib.receiveTokenOrETH(token, lender, amount);
 
         return id;
@@ -451,7 +454,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         emit Borrow(id, amount, to);
 
-        _sortIntoQ(id);
+        _sortIntoQ(id, credit.tranche);
     }
 
     /// see ILineOfCredit.withdraw
@@ -512,22 +515,25 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         }
         // create a new tranche
         else {
+            console.log('xxx - make a tranche?');
             _createTranche(token, creditLimit);
         }
 
         id = CreditLib.computeId(address(this), lender, token);
-
+        console.log('xxx - make an id?');
         // MUST not double add the credit line. once lender is set it cant be deleted even if position is closed.
         if (credits[id].lender != address(0) && credits[id].isOpen) {
             revert PositionExists();
         }
 
-        credits[id] = CreditLib.create(id, amount, lender, token, address(oracle), ids.length - 1);
+        console.log('xxx - how many tranches? ', ids.length);
+        uint256 trancheIndex = ids.length > 0 ? ids.length - 1 : 0;
+        credits[id] = CreditLib.create(id, amount, lender, token, trancheIndex, address(oracle));
 
-        ids[ids.length - 1].push(id); // add lender to last tranche within repayment queue
+        ids[trancheIndex].push(id); // add lender to last tranche within repayment queue
 
         // if positions was 1st in Q, cycle to next valid position
-        if (ids[ids.length - 1][0] == bytes32(0)) ids.stepQ(ids.length - 1);
+        if (ids[trancheIndex][0] == bytes32(0)) ids.stepQ(trancheIndex);
 
         // TODO: remove this
         unchecked {
@@ -606,12 +612,12 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
      * @dev - privileged internal function. MUST check params and logic flow before calling
      * @param p - position id that we are trying to find appropriate place for
      */
-    function _sortIntoQ(bytes32 p) internal {
-        uint256 lastSpot = ids.length - 1;
+    function _sortIntoQ(bytes32 p, uint256 tranche) internal {
+        uint256 lastSpot = ids[tranche].length - 1;
         uint256 nextQSpot = lastSpot;
         bytes32 id;
         for (uint256 i; i <= lastSpot; ++i) {
-            id = ids[i];
+            id = ids[tranche][i];
             if (p != id) {
                 if (
                     id == bytes32(0) || // deleted element. In the middle of the q because it was closed.
@@ -623,10 +629,10 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
                 // nothing to update
                 if (nextQSpot == lastSpot) return; // nothing to update
                 // get id value being swapped with `p`
-                bytes32 oldPositionId = ids[nextQSpot];
+                bytes32 oldPositionId = ids[tranche][nextQSpot];
                 // swap positions
-                ids[i] = oldPositionId; // id put into old `p` position
-                ids[nextQSpot] = p; // p put at target index
+                ids[tranche][i] = oldPositionId; // id put into old `p` position
+                ids[tranche][nextQSpot] = p; // p put at target index
 
                 emit SortedIntoQ(p, nextQSpot, i, oldPositionId);
             }
@@ -652,8 +658,8 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         return (credits[id].deposit - credits[id].principal, credits[id].interestRepaid);
     }
 
-    function nextInQ() external view returns (bytes32, address, address, uint256, uint256, uint256, uint128, uint128) {
-        bytes32 next = ids[0];
+    function nextInQ(uint256 trancheIndex) external view returns (bytes32, address, address, uint256, uint256, uint256, uint128, uint128) {
+        bytes32 next = ids[trancheIndex][0];
         Credit memory credit = credits[next];
         // Add to docs that this view revertts if no queue
         (uint128 dRate, uint128 fRate) = CreditLib.getNextRateInQ(credit.principal, next, address(interestRate));

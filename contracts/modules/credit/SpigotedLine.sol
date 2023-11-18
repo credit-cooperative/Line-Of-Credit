@@ -111,7 +111,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
         address claimToken,
         bytes calldata zeroExTradeData
     ) external whileBorrowing nonReentrant returns (uint256) {
-        bytes32 id = ids[0];
+        bytes32 id = ids[0][0];
         Credit memory credit = _accrue(credits[id], id);
 
         if (msg.sender != arbiter) {
@@ -148,7 +148,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
 
     /// see ISpigotedLine.useAndRepay
     function useAndRepay(uint256 amount) external whileBorrowing returns (bool) {
-        bytes32 id = ids[0];
+        bytes32 id = ids[0][0];
         Credit memory credit = credits[id];
 
         if (msg.sender != borrower && msg.sender != credit.lender) {
@@ -182,7 +182,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
         if (msg.sender != arbiter) {
             revert CallerAccessDenied();
         }
-        address targetToken = credits[ids[0]].token;
+        address targetToken = credits[ids[0][0]].token;
         uint256 newTokens = _claimAndTrade(claimToken, targetToken, zeroExTradeData);
 
         // add bought tokens to unused balance

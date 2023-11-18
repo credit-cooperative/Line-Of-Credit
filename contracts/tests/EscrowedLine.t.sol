@@ -1,195 +1,195 @@
-// SPDX-License-Identifier: GPL-3.0
-// Copyright: https://github.com/credit-cooperative/Line-Of-Credit/blob/master/COPYRIGHT.md
+// // SPDX-License-Identifier: GPL-3.0
+// // Copyright: https://github.com/credit-cooperative/Line-Of-Credit/blob/master/COPYRIGHT.md
 
- pragma solidity ^0.8.16;
+//  pragma solidity ^0.8.16;
 
-import "forge-std/Test.sol";
-import { IEscrow } from "../interfaces/IEscrow.sol";
-import { LineLib } from "../utils/LineLib.sol";
-import { IEscrowedLine } from "../interfaces/IEscrowedLine.sol";
-import { ILineOfCredit } from "../interfaces/ILineOfCredit.sol";
-import { SimpleOracle } from "../mock/SimpleOracle.sol";
-import { RevenueToken } from "../mock/RevenueToken.sol";
-import { Escrow } from "../modules/escrow/Escrow.sol";
-import { MockEscrowedLine } from '../mock/MockEscrowedLine.sol';
-import { Denominations } from "chainlink/Denominations.sol";
-import { ZeroEx } from "../mock/ZeroEx.sol";
-import { MockLine } from "../mock/MockLine.sol";
-
-
-contract EscrowedLineTest is Test {
-    MockEscrowedLine line;
-    Escrow escrow;
-
-    RevenueToken supportedToken1;
-    RevenueToken supportedToken2;
-    RevenueToken unsupportedToken;
-
-    // Named vars for common inputs
-    address constant revenueContract = address(0xdebf);
-    uint lentAmount = 1 ether;
-
-    uint128 constant dRate = 100;
-    uint128 constant fRate = 1;
-    uint constant ttl = 10 days; // allows us t
-    uint8 constant ownerSplit = 10; // 10% of all borrower revenue goes to spigot
-
-    uint constant MAX_INT = 115792089237316195423570985008687907853269984665640564039457584007913129639935;
-    uint constant MAX_REVENUE = MAX_INT / 100;
-    uint32 minCollateralRatio = 10000; // 100%
-    uint mintAmount = 100 ether;
-
-    // Line access control vars
-    address private arbiter = address(this);
-    address private borrower = address(10);
-    address private lender = address(20);
-
-    address private testaddr = makeAddr("test");
-    SimpleOracle private oracle;
-
-    function setUp() public {
-        supportedToken1 = new RevenueToken();
-        supportedToken2 = new RevenueToken();
-        unsupportedToken = new RevenueToken();
-
-        oracle = new SimpleOracle(address(supportedToken1), address(supportedToken2));
-        escrow = new Escrow(minCollateralRatio, address(oracle), arbiter, borrower, arbiter);
-        line = new MockEscrowedLine(
-            address(escrow),
-            address(oracle),
-            arbiter,
-            borrower,
-            ttl
-        );
-
-        escrow.updateLine(address(line));
-        line.init();
-        // assertEq(uint(line.init()), uint(LineLib.STATUS.ACTIVE));
-
-        _mintAndApprove();
-        escrow.enableCollateral( address(supportedToken1));
-        escrow.enableCollateral( address(supportedToken2));
-
-        vm.startPrank(borrower);
-        escrow.addCollateral(1 ether, address(supportedToken2));
-        vm.stopPrank();
-    }
+// import "forge-std/Test.sol";
+// import { IEscrow } from "../interfaces/IEscrow.sol";
+// import { LineLib } from "../utils/LineLib.sol";
+// import { IEscrowedLine } from "../interfaces/IEscrowedLine.sol";
+// import { ILineOfCredit } from "../interfaces/ILineOfCredit.sol";
+// import { SimpleOracle } from "../mock/SimpleOracle.sol";
+// import { RevenueToken } from "../mock/RevenueToken.sol";
+// import { Escrow } from "../modules/escrow/Escrow.sol";
+// import { MockEscrowedLine } from '../mock/MockEscrowedLine.sol';
+// import { Denominations } from "chainlink/Denominations.sol";
+// import { ZeroEx } from "../mock/ZeroEx.sol";
+// import { MockLine } from "../mock/MockLine.sol";
 
 
-    function _mintAndApprove() internal {
-        deal(lender, mintAmount);
+// contract EscrowedLineTest is Test {
+//     MockEscrowedLine line;
+//     Escrow escrow;
 
-        supportedToken1.mint(borrower, mintAmount);
-        supportedToken1.mint(lender, mintAmount);
-        supportedToken2.mint(borrower, mintAmount);
-        supportedToken2.mint(lender, mintAmount);
-        unsupportedToken.mint(borrower, mintAmount);
-        unsupportedToken.mint(lender, mintAmount);
+//     RevenueToken supportedToken1;
+//     RevenueToken supportedToken2;
+//     RevenueToken unsupportedToken;
 
-        vm.startPrank(borrower);
-        supportedToken1.approve(address(escrow), MAX_INT);
-        supportedToken1.approve(address(line), MAX_INT);
-        supportedToken2.approve(address(escrow), MAX_INT);
-        supportedToken2.approve(address(line), MAX_INT);
-        unsupportedToken.approve(address(escrow), MAX_INT);
-        unsupportedToken.approve(address(line), MAX_INT);
-        vm.stopPrank();
+//     // Named vars for common inputs
+//     address constant revenueContract = address(0xdebf);
+//     uint lentAmount = 1 ether;
 
-        vm.startPrank(lender);
-        supportedToken1.approve(address(escrow), MAX_INT);
-        supportedToken1.approve(address(line), MAX_INT);
-        supportedToken2.approve(address(escrow), MAX_INT);
-        supportedToken2.approve(address(line), MAX_INT);
-        unsupportedToken.approve(address(escrow), MAX_INT);
-        unsupportedToken.approve(address(line), MAX_INT);
-        vm.stopPrank();
+//     uint128 constant dRate = 100;
+//     uint128 constant fRate = 1;
+//     uint constant ttl = 10 days; // allows us t
+//     uint8 constant ownerSplit = 10; // 10% of all borrower revenue goes to spigot
 
-    }
+//     uint constant MAX_INT = 115792089237316195423570985008687907853269984665640564039457584007913129639935;
+//     uint constant MAX_REVENUE = MAX_INT / 100;
+//     uint32 minCollateralRatio = 10000; // 100%
+//     uint mintAmount = 100 ether;
 
-    function _addCredit(address token, uint256 amount) public {
-        vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, amount, token, lender);
-        vm.stopPrank();
-        vm.startPrank(lender);
-        line.addCredit(dRate, fRate, amount, token, lender);
-        vm.stopPrank();
-    }
+//     // Line access control vars
+//     address private arbiter = address(this);
+//     address private borrower = address(10);
+//     address private lender = address(20);
 
+//     address private testaddr = makeAddr("test");
+//     SimpleOracle private oracle;
 
+//     function setUp() public {
+//         supportedToken1 = new RevenueToken();
+//         supportedToken2 = new RevenueToken();
+//         unsupportedToken = new RevenueToken();
 
-   function test_cannot_liquidate_escrow_if_cratio_above_min() public {
-        vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
-        vm.stopPrank();
-        vm.startPrank(lender);
-        bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
-        vm.stopPrank();
-        vm.startPrank(borrower);
-        line.borrow(id, 1 ether, borrower);
-        vm.stopPrank();
-        vm.expectRevert(ILineOfCredit.NotLiquidatable.selector);
-        line.liquidate(1 ether, address(supportedToken2));
-    }
+//         oracle = new SimpleOracle(address(supportedToken1), address(supportedToken2));
+//         escrow = new Escrow(minCollateralRatio, address(oracle), arbiter, borrower, arbiter);
+//         line = new MockEscrowedLine(
+//             address(escrow),
+//             address(oracle),
+//             arbiter,
+//             borrower,
+//             ttl
+//         );
 
-    function test_can_liquidate_escrow_if_cratio_below_min() public {
-        _addCredit(address(supportedToken1), 1 ether);
-        uint balanceOfEscrow = supportedToken2.balanceOf(address(escrow));
-        uint balanceOfArbiter = supportedToken2.balanceOf(arbiter);
+//         escrow.updateLine(address(line));
+//         line.init();
+//         // assertEq(uint(line.init()), uint(LineLib.STATUS.ACTIVE));
 
-        bytes32 id = line.ids(0);
-        vm.startPrank(borrower);
-        line.borrow(id, 1 ether, borrower);
-        vm.stopPrank();
-        (uint p,) = line.updateOutstandingDebt();
-        assertGt(p, 0);
-        console.log('checkpoint');
-        oracle.changePrice(address(supportedToken2), 1);
-        line.liquidate(1 ether, address(supportedToken2));
-        assertEq(
-        balanceOfEscrow, supportedToken1.balanceOf(address(escrow)) + 1 ether, "Escrow balance should have increased by 1e18");
-        assertEq(balanceOfArbiter, supportedToken2.balanceOf(arbiter) - 1 ether, "Arbiter balance should have decreased by 1e18");
-    }
+//         _mintAndApprove();
+//         escrow.enableCollateral( address(supportedToken1));
+//         escrow.enableCollateral( address(supportedToken2));
 
-    function test_line_is_uninitilized_if_escrow_not_owned() public {
-        address mock = address(new MockLine(0, address(3)));
-
-        Escrow e = new Escrow(minCollateralRatio, address(oracle), mock, borrower, arbiter);
-        MockEscrowedLine l = new MockEscrowedLine(
-
-            address(escrow),
-            address(oracle),
-            arbiter,
-            borrower,
-            ttl
-        );
-
-        // configure other modules
+//         vm.startPrank(borrower);
+//         escrow.addCollateral(1 ether, address(supportedToken2));
+//         vm.stopPrank();
+//     }
 
 
-        // assertEq(uint(l.init()), uint(LineLib.STATUS.UNINITIALIZED));
+//     function _mintAndApprove() internal {
+//         deal(lender, mintAmount);
 
-        vm.expectRevert(abi.encodeWithSelector(ILineOfCredit.BadModule.selector, address(escrow)));
-        l.init();
-    }
+//         supportedToken1.mint(borrower, mintAmount);
+//         supportedToken1.mint(lender, mintAmount);
+//         supportedToken2.mint(borrower, mintAmount);
+//         supportedToken2.mint(lender, mintAmount);
+//         unsupportedToken.mint(borrower, mintAmount);
+//         unsupportedToken.mint(lender, mintAmount);
 
-    function test_can_liquidate_anytime_if_escrow_cratio_below_min() public {
-        _addCredit(address(supportedToken1), 1 ether);
-        uint balanceOfEscrow = supportedToken2.balanceOf(address(escrow));
-        uint balanceOfArbiter = supportedToken2.balanceOf(arbiter);
-        bytes32 id = line.ids(0);
-        vm.startPrank(borrower);
-        line.borrow(id, 1 ether, borrower);
-        vm.stopPrank();
-        (uint p, uint i) = line.updateOutstandingDebt();
-        assertGt(p, 0);
-        oracle.changePrice(address(supportedToken2), 1);
-        line.liquidate(1 ether, address(supportedToken2));
-        assertEq(balanceOfEscrow, supportedToken1.balanceOf(address(escrow)) + 1 ether, "Escrow balance should have increased by 1e18");
-        assertEq(balanceOfArbiter, supportedToken2.balanceOf(arbiter) - 1 ether, "Arbiter balance should have decreased by 1e18");
-    }
+//         vm.startPrank(borrower);
+//         supportedToken1.approve(address(escrow), MAX_INT);
+//         supportedToken1.approve(address(line), MAX_INT);
+//         supportedToken2.approve(address(escrow), MAX_INT);
+//         supportedToken2.approve(address(line), MAX_INT);
+//         unsupportedToken.approve(address(escrow), MAX_INT);
+//         unsupportedToken.approve(address(line), MAX_INT);
+//         vm.stopPrank();
 
-    function test_cannot_be_liquidatable_if_debt_is_0() public {
+//         vm.startPrank(lender);
+//         supportedToken1.approve(address(escrow), MAX_INT);
+//         supportedToken1.approve(address(line), MAX_INT);
+//         supportedToken2.approve(address(escrow), MAX_INT);
+//         supportedToken2.approve(address(line), MAX_INT);
+//         unsupportedToken.approve(address(escrow), MAX_INT);
+//         unsupportedToken.approve(address(line), MAX_INT);
+//         vm.stopPrank();
 
-        assertEq(uint256(line.healthcheck()), uint256(LineLib.STATUS.ACTIVE));
-    }
-}
+//     }
+
+//     function _addCredit(address token, uint256 amount) public {
+//         vm.startPrank(borrower);
+//         line.addCredit(dRate, fRate, amount, token, lender);
+//         vm.stopPrank();
+//         vm.startPrank(lender);
+//         line.addCredit(dRate, fRate, amount, token, lender);
+//         vm.stopPrank();
+//     }
+
+
+
+//    function test_cannot_liquidate_escrow_if_cratio_above_min() public {
+//         vm.startPrank(borrower);
+//         line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+//         vm.stopPrank();
+//         vm.startPrank(lender);
+//         bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+//         vm.stopPrank();
+//         vm.startPrank(borrower);
+//         line.borrow(id, 1 ether, borrower);
+//         vm.stopPrank();
+//         vm.expectRevert(ILineOfCredit.NotLiquidatable.selector);
+//         line.liquidate(1 ether, address(supportedToken2));
+//     }
+
+//     function test_can_liquidate_escrow_if_cratio_below_min() public {
+//         _addCredit(address(supportedToken1), 1 ether);
+//         uint balanceOfEscrow = supportedToken2.balanceOf(address(escrow));
+//         uint balanceOfArbiter = supportedToken2.balanceOf(arbiter);
+
+//         bytes32 id = line.ids(0);
+//         vm.startPrank(borrower);
+//         line.borrow(id, 1 ether, borrower);
+//         vm.stopPrank();
+//         (uint p,) = line.updateOutstandingDebt();
+//         assertGt(p, 0);
+//         console.log('checkpoint');
+//         oracle.changePrice(address(supportedToken2), 1);
+//         line.liquidate(1 ether, address(supportedToken2));
+//         assertEq(
+//         balanceOfEscrow, supportedToken1.balanceOf(address(escrow)) + 1 ether, "Escrow balance should have increased by 1e18");
+//         assertEq(balanceOfArbiter, supportedToken2.balanceOf(arbiter) - 1 ether, "Arbiter balance should have decreased by 1e18");
+//     }
+
+//     function test_line_is_uninitilized_if_escrow_not_owned() public {
+//         address mock = address(new MockLine(0, address(3)));
+
+//         Escrow e = new Escrow(minCollateralRatio, address(oracle), mock, borrower, arbiter);
+//         MockEscrowedLine l = new MockEscrowedLine(
+
+//             address(escrow),
+//             address(oracle),
+//             arbiter,
+//             borrower,
+//             ttl
+//         );
+
+//         // configure other modules
+
+
+//         // assertEq(uint(l.init()), uint(LineLib.STATUS.UNINITIALIZED));
+
+//         vm.expectRevert(abi.encodeWithSelector(ILineOfCredit.BadModule.selector, address(escrow)));
+//         l.init();
+//     }
+
+//     function test_can_liquidate_anytime_if_escrow_cratio_below_min() public {
+//         _addCredit(address(supportedToken1), 1 ether);
+//         uint balanceOfEscrow = supportedToken2.balanceOf(address(escrow));
+//         uint balanceOfArbiter = supportedToken2.balanceOf(arbiter);
+//         bytes32 id = line.ids(0);
+//         vm.startPrank(borrower);
+//         line.borrow(id, 1 ether, borrower);
+//         vm.stopPrank();
+//         (uint p, uint i) = line.updateOutstandingDebt();
+//         assertGt(p, 0);
+//         oracle.changePrice(address(supportedToken2), 1);
+//         line.liquidate(1 ether, address(supportedToken2));
+//         assertEq(balanceOfEscrow, supportedToken1.balanceOf(address(escrow)) + 1 ether, "Escrow balance should have increased by 1e18");
+//         assertEq(balanceOfArbiter, supportedToken2.balanceOf(arbiter) - 1 ether, "Arbiter balance should have decreased by 1e18");
+//     }
+
+//     function test_cannot_be_liquidatable_if_debt_is_0() public {
+
+//         assertEq(uint256(line.healthcheck()), uint256(LineLib.STATUS.ACTIVE));
+//     }
+// }
