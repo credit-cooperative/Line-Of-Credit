@@ -17,6 +17,7 @@ interface ILineOfCredit {
         uint8 decimals; // Decimals of Credit Token for calcs
         address token; // The token being lent out (Credit Token)
         address lender; // The person to repay
+        uint256 tranche; // The tranche the credit is in
         bool isOpen; // Status of position
     }
 
@@ -141,7 +142,8 @@ interface ILineOfCredit {
         uint128 frate,
         uint256 amount,
         address token,
-        address lender
+        address lender,
+        uint256 creditLimit
     ) external payable returns (bytes32);
 
     /**
@@ -250,7 +252,7 @@ interface ILineOfCredit {
      * @notice - Cycles through position ids andselects first position with non-null principal to the zero index
      * @dev - Only works if the first element in the queue is null
      */
-    function stepQ() external;
+    function stepQ(uint256 trancheIndex) external;
 
     /**
      * @notice - Returns the total debt of a Borrower across all positions for all Lenders.

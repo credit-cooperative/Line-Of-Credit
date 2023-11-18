@@ -22,27 +22,30 @@ library CreditListLib {
      * @param id            - the hash id of the credit line to be removed from active ids after removePosition() has run
      * @return newPositions - all active credit lines on the Line of Credit facility after the `id` has been removed
      */
-    function removePosition(bytes32[] storage ids, bytes32 id) external returns (bool) {
-        uint256 len = ids.length;
-
-        for (uint256 i; i < len; ++i) {
-            if (ids[i] == id) {
-                delete ids[i];
-                return true;
+    function removePosition(bytes32[][] storage ids, bytes32 id) external returns (bool, uint256) {
+        uint256 numTranches = ids.length;
+        for (uint256 i; i < numTranches; ++i) {
+            uint256 len = ids[i].length;
+            for (uint256 j; j < len; ++j) {
+                if (ids[i][j] == id) {
+                    delete ids[i][j];
+                    return (true, i);
+                }
             }
         }
 
-        return true;
+        return (false, 0);
     }
 
+    // TODO: make this work with tranches!
     /**
      * @notice  - swap the first element in the queue, provided it is null, with the next available valid(non-null) id
      * @dev     - Must perform check for ids[0] being valid (non-zero) before calling
      * @param ids       - all current credit lines on the Line of Credit facility
      * @return swapped  - returns true if the swap has occurred
      */
-    function stepQ(bytes32[] storage ids) external returns (bool) {
-        if (ids[0] != bytes32(0)) {
+    function stepQ(bytes32[][] storage ids, uint256 tranche) external returns (bool) {
+        if (ids[tranche][0] != bytes32(0)) {
             revert CantStepQ();
         }
 
@@ -50,17 +53,17 @@ library CreditListLib {
         if (len <= 1) return false;
 
         // skip the loop if we don't need
-        if (len == 2 && ids[1] != bytes32(0)) {
-            (ids[0], ids[1]) = (ids[1], ids[0]);
-            emit SortedIntoQ(ids[0], 0, 1, ids[1]);
+        if (len == 2 && ids[tranche][1] != bytes32(0)) {
+            (ids[tranche][0], ids[tranche][1]) = (ids[tranche][1], ids[tranche][0]);
+            emit SortedIntoQ(ids[tranche][0], 0, 1, ids[tranche][1]);
             return true;
         }
 
         // we never check the first id, because we already know it's null
         for (uint i = 1; i < len; ) {
-            if (ids[i] != bytes32(0)) {
-                (ids[0], ids[i]) = (ids[i], ids[0]); // swap the ids in storage
-                emit SortedIntoQ(ids[0], 0, i, ids[i]);
+            if (ids[tranche][i] != bytes32(0)) {
+                (ids[tranche][0], ids[tranche][i]) = (ids[tranche][i], ids[tranche][0]); // swap the ids in storage
+                emit SortedIntoQ(ids[tranche][0], 0, i, ids[tranche][i]);
                 return true; // if we make the swap, return early
             }
             unchecked {

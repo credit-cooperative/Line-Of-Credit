@@ -27,7 +27,7 @@ import {ILineOfCredit} from "../../interfaces/ILineOfCredit.sol";
 contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    using CreditListLib for bytes32[];
+    using CreditListLib for bytes32[][];
 
     /// @notice - the timestamp that all creditors must be repaid by
     uint256 public deadline;
@@ -262,7 +262,8 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         bytes32 id;
         for (uint256 i; i < len; ++i) {
-            id = ids[i][0]; // TODO: fix this error since ids is now a 2d array
+            // TODO: loop through each credit positon in a given tranche
+            id = ids[i][0];
 
             // null element in array from closing a position. skip for gas savings
             if (id == bytes32(0)) {
@@ -463,8 +464,8 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
      * @notice  - Steps the Queue by replacing the first element with the next valid credit line's ID
      * @dev     - Only works if the first element in the queue is null
      */
-    function stepQ() external {
-        ids.stepQ();
+    function stepQ(uint256 trancheIndex) external {
+        ids.stepQ(trancheIndex);
     }
 
     //////////////////////
@@ -521,12 +522,12 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
             revert PositionExists();
         }
 
-        credits[id] = CreditLib.create(id, amount, lender, token, address(oracle));
+        credits[id] = CreditLib.create(id, amount, lender, token, address(oracle), ids.length - 1);
 
         ids[ids.length - 1].push(id); // add lender to last tranche within repayment queue
 
         // if positions was 1st in Q, cycle to next valid position
-        if (ids[0] == bytes32(0)) ids.stepQ();
+        if (ids[ids.length - 1][0] == bytes32(0)) ids.stepQ(ids.length - 1);
 
         // TODO: remove this
         unchecked {
@@ -580,10 +581,10 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         credit.isOpen = false;
 
         // nullify the element for `id`
-        ids.removePosition(id);
+        (bool isRemoved, uint256 trancheIndex) = ids.removePosition(id);
 
         // if positions was 1st in Q, cycle to next valid position
-        if (ids[0] == bytes32(0)) ids.stepQ();
+        if (ids[trancheIndex][0] == bytes32(0)) ids.stepQ(trancheIndex);
 
         unchecked {
             --count;
