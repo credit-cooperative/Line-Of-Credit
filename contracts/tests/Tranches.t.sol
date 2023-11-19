@@ -205,10 +205,100 @@ contract SecuredLineTest is Test {
 
 
     // TODO: test full repayment lifecycle with CC lender tranching plus beneficiaries
-    // TODO: REALISTIC SCENARIO - single tranche with two CC lenders
+
+    // REALISTIC SCENARIO - single tranche with two CC lenders
+    function test_full_repayment_lifecycle_w_single_tranche() public {
+
+       // Line owns the Spigot and Escrow modules
+        assertEq(address(line), spigot.owner());
+        assertEq(address(line), escrow.line());
+
+        // Line status is active
+        assertEq(1, uint(line.status()));
+
+        // Borrower transfers ownership of revenue contract to Spigot
+        vm.startPrank(borrower);
+        revenueContract.transferOwnership(address(spigot));
+        vm.stopPrank();
+
+        // Arbiter adds revenue contract to the Spigot and b
+        ISpigot.Setting memory settings = ISpigot.Setting({
+            ownerSplit: ownerSplit,
+            claimFunction: SimpleRevenueContract.sendPushPayment.selector,
+            // claimFunction: bytes4(0),
+            transferOwnerFunction: SimpleRevenueContract.transferOwnership.selector
+        });
+
+        vm.startPrank(arbiter);
+        line.addSpigot(address(revenueContract), settings);
+        vm.stopPrank();
+
+        // 2. Fund Line of Credit and Borrow
+        // Lender proposes credit position
+        // Borrower accepts credit position
+
+        // create single tranche w/ two positions
+        _addCredit(address(supportedToken1), 100 ether, lender1, 200 ether);
+        _addCredit(address(supportedToken1), 100 ether, lender4, 0);
+
+        emit log_named_bytes32('\nxxx - credit position 1: ', line.ids(0, 0));
+        emit log_named_bytes32('xxx - credit position 2: ', line.ids(0, 1));
+
+        (address trancheToken1, uint8 trancheDecimals1, uint256 trancheLimit1, uint256 trancheSubscribedAmount1) = line.tranches(0);
+        emit log_named_address('\nxxx - tranche 1 - token: ', trancheToken1);
+        emit log_named_uint('xxx - tranche 1 - decimals: ', trancheDecimals1);
+        emit log_named_uint('xxx - tranche 1 - credit limit: ', trancheLimit1);
+        emit log_named_uint('xxx - tranche 1 - subscribed amount: ', trancheSubscribedAmount1);
+        assertEq(trancheLimit1, 200 ether);
+        assertEq(trancheSubscribedAmount1, 200 ether);
+
+        // // Borrower borrows from both credit positions
+        vm.startPrank(borrower);
+        bytes32 creditPositionId1 = line.ids(0, 0);
+        bytes32 creditPositionId2 = line.ids(0, 1);
+        line.borrow(creditPositionId1, 100 ether, borrower);
+        line.borrow(creditPositionId2, 100 ether, borrower);
+
+        vm.stopPrank();
+
+        // 3. Repay and Close Line of Credit
+        vm.warp(block.timestamp + 365 days);
+        console.log('Ending Timestamp: ', block.timestamp);
+
+        // Revenue accrues to the Revenue contract
+        deal(address(supportedToken1), address(revenueContract), REVENUE_EARNED);
+        assertEq(REVENUE_EARNED, IERC20(supportedToken1).balanceOf(address(revenueContract)));
+
+        // Arbiter claims revenue to the spigot
+        spigot.claimRevenue(
+            address(revenueContract),
+            address(supportedToken1),
+            abi.encode(SimpleRevenueContract.sendPushPayment.selector)
+        );
+
+        assertEq(IERC20(supportedToken1).balanceOf(address(spigot)), REVENUE_EARNED);
+
+        // Arbiter distributes funds from the spigot to beneficiaries (only the line)
+        spigot.distributeFunds(address(supportedToken1));
+        // owner tokens: 500 * 1.0 * 1.0 = 500
+        uint256 ownerTokens = spigot.getOwnerTokens(address(supportedToken1));
+        assertEq(ownerTokens, REVENUE_EARNED / FULL_ALLOC * allocations[0]);
+
+        // Arbiter fully repays tranche with funds from spigot and closes both credit positions
+        vm.startPrank(arbiter);
+        line.claimAndRepay(address(supportedToken1), "");
+        line.close(creditPositionId1);
+        line.close(creditPositionId2);
+        // line status is REPAID
+        assertEq(3, uint(line.status()));
+        vm.stopPrank();
+
+        // Arbiter closes positions
+
+    }
 
     // four Credit Coop lenders across two tranches
-    function test_full_repayment_lifecycle_w_tranching() public {
+    function test_full_repayment_lifecycle_w_two_tranches() public {
 
         // Line owns the Spigot and Escrow modules
         assertEq(address(line), spigot.owner());
@@ -281,7 +371,7 @@ contract SecuredLineTest is Test {
 
         // 3. Repay and Close Line of Credit
         vm.warp(block.timestamp + 365 days);
-        console.log('Ending Timestamp: ', block.timestamp);
+        console.log('\nEnding Timestamp: ', block.timestamp);
 
         // Revenue accrues to the Revenue contract
         deal(address(supportedToken1), address(revenueContract), REVENUE_EARNED);
