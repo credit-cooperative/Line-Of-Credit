@@ -301,12 +301,12 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
 
     /// see ILineOfCredit.addTranche
-    function createTranche(address token, uint256 creditLimit) external onlyBorrower {
-        _createTranche(token, creditLimit);
+    function createTranche(address token, uint256 amount, uint256 creditLimit) external onlyBorrower {
+        _createTranche(token, amount, creditLimit);
 
     }
 
-    function _createTranche(address token, uint256 creditLimit) internal {
+    function _createTranche(address token, uint256 amount, uint256 creditLimit) internal {
         (bool passed, bytes memory result) = token.call(abi.encodeWithSignature("decimals()"));
 
         if (!passed || result.length == 0) {
@@ -315,7 +315,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         uint8 decimals = abi.decode(result, (uint8));
 
-        tranches.push(Tranche(token, decimals, creditLimit, 0));
+        tranches.push(Tranche(token, decimals, creditLimit, amount));
 
         bytes32[] memory newTranche;
         ids.push(newTranche);
@@ -331,9 +331,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         uint256 creditLimit
     ) external payable override nonReentrant whileActive mutualConsent(lender, borrower) returns (bytes32) {
         bytes32 id = _createCredit(lender, token, amount, creditLimit);
-        console.log('AAA - how many times?');
         _setRates(id, drate, frate);
-        console.log('AAB - how many times?');
         LineLib.receiveTokenOrETH(token, lender, amount);
 
         return id;
@@ -499,7 +497,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         // subscribe to an existing tranche
         if (creditLimit == 0) {
-            Tranche memory tranche = tranches[tranches.length - 1];
+            Tranche storage tranche = tranches[tranches.length - 1];
 
             // there must be at least one tranche
             if (tranches.length == 0) {
@@ -515,18 +513,16 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         }
         // create a new tranche
         else {
-            console.log('xxx - make a tranche?');
-            _createTranche(token, creditLimit);
+            _createTranche(token, amount, creditLimit);
         }
 
         id = CreditLib.computeId(address(this), lender, token);
-        console.log('xxx - make an id?');
+
         // MUST not double add the credit line. once lender is set it cant be deleted even if position is closed.
         if (credits[id].lender != address(0) && credits[id].isOpen) {
             revert PositionExists();
         }
 
-        console.log('xxx - how many tranches? ', ids.length);
         uint256 trancheIndex = ids.length > 0 ? ids.length - 1 : 0;
         credits[id] = CreditLib.create(id, amount, lender, token, trancheIndex, address(oracle));
 

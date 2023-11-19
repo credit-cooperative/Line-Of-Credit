@@ -43,7 +43,7 @@ contract SecuredLineTest is Test {
     uint128 dRate = 1500; // 15%
     uint128 fRate = 1500; // 15%
     uint ttl = 60 days;
-    uint8 constant ownerSplit = 50; // 50% of all borrower revenue goes to spigot
+    uint8 constant ownerSplit = 100; // 100% of all borrower revenue goes to spigot
 
     uint256 FULL_ALLOC = 100000;
     uint256 constant REVENUE_EARNED = 500 ether;
@@ -124,13 +124,25 @@ contract SecuredLineTest is Test {
 
     function _mintAndApprove() internal {
         deal(lender1, mintAmount);
+        deal(lender2, mintAmount);
+        deal(lender3, mintAmount);
+        deal(lender4, mintAmount);
 
         supportedToken1.mint(borrower, mintAmount);
         supportedToken1.mint(lender1, mintAmount);
+        supportedToken1.mint(lender2, mintAmount);
+        supportedToken1.mint(lender3, mintAmount);
+        supportedToken1.mint(lender4, mintAmount);
         supportedToken2.mint(borrower, mintAmount);
         supportedToken2.mint(lender1, mintAmount);
+        supportedToken2.mint(lender2, mintAmount);
+        supportedToken2.mint(lender3, mintAmount);
+        supportedToken2.mint(lender4, mintAmount);
         unsupportedToken.mint(borrower, mintAmount);
         unsupportedToken.mint(lender1, mintAmount);
+        unsupportedToken.mint(lender2, mintAmount);
+        unsupportedToken.mint(lender3, mintAmount);
+        unsupportedToken.mint(lender4, mintAmount);
 
         vm.startPrank(borrower);
         supportedToken1.approve(address(escrow), MAX_INT);
@@ -150,21 +162,50 @@ contract SecuredLineTest is Test {
         unsupportedToken.approve(address(line), MAX_INT);
         vm.stopPrank();
 
+        vm.startPrank(lender2);
+        supportedToken1.approve(address(escrow), MAX_INT);
+        supportedToken1.approve(address(line), MAX_INT);
+        supportedToken2.approve(address(escrow), MAX_INT);
+        supportedToken2.approve(address(line), MAX_INT);
+        unsupportedToken.approve(address(escrow), MAX_INT);
+        unsupportedToken.approve(address(line), MAX_INT);
+        vm.stopPrank();
+
+        vm.startPrank(lender3);
+        supportedToken1.approve(address(escrow), MAX_INT);
+        supportedToken1.approve(address(line), MAX_INT);
+        supportedToken2.approve(address(escrow), MAX_INT);
+        supportedToken2.approve(address(line), MAX_INT);
+        unsupportedToken.approve(address(escrow), MAX_INT);
+        unsupportedToken.approve(address(line), MAX_INT);
+        vm.stopPrank();
+
+        vm.startPrank(lender4);
+        supportedToken1.approve(address(escrow), MAX_INT);
+        supportedToken1.approve(address(line), MAX_INT);
+        supportedToken2.approve(address(escrow), MAX_INT);
+        supportedToken2.approve(address(line), MAX_INT);
+        unsupportedToken.approve(address(escrow), MAX_INT);
+        unsupportedToken.approve(address(line), MAX_INT);
+        vm.stopPrank();
+
+
+
+
     }
 
     function _addCredit(address token, uint256 amount, address lender, uint256 creditLimit) public {
         vm.startPrank(borrower);
         line.addCredit(dRate, fRate, amount, token, lender, creditLimit);
-        console.log('xxx - Do I make it 1?');
         vm.stopPrank();
         vm.startPrank(lender);
         line.addCredit(dRate, fRate, amount, token, lender, creditLimit);
-        console.log('xxx - Do I make it 2?');
         vm.stopPrank();
     }
 
 
     // TODO: test full repayment lifecycle with CC lender tranching plus beneficiaries
+    // TODO: REALISTIC SCENARIO - single tranche with two CC lenders
 
     // four Credit Coop lenders across two tranches
     function test_full_repayment_lifecycle_w_tranching() public {
@@ -196,68 +237,88 @@ contract SecuredLineTest is Test {
         // 2. Fund Line of Credit and Borrow
         // Lender proposes credit position
         // Borrower accepts credit position
+
+        // create first tranche when adding first position
         _addCredit(address(supportedToken1), 100 ether, lender1, 200 ether);
 
-        // // Borrower borrows from line
-        // vm.startPrank(borrower);
-        // bytes32 creditPositionId = line.ids(0);
-        // line.borrow(creditPositionId, 100 ether, borrower);
-        // vm.stopPrank();
+        // add another credit position to the newly created tranche
+        _addCredit(address(supportedToken1), 100 ether, lender2, 0);
 
-        // // 3. Repay and Close Line of Credit
-        // vm.warp(block.timestamp + 59 days);
-        // console.log('Ending Timestamp: ', block.timestamp);
+        // create a second tranche
+        _addCredit(address(supportedToken1), 100 ether, lender3, 200 ether);
+        _addCredit(address(supportedToken1), 100 ether, lender4, 0);
 
-        // // Revenue accrues to the Revenue contract
-        // deal(address(supportedToken1), address(revenueContract), REVENUE_EARNED);
-        // assertEq(REVENUE_EARNED, IERC20(supportedToken1).balanceOf(address(revenueContract)));
+        emit log_named_bytes32('\nxxx - credit position 1: ', line.ids(0, 0));
+        emit log_named_bytes32('xxx - credit position 2: ', line.ids(0, 1));
+        emit log_named_bytes32('xxx - credit position 3: ', line.ids(1, 0));
+        emit log_named_bytes32('xxx - credit position 4: ', line.ids(1, 1));
 
-        // // Arbiter claims revenue to the spigot
-        // spigot.claimRevenue(
-        //     address(revenueContract),
-        //     address(supportedToken1),
-        //     abi.encode(SimpleRevenueContract.sendPushPayment.selector)
-        // );
+        (address trancheToken1, uint8 trancheDecimals1, uint256 trancheLimit1, uint256 trancheSubscribedAmount1) = line.tranches(0);
+        emit log_named_address('\nxxx - tranche 1 - token: ', trancheToken1);
+        emit log_named_uint('xxx - tranche 1 - decimals: ', trancheDecimals1);
+        emit log_named_uint('xxx - tranche 1 - credit limit: ', trancheLimit1);
+        emit log_named_uint('xxx - tranche 1 - subscribed amount: ', trancheSubscribedAmount1);
+        assertEq(trancheSubscribedAmount1, 200 ether);
 
-        // assertEq(IERC20(supportedToken1).balanceOf(address(spigot)), REVENUE_EARNED);
+        (address trancheToken2, uint8 trancheDecimals2, uint256 trancheLimit2, uint256 trancheSubscribedAmount2) = line.tranches(1);
+        emit log_named_address('\nxxx - tranche 2 - token: ', trancheToken2);
+        emit log_named_uint('xxx - tranche 2 - decimals: ', trancheDecimals2);
+        emit log_named_uint('xxx - tranche 2 - credit limit: ', trancheLimit2);
+        emit log_named_uint('xxx - tranche 2 - subscribed amount: ', trancheSubscribedAmount2);
+        assertEq(trancheSubscribedAmount2, 200 ether);
 
-        // // Arbiter distributes funds from the spigot to beneficiaries
-        // uint256 elDebtOwed = debtOwed[1];
-        // spigot.distributeFunds(address(supportedToken1));
-        // // TODO: this isn't quite right - owner split should be 50% of claimed revenue
-        // // Beneficiary Debt is completely repaid and remainign balance goes to line
-        // // operator tokens = 500 * 0.5 (ownersplit) = 250
-        // // beneficiary tokens: 500 * 0.5 * 0.5 = 125 => 125 - 102.5 = 22.5 (leftover)
-        // // owner tokens: 500 * 0.5 * 0.5 = 125 => 125 + 22.5 = 147.5
-        // // total = 250 (operator) + 147.5 (owner) + 102.5 (beneficiary) = 500
-        // uint256 ownerTokens = spigot.getOwnerTokens(address(supportedToken1));
-        // uint256 operatorTokens = spigot.getOperatorTokens(address(supportedToken1));
-        // uint256 externalLenderTokens = IERC20(address(supportedToken1)).balanceOf(externalLender);
-        // uint256 excessTokens = REVENUE_EARNED / 100 * ownerSplit / FULL_ALLOC * allocations[1] - elDebtOwed;
+        // // Borrower borrows from all credit positions across both tranches
+        vm.startPrank(borrower);
+        bytes32 creditPositionId1 = line.ids(0, 0);
+        bytes32 creditPositionId2 = line.ids(0, 1);
+        bytes32 creditPositionId3 = line.ids(1, 0);
+        bytes32 creditPositionId4 = line.ids(1, 1);
+        line.borrow(creditPositionId1, 100 ether, borrower);
+        line.borrow(creditPositionId2, 100 ether, borrower);
+        line.borrow(creditPositionId3, 100 ether, borrower);
+        line.borrow(creditPositionId4, 100 ether, borrower);
+        vm.stopPrank();
 
-        // // Each party receives expected tokens
-        // assertEq(ownerTokens, REVENUE_EARNED / 100 * ownerSplit / FULL_ALLOC * allocations[0] + excessTokens);
-        // assertEq(operatorTokens, REVENUE_EARNED / 100 * ownerSplit);
-        // assertEq(externalLenderTokens, elDebtOwed);
-        // assertEq(ownerTokens + operatorTokens + externalLenderTokens, REVENUE_EARNED);
+        // 3. Repay and Close Line of Credit
+        vm.warp(block.timestamp + 365 days);
+        console.log('Ending Timestamp: ', block.timestamp);
 
-        // // External lender debt is repaid, allocation is set to zero
-        // // External lender allocation is transferred to line
-        // (, uint256 ownerAllocation, , ) = spigot.getBeneficiaryBasicInfo(spigot.owner());
-        // (, uint256 elAllocation, , uint256 elNewDebtOwed) = spigot.getBeneficiaryBasicInfo(externalLender);
-        // assertEq(ownerAllocation, 100000);
-        // assertEq(elAllocation, 0);
-        // assertEq(elNewDebtOwed, 0);
+        // Revenue accrues to the Revenue contract
+        deal(address(supportedToken1), address(revenueContract), REVENUE_EARNED);
+        assertEq(REVENUE_EARNED, IERC20(supportedToken1).balanceOf(address(revenueContract)));
 
-        // // Arbiter repays and closes line with spigot funds
-        // vm.startPrank(arbiter);
-        // (,uint principal,,,,,,) = line.credits(line.ids(0));
-        // uint interestAccrued = line.interestAccrued(line.ids(0));
-        // line.claimAndRepay(address(supportedToken1), "");
+        // Arbiter claims revenue to the spigot
+        spigot.claimRevenue(
+            address(revenueContract),
+            address(supportedToken1),
+            abi.encode(SimpleRevenueContract.sendPushPayment.selector)
+        );
+
+        assertEq(IERC20(supportedToken1).balanceOf(address(spigot)), REVENUE_EARNED);
+
+        // Arbiter distributes funds from the spigot to beneficiaries (only the line)
+        spigot.distributeFunds(address(supportedToken1));
+        // owner tokens: 500 * 1.0 * 1.0 = 500
+        // total = 250 (operator) + 147.5 (owner) + 102.5 (beneficiary) = 500
+        uint256 ownerTokens = spigot.getOwnerTokens(address(supportedToken1));
+        assertEq(ownerTokens, REVENUE_EARNED / FULL_ALLOC * allocations[0]);
+
+        // Arbiter repays interestAccrued on both senior and junior tranche with funds
+        // from spigot
+        vm.startPrank(arbiter);
+        // (,uint principal,,,,,,) = line.credits(line.ids(0, 0));
+        // uint interestAccrued = line.interestAccrued(line.ids(0, 0));
+        line.claimAndRepay(address(supportedToken1), "");
         // line.close(creditPositionId);
-        // // line status is REPAID
-        // assertEq(3, uint(line.status()));
-        // vm.stopPrank();
+        // line status is REPAID
+        assertEq(3, uint(line.status()));
+        vm.stopPrank();
+
+        // Arbiter repays principal for senior tranche
+
+        // Arbiter repays principal for junior tranche
+
+        // Arbiter closes positions
 
         // // Lender withdraws position
         // vm.startPrank(lender);
