@@ -76,16 +76,22 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
 
     // a ripcord function that liquidates all tokens in escrow and sends them to the arbiter and releases spigot to the arbiter
 
-    function ripcord() external returns (bool) {
+    function ripcord(address[] tokens) external returns (bool) {
         if (msg.sender != arbiter) {
             revert CallerAccessDenied();
         }
 
         // send tokens to arbiter for OTC sales
-        uint256 amount = _liquidate(ids[0], escrow.balance(), address(escrow.token()), msg.sender);
+
+        for (uint256 i = 0; i < tokens.length; i++) {
+            uint256 amount = _liquidate(ids[0], escrow.balanceOf(tokens[i]), tokens[i], msg.sender);
+            emit Ripcord(address(this), amount, tokens[i]);
+        }
 
         // release spigot to arbiter
         releaseSpigot(msg.sender);
+
+        _updateStatus(LineLib.STATUS.RIPCORDED);
 
         emit Ripcord(address(this), amount, address(escrow.token()));
 

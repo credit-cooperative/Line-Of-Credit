@@ -430,6 +430,15 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         credits[id] = CreditLib.withdraw(_accrue(credits[id], id), id, msg.sender, amount);
     }
 
+    // for Ripcord Scenario
+
+    function withdrawRipcord(address token) external override nonReentrant {
+        require (msg.sender == arbiter);
+        require (status == LineLib.STATUS.RIPCORDED);
+        uint256 amount = IERC20(token).balanceOf(address(this));
+        IERC20(token).safeTransfer(msg.sender, amount);
+    }
+
     /**
      * @notice  - Steps the Queue be replacing the first element with the next valid credit line's ID
      * @dev     - Only works if the first element in the queue is null
