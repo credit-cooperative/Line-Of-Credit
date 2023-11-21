@@ -105,6 +105,7 @@ interface ILineOfCredit {
     error NotLiquidatable();
     error AlreadyInitialized();
     error PositionIsClosed();
+    error NotEnoughTokens();
     error RepayAmountExceedsDebt(uint256 totalAvailable);
     error CantStepQ();
     error EthSupportDisabled();

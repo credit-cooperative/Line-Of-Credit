@@ -146,6 +146,181 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
         return newTokens;
     }
 
+    // TODO: update to handle multiple tranches w/ creditToken != claimToken
+    // TODO: move to useAndRepay to abstract trading from repayment
+    /// see ISpigotedLine.claimAndRepay
+    function claimAndRepayTranches(
+        address claimToken,
+        bytes calldata zeroExTradeData
+    ) external whileBorrowing nonReentrant returns (uint256) {
+        // bytes32 id = ids[0][0];
+        // Credit memory credit = _accrue(credits[id], id);
+
+        if (msg.sender != arbiter) {
+            revert CallerAccessDenied();
+        }
+
+        uint256 newTokens = _claimAndTrade(claimToken, tranches[0].token, zeroExTradeData);
+        uint256 availableTokens = newTokens + unusedTokens[tranches[0].token];
+        uint256 debtRepaid;
+
+        uint256 tokensToAllocate = availableTokens; // initialize tokensToAllocate
+        console.log('xxx - tokensToAllocate: ', tokensToAllocate);
+        uint256 trancheIndex = 0;
+        uint256[][] memory interestPayments = new uint256[][](tranches.length);
+        uint256[][] memory principalPayments = new uint256[][](tranches.length);
+
+        // Determine payments for interest accrued portion of outstanding debts
+        while (tokensToAllocate > 0 && trancheIndex < tranches.length) {
+            // get the next tranche of positions
+            console.log('\n');
+            console.log('xxx - Tranche ', trancheIndex);
+
+            // get the interest accrued for each position in the tranche
+            bytes32[] memory positions = ids[trancheIndex];
+            uint256[] memory positionsInterestAccrued = new uint256[](positions.length);
+            uint256 trancheInterestAccrued = 0;
+            for (uint256 i = 0; i < positions.length; i++) {
+                bytes32 id = positions[i];
+                Credit memory credit = _accrue(credits[id], id);
+                // assign to state
+                credits[id] = credit;
+                positionsInterestAccrued[i] = credit.interestAccrued;
+                trancheInterestAccrued += credit.interestAccrued;
+
+            }
+
+            // create the allocations array
+            // create distribution of payments for the tranche
+            uint256[] memory allocations = new uint256[](positions.length);
+            uint256[] memory trancheInterestPayments = new uint256[](positions.length);
+            uint256 trancheInterestPaid = 0;
+            for (uint256 i = 0; i < positions.length; i++) {
+                // TODO: condense/simplify this logic
+                allocations[i] = positionsInterestAccrued[i] * 100000 / trancheInterestAccrued;
+                uint256 interestPaid = allocations[i] * tokensToAllocate / 100000;
+                if (interestPaid > positionsInterestAccrued[i]) {
+                    interestPaid = positionsInterestAccrued[i];
+                }
+                trancheInterestPayments[i] = interestPaid;
+                trancheInterestPaid += interestPaid;
+                console.log('xxx - credit position ', i);
+                console.log('xxx - interest accrued: ', positionsInterestAccrued[i]);
+                console.log('xxx - interest allocated:' , interestPaid);
+                // interestPayments[trancheIndex][i] = interestAccrued;
+            }
+            console.log('xxx - trancheIndex: ', trancheIndex);
+            // add interest payments for each position in tranche to interestPayments array
+            interestPayments[trancheIndex] = trancheInterestPayments;
+
+            // deduct interestAccrued from tokensToAllocate
+            tokensToAllocate -= trancheInterestPaid;
+            debtRepaid += trancheInterestPaid;
+            trancheInterestPaid = 0;
+
+            // increment to the next tranche
+            trancheIndex++;
+
+        }
+
+        // Determine principal payments
+        trancheIndex = 0;
+        while (tokensToAllocate > 0 && trancheIndex < tranches.length) {
+            // get the next tranche of positions
+            console.log('\n');
+            console.log('xxx - Tranche ', trancheIndex);
+
+            // get the principal for each position in the tranche
+            bytes32[] memory positions = ids[trancheIndex];
+            uint256[] memory positionsPrincipal = new uint256[](positions.length);
+            uint256 tranchePrincipal = 0;
+            for (uint256 i = 0; i < positions.length; i++) {
+                bytes32 id = positions[i];
+                // Credit memory credit = _accrue(credits[id], id);
+                Credit memory credit = credits[id];
+                positionsPrincipal[i] = credit.principal;
+                tranchePrincipal += credit.principal;
+
+            }
+
+            // create the allocations array
+            // create distribution of payments for the tranche
+            uint256[] memory allocations = new uint256[](positions.length);
+            uint256[] memory tranchePrincipalPayments = new uint256[](positions.length);
+            uint256 tranchePrincipalPaid = 0;
+            for (uint256 i = 0; i < positions.length; i++) {
+                // TODO: condense/simplify this logic
+                allocations[i] = positionsPrincipal[i] * 100000 / tranchePrincipal;
+                uint256 principal = allocations[i] * tokensToAllocate / 100000;
+                if (principal > positionsPrincipal[i]) {
+                    principal = positionsPrincipal[i];
+                }
+                tranchePrincipalPayments[i] = principal;
+                tranchePrincipalPaid += principal;
+                console.log('xxx - credit position ', i);
+                console.log('xxx - principal: ', positionsPrincipal[i]);
+                console.log('xxx - principal allocated:' , principal);
+            }
+            // add principal payments for each position in tranche to principalPayments array
+            principalPayments[trancheIndex] = tranchePrincipalPayments;
+
+            // deduct interestAccrued from tokensToAllocate
+            tokensToAllocate -= tranchePrincipalPaid;
+            debtRepaid += tranchePrincipalPaid;
+            tranchePrincipal = 0;
+
+            // increment to the next tranche
+            trancheIndex++;
+
+        }
+        console.log('xxx - debtRepaid: ', debtRepaid);
+
+        // Make payments to each credit position
+        for (uint256 i; i < tranches.length; i++) {
+            bytes32[] memory positions = ids[i];
+            for (uint256 j; j < positions.length; j++) {
+                bytes32 id = positions[j];
+                // Declare the credit variable
+                // Credit memory credit = _accrue(credits[id], id);
+                Credit memory credit = credits[id];
+
+                // Assign value from credits mapping to credit variable
+                uint256 totalPayment = interestPayments[i][j] + principalPayments[i][j];
+                if (totalPayment > 0) {
+                    console.log('\n');
+                    console.log('xxx - credit position: ', j);
+                    console.log('xxx - total payment: ', totalPayment);
+                    console.log('xxx - interest accrued: ', credit.interestAccrued);
+                    console.log('xxx - total debt: ', credit.interestAccrued + credit.principal);
+                    credits[id] = _repay(credit, id, totalPayment, address(0)); // no payer, we already have funds
+                }
+            }
+        }
+
+        // cap payments to tokens available
+        if (debtRepaid > availableTokens) {
+            revert NotEnoughTokens();
+        }
+
+        // update reserves based on usage
+        if (debtRepaid > newTokens) {
+            // if using `unusedTokens` to repay line, reduce reserves
+            uint256 diff = debtRepaid - newTokens;
+            emit ReservesChanged(tranches[0].token, -int256(diff), 1);
+            unusedTokens[tranches[0].token] -= diff;
+        } else {
+            // else high revenue and bought more credit tokens than owed, fill reserves
+            uint256 diff = newTokens - debtRepaid;
+            emit ReservesChanged(tranches[0].token, int256(diff), 1);
+            unusedTokens[tranches[0].token] += diff;
+        }
+
+        console.log('xxx - FIN.');
+        emit RevenuePayment(claimToken, debtRepaid);
+
+        return newTokens;
+    }
+
     /// see ISpigotedLine.useAndRepay
     function useAndRepay(uint256 amount) external whileBorrowing returns (bool) {
         bytes32 id = ids[0][0];

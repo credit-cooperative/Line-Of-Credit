@@ -233,7 +233,7 @@ library CreditLib {
      * see ILineOfCredit._accrue
      * @notice called by LineOfCredit._accrue during every repayment function
      * @dev public to use in `getOutstandingDebt`
-     * @param interest - interset rate contract used by line that will calculate interest owed
+     * @param interest - interest rate contract used by line that will calculate interest owed
      */
     function accrue(
         ILineOfCredit.Credit memory credit,
