@@ -14,6 +14,9 @@ interface ISecuredLine is IEscrowedLine, ISpigotedLine {
     error CannotAmendAndExtendLine();
     error CannotAmendLine();
 
+    // Events
+    event Ripcord(address indexed to, uint256 amount, address token);
+
     // Borrower functions
 
     /**
