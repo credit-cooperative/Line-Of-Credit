@@ -153,9 +153,6 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
         address claimToken,
         bytes calldata zeroExTradeData
     ) external whileBorrowing nonReentrant returns (uint256) {
-        // bytes32 id = ids[0][0];
-        // Credit memory credit = _accrue(credits[id], id);
-
         if (msg.sender != arbiter) {
             revert CallerAccessDenied();
         }

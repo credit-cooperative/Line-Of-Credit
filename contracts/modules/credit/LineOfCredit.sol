@@ -385,6 +385,18 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
     /// see ILineOfCredit.close
     function close(bytes32 id) external payable override nonReentrant onlyBorrowerOrArbiter {
+        _closePosition(id);
+    }
+
+    /// see ILineOfCredit.closePositions
+    function closePositions(bytes32[] calldata creditIds) external payable nonReentrant onlyBorrowerOrArbiter {
+        for (uint256 i; i < creditIds.length; ++i) {
+            bytes32 id = creditIds[i];
+            _closePosition(id);
+        }
+    }
+
+    function _closePosition(bytes32 id) internal {
         Credit memory credit = _accrue(credits[id], id);
 
         uint256 facilityFee = credit.interestAccrued;

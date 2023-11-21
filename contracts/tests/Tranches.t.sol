@@ -293,8 +293,13 @@ contract SecuredLineTest is Test {
         uint256 interestOwed = line.interestAccrued(creditPositionId1) + line.interestAccrued(creditPositionId2);
         line.claimAndRepayTranches(address(supportedToken1), "");
         // Arbiter closes positions
-        line.close(creditPositionId1);
-        line.close(creditPositionId2);
+        // line.close(creditPositionId1);
+        // line.close(creditPositionId2);
+        bytes32[] memory creditPositionsToClose = new bytes32[](2);
+        creditPositionsToClose[0] = creditPositionId1;
+        creditPositionsToClose[1] = creditPositionId2;
+        line.closePositions(creditPositionsToClose);
+
         // line status is REPAID
         assertEq(3, uint(line.status()));
         vm.stopPrank();
@@ -512,10 +517,16 @@ contract SecuredLineTest is Test {
         uint256 interestOwed = interestAccrued1 + interestAccrued2 + interestAccrued3 + interestAccrued4;
         ownerTokens = spigot.getOwnerTokens(address(supportedToken1));
         line.claimAndRepayTranches(address(supportedToken1), "");
-        line.close(creditPositionId1);
-        line.close(creditPositionId2);
-        line.close(creditPositionId3);
-        line.close(creditPositionId4);
+        // line.close(creditPositionId1);
+        // line.close(creditPositionId2);
+        // line.close(creditPositionId3);
+        // line.close(creditPositionId4);
+        bytes32[] memory creditPositionsToClose = new bytes32[](4);
+        creditPositionsToClose[0] = creditPositionId1;
+        creditPositionsToClose[1] = creditPositionId2;
+        creditPositionsToClose[2] = creditPositionId3;
+        creditPositionsToClose[3] = creditPositionId4;
+        line.closePositions(creditPositionsToClose);
 
         // line status is REPAID
         assertEq(3, uint(line.status()));
