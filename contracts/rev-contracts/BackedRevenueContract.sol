@@ -49,12 +49,12 @@ contract BackedRevenueContract  {
         return true;
     }
 
- 
 
     // user calls a function that sends their backed tokens to this address and emits an event
 
     function redeemBackedTokens(uint256 amount) external returns (bool) {
         require(backedToken.transfer(address(this), amount), "Revenue: bad transfer");
+        emit RedeemBackedTokens(msg.sender, amount);
         // get usd value of tokens via chainlink
         uint256 usdValue = 0; // set that value here
         bytes32 id = 0; //
@@ -64,12 +64,12 @@ contract BackedRevenueContract  {
         // transfer borrowed funds to msg.sender
         require(revenueToken.transfer(msg.sender, usdValue), "Revenue: bad transfer");
         // start burn process
-        _burnBackedTokens(amount);
+        _burnBackedTokens();
         return true;
     }
 
-    function _burnBackedTokens(uint256 amount) internal returns (bool) {
-        require(backedToken.transfer(burnAddress, amount), "Revenue: bad transfer");
+    function _burnBackedTokens() internal returns (bool) {
+        require(backedToken.transfer(burnAddress, backedToken.balanceOf(address(this))), "Revenue: bad transfer");
         emit BurnBackedTokens(address(this), backedToken.balanceOf(address(this)));
         return true;
     }
