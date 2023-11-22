@@ -451,20 +451,20 @@ contract SecuredLineTest is Test {
         _addCredit(address(supportedToken1), 100 ether, lender3, 200 ether);
         _addCredit(address(supportedToken1), 100 ether, lender4, 0);
 
-        emit log_named_bytes32('\nxxx - credit position 1: ', line.ids(0, 0));
+        emit log_named_bytes32('xxx - credit position 1: ', line.ids(0, 0));
         emit log_named_bytes32('xxx - credit position 2: ', line.ids(0, 1));
         emit log_named_bytes32('xxx - credit position 3: ', line.ids(1, 0));
         emit log_named_bytes32('xxx - credit position 4: ', line.ids(1, 1));
 
         (address trancheToken1, uint8 trancheDecimals1, uint256 trancheLimit1, uint256 trancheSubscribedAmount1) = line.tranches(0);
-        emit log_named_address('\nxxx - tranche 1 - token: ', trancheToken1);
+        emit log_named_address('xxx - tranche 1 - token: ', trancheToken1);
         emit log_named_uint('xxx - tranche 1 - decimals: ', trancheDecimals1);
         emit log_named_uint('xxx - tranche 1 - credit limit: ', trancheLimit1);
         emit log_named_uint('xxx - tranche 1 - subscribed amount: ', trancheSubscribedAmount1);
         assertEq(trancheSubscribedAmount1, 200 ether);
 
         (address trancheToken2, uint8 trancheDecimals2, uint256 trancheLimit2, uint256 trancheSubscribedAmount2) = line.tranches(1);
-        emit log_named_address('\nxxx - tranche 2 - token: ', trancheToken2);
+        emit log_named_address('xxx - tranche 2 - token: ', trancheToken2);
         emit log_named_uint('xxx - tranche 2 - decimals: ', trancheDecimals2);
         emit log_named_uint('xxx - tranche 2 - credit limit: ', trancheLimit2);
         emit log_named_uint('xxx - tranche 2 - subscribed amount: ', trancheSubscribedAmount2);
@@ -516,7 +516,15 @@ contract SecuredLineTest is Test {
         uint256 interestAccrued4 = line.interestAccrued(line.ids(1, 1));
         uint256 interestOwed = interestAccrued1 + interestAccrued2 + interestAccrued3 + interestAccrued4;
         ownerTokens = spigot.getOwnerTokens(address(supportedToken1));
+
+        // repay with useAndRepay
+        // uint256 tokensAvailable = line.claimAndTrade(address(supportedToken1), "");
+        // console.log('xxx - tokensAvailable: ', tokensAvailable);
+        // line.useAndRepayTranches(address(supportedToken1), tokensAvailable);
+
+        // repay with claimAndRepay
         line.claimAndRepayTranches(address(supportedToken1), "");
+
         // line.close(creditPositionId1);
         // line.close(creditPositionId2);
         // line.close(creditPositionId3);
@@ -538,6 +546,10 @@ contract SecuredLineTest is Test {
         uint256 startingBorrowerBalance = IERC20(supportedToken1).balanceOf(borrower);
         line.sweep(borrower, address(supportedToken1), 0);
         uint256 endingBorrowerBalance = IERC20(supportedToken1).balanceOf(borrower);
+        console.log('xxx - startingBorrowerBalance: ', startingBorrowerBalance);
+        console.log('xxx - endingBorrowerBalance: ', endingBorrowerBalance);
+        console.log('xxx - ownerTokens: ', ownerTokens);
+        console.log('xxx - interestOwed: ', interestOwed);
         assertEq(endingBorrowerBalance - startingBorrowerBalance, ownerTokens - interestOwed - 400 ether);
         vm.stopPrank();
 
