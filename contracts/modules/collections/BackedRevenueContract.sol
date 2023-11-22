@@ -73,4 +73,12 @@ contract BackedRevenueContract  {
         emit BurnBackedTokens(address(this), backedToken.balanceOf(address(this)));
         return true;
     }
+
+    // a function that the burner address calls to send the redeemed usdc back and then calls the pushpayment function
+    function receiveUsdc(uint256 amount) external returns (bool) {
+        require(revenueToken.transferFrom(msg.sender, address(this), amount), "Revenue: bad transfer");
+        sendPushPayment();
+        return true;
+    }
+
 }
