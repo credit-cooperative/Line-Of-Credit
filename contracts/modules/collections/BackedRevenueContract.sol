@@ -11,6 +11,7 @@ contract BackedRevenueContract  {
 
     event RedeemBackedTokens(address indexed user, uint256 amount);
     event BurnBackedTokens(address indexed user, uint256 amount);
+    event PushPayment(address indexed user, uint256 amount);
 
     address public owner;
     IERC20 revenueToken;
@@ -46,6 +47,7 @@ contract BackedRevenueContract  {
         } else {
             payable(owner).transfer(address(this).balance);
         }
+        emit PushPayment(owner, address(this).balance);
         return true;
     }
 
