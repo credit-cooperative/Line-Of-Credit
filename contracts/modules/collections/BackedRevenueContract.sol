@@ -48,6 +48,8 @@ contract BackedRevenueContract  {
             payable(owner).transfer(address(this).balance);
         }
         emit PushPayment(owner, address(this).balance);
+
+        // maybe call claim revenue here to update spigot accounting?
         return true;
     }
 
