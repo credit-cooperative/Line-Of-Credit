@@ -76,8 +76,8 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
 
     // a ripcord function that liquidates all tokens in escrow and sends them to the arbiter and releases spigot to the arbiter
 
-    function ripcord(address[] tokens) external returns (bool) {
-        if (msg.sender != arbiter) {
+    function ripcord(address[] tokens) external mutualConsent(arbiter, borrower) returns  (bool) {
+        if (msg.sender != arbiter || msg.sender != borrower) {
             revert CallerAccessDenied();
         }
 
