@@ -7,6 +7,10 @@ import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
 import {MutualConsent} from "../utils/MutualConsent.sol";
 
 contract BackedRevenueContract  {
+
+    event RedeemBackedTokens(address indexed user, uint256 amount);
+    event BurnBackedTokens(address indexed user, uint256 amount);
+    
     address public owner;
     IERC20 revenueToken;
     IERC20 backedToken;
@@ -47,9 +51,8 @@ contract BackedRevenueContract  {
     }
 
     function burnBackedTokens() external returns (bool) {
-        require(msg.sender == owner, "Revenue: Only owner can burn");
         require(backedToken.transfer(burnAddress, backedToken.balanceOf(address(this))), "Revenue: bad transfer");
-        emit BurnBackedTokens(msg.sender, backedToken.balanceOf(address(this)));
+        emit BurnBackedTokens(address(this), backedToken.balanceOf(address(this)));
         return true;
     }
 }
