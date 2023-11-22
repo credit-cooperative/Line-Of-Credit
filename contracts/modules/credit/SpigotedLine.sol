@@ -448,25 +448,6 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
         return newTokens;
     }
 
-    // /// see ISpigotedLine.claimAndTrade
-    // function claimAndTradePartial(
-    //     address claimToken,
-    //     address targetToken,
-    //     uint256 sellAmount,
-    //     bytes calldata zeroExTradeData
-    // ) external whileBorrowing nonReentrant returns (uint256) {
-    //     if (msg.sender != arbiter) {
-    //         revert CallerAccessDenied();
-    //     }
-    //     uint256 newTokens = _claimAndTradePartial(claimToken, targetToken, sellAmount, zeroExTradeData);
-
-    //     // add bought tokens to unused balance
-    //     unusedTokens[targetToken] += newTokens;
-    //     emit ReservesChanged(targetToken, int256(newTokens), 1);
-
-    //     return newTokens;
-    // }
-
     /**
      * @notice  - Claims revenue tokens escrowed in Spigot and trades them for credit tokens.
      *          - MUST trade all available claim tokens to target credit token.
@@ -505,50 +486,6 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
             return tokensBought;
         }
     }
-
-
-    /**
-     * @notice  - Claims revenue tokens escrowed in Spigot and trades them for credit tokens.
-     *          - MUST trade all available claim tokens to target credit token.
-     *          - Excess credit tokens not used to repay dent are stored in `unused`
-     * @dev     - priviliged internal function
-     * @param claimToken - The revenue token escrowed in the Spigot to sell in trade
-     * @param targetToken - The credit token that needs to be bought in order to pat down debt. Always `credits[ids[0]].token`
-     * @param zeroExTradeData - 0x API data to use in trade to sell `claimToken` for target
-     *
-     * @return - amount of target tokens bought
-     */
-    // TODO: add sellTokenAmount as parameter
-    // function _claimAndTradePartial(
-    //     address claimToken,
-    //     address targetToken,
-    //     uint256 sellAmount,
-    //     bytes calldata zeroExTradeData
-    // ) internal returns (uint256) {
-    //     if (claimToken == targetToken) {
-    //         // same asset. dont trade
-    //         return spigot.claimOwnerTokens(claimToken);
-    //     } else {
-    //         // trade revenue token for debt obligation
-    //         (uint256 tokensBought, uint256 totalUnused) = SpigotedLineLib.claimAndTradePartial(
-    //             claimToken,
-    //             targetToken,
-    //             sellAmount,
-    //             swapTarget,
-    //             address(spigot),
-    //             unusedTokens[claimToken],
-    //             zeroExTradeData
-    //         );
-
-    //         // we dont use revenue after this so can store now
-    //         /// @dev ReservesChanged event for claim token is emitted in SpigotedLineLib.claimAndTrade
-    //         unusedTokens[claimToken] = totalUnused;
-
-    //         // the target tokens purchased
-    //         return tokensBought;
-    //     }
-    // }
-
 
     //  SPIGOT OWNER FUNCTIONS
 

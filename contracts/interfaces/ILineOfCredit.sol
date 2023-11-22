@@ -23,7 +23,7 @@ interface ILineOfCredit {
 
     // Tranche data
     struct Tranche {
-        address token; // the credit token for all positions within the tranche
+        address token; // the credit token for tranche credit limit
         uint8 decimals; // decimals of tranche credit token
         uint256 creditLimit; // the maximum amount of credit that can be drawn down from the tranche
         uint256 amountSubscribed; // the amount of credit deployed to the tranche
