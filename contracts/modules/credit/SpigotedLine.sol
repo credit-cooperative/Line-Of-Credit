@@ -118,6 +118,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
             revert CallerAccessDenied();
         }
 
+        // TODO: add sellTokenAmount as parameter
         uint256 newTokens = _claimAndTrade(claimToken, credit.token, zeroExTradeData);
 
         uint256 repaid = newTokens + unusedTokens[credit.token];
@@ -157,6 +158,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
             revert CallerAccessDenied();
         }
 
+        // TODO: add sellTokenAmount as parameter
         uint256 newTokens = _claimAndTrade(claimToken, tranches[0].token, zeroExTradeData);
         uint256 availableTokens = newTokens + unusedTokens[tranches[0].token];
         uint256 debtRepaid;
@@ -175,37 +177,11 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
 
             // get the interest accrued for each position in the tranche
             bytes32[] memory positions = ids[trancheIndex];
-            uint256[] memory positionsInterestAccrued = new uint256[](positions.length);
-            uint256 trancheInterestAccrued = 0;
-            for (uint256 i = 0; i < positions.length; i++) {
-                bytes32 id = positions[i];
-                Credit memory credit = _accrue(credits[id], id);
-                // assign to state
-                credits[id] = credit;
-                positionsInterestAccrued[i] = credit.interestAccrued;
-                trancheInterestAccrued += credit.interestAccrued;
+            (uint256[] memory positionsInterestAccrued, uint256 trancheInterestAccrued) =  _getTrancheInterestAccrued(positions);
 
-            }
+            // get the tranche interest payments
+            (uint256[] memory trancheInterestPayments, uint256 trancheInterestPaid) = _getTrancheInterestPayments(positions, positionsInterestAccrued, trancheInterestAccrued, tokensToAllocate);
 
-            // create the allocations array
-            // create distribution of payments for the tranche
-            uint256[] memory allocations = new uint256[](positions.length);
-            uint256[] memory trancheInterestPayments = new uint256[](positions.length);
-            uint256 trancheInterestPaid = 0;
-            for (uint256 i = 0; i < positions.length; i++) {
-                // TODO: condense/simplify this logic
-                allocations[i] = positionsInterestAccrued[i] * 100000 / trancheInterestAccrued;
-                uint256 interestPaid = allocations[i] * tokensToAllocate / 100000;
-                if (interestPaid > positionsInterestAccrued[i]) {
-                    interestPaid = positionsInterestAccrued[i];
-                }
-                trancheInterestPayments[i] = interestPaid;
-                trancheInterestPaid += interestPaid;
-                console.log('xxx - credit position ', i);
-                console.log('xxx - interest accrued: ', positionsInterestAccrued[i]);
-                console.log('xxx - interest allocated:' , interestPaid);
-                // interestPayments[trancheIndex][i] = interestAccrued;
-            }
             console.log('xxx - trancheIndex: ', trancheIndex);
             // add interest payments for each position in tranche to interestPayments array
             interestPayments[trancheIndex] = trancheInterestPayments;
@@ -229,35 +205,12 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
 
             // get the principal for each position in the tranche
             bytes32[] memory positions = ids[trancheIndex];
-            uint256[] memory positionsPrincipal = new uint256[](positions.length);
-            uint256 tranchePrincipal = 0;
-            for (uint256 i = 0; i < positions.length; i++) {
-                bytes32 id = positions[i];
-                // Credit memory credit = _accrue(credits[id], id);
-                Credit memory credit = credits[id];
-                positionsPrincipal[i] = credit.principal;
-                tranchePrincipal += credit.principal;
-
-            }
+            (uint256[] memory positionsPrincipal, uint256 tranchePrincipal) = _getTranchePrincipal(positions);
 
             // create the allocations array
             // create distribution of payments for the tranche
-            uint256[] memory allocations = new uint256[](positions.length);
-            uint256[] memory tranchePrincipalPayments = new uint256[](positions.length);
-            uint256 tranchePrincipalPaid = 0;
-            for (uint256 i = 0; i < positions.length; i++) {
-                // TODO: condense/simplify this logic
-                allocations[i] = positionsPrincipal[i] * 100000 / tranchePrincipal;
-                uint256 principal = allocations[i] * tokensToAllocate / 100000;
-                if (principal > positionsPrincipal[i]) {
-                    principal = positionsPrincipal[i];
-                }
-                tranchePrincipalPayments[i] = principal;
-                tranchePrincipalPaid += principal;
-                console.log('xxx - credit position ', i);
-                console.log('xxx - principal: ', positionsPrincipal[i]);
-                console.log('xxx - principal allocated:' , principal);
-            }
+            (uint256[] memory tranchePrincipalPayments, uint256 tranchePrincipalPaid) = _getTranchePrincipalPayments(positions, positionsPrincipal, tranchePrincipal, tokensToAllocate);
+
             // add principal payments for each position in tranche to principalPayments array
             principalPayments[trancheIndex] = tranchePrincipalPayments;
 
@@ -273,6 +226,107 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
         console.log('xxx - debtRepaid: ', debtRepaid);
 
         // Make payments to each credit position
+        _repayTranches(interestPayments, principalPayments);
+
+        // cap payments to tokens available
+        if (debtRepaid > availableTokens) {
+            revert NotEnoughTokens();
+        }
+
+        // update reserves based on usage
+        if (debtRepaid > newTokens) {
+            // if using `unusedTokens` to repay line, reduce reserves
+            uint256 diff = debtRepaid - newTokens;
+            emit ReservesChanged(tranches[0].token, -int256(diff), 1);
+            unusedTokens[tranches[0].token] -= diff;
+        } else {
+            // else high revenue and bought more credit tokens than owed, fill reserves
+            uint256 diff = newTokens - debtRepaid;
+            emit ReservesChanged(tranches[0].token, int256(diff), 1);
+            unusedTokens[tranches[0].token] += diff;
+        }
+
+        emit RevenuePayment(claimToken, debtRepaid);
+
+        return newTokens;
+    }
+
+
+    function _getTrancheInterestAccrued(bytes32[] memory positions) internal returns (uint256[] memory, uint256) {
+        uint256[] memory positionsInterestAccrued = new uint256[](positions.length);
+        uint256 trancheInterestAccrued = 0;
+        for (uint256 i = 0; i < positions.length; i++) {
+            // TODO: how expensive is this from a gas perspective?
+            // accrue interest for position and assign to state
+            bytes32 id = positions[i];
+            Credit memory credit = _accrue(credits[id], id);
+            credits[id] = credit;
+
+            positionsInterestAccrued[i] = credit.interestAccrued;
+            trancheInterestAccrued += credit.interestAccrued;
+
+        }
+        return (positionsInterestAccrued, trancheInterestAccrued);
+    }
+
+    function _getTranchePrincipal(bytes32[] memory positions) internal view returns (uint256[] memory, uint256) {
+        uint256 tranchePrincipal = 0;
+        uint256[] memory positionsPrincipal = new uint256[](positions.length);
+        for (uint256 i = 0; i < positions.length; i++) {
+            bytes32 id = positions[i];
+            // Credit memory credit = _accrue(credits[id], id);
+            Credit memory credit = credits[id];
+            positionsPrincipal[i] = credit.principal;
+            tranchePrincipal += credit.principal;
+        }
+        return (positionsPrincipal, tranchePrincipal);
+    }
+
+    function _getTrancheInterestPayments(bytes32[] memory positions, uint256[] memory positionsInterestAccrued, uint256 trancheInterestAccrued, uint256 tokensToAllocate) internal view returns (uint256[] memory, uint256) {
+            // create the allocations array
+            // create distribution of payments for the tranche
+            uint256[] memory allocations = new uint256[](positions.length);
+            uint256[] memory trancheInterestPayments = new uint256[](positions.length);
+            uint256 trancheInterestPaid = 0;
+            for (uint256 i = 0; i < positions.length; i++) {
+                // TODO: condense/simplify this logic
+                allocations[i] = positionsInterestAccrued[i] * 100000 / trancheInterestAccrued;
+                uint256 interestPaid = allocations[i] * tokensToAllocate / 100000;
+                if (interestPaid > positionsInterestAccrued[i]) {
+                    interestPaid = positionsInterestAccrued[i];
+                }
+                trancheInterestPayments[i] = interestPaid;
+                trancheInterestPaid += interestPaid;
+                console.log('xxx - credit position ', i);
+                console.log('xxx - interest accrued: ', positionsInterestAccrued[i]);
+                console.log('xxx - interest allocated:' , interestPaid);
+                // interestPayments[trancheIndex][i] = interestAccrued;
+            }
+            return (trancheInterestPayments, trancheInterestPaid);
+    }
+
+    function _getTranchePrincipalPayments(bytes32[] memory positions, uint256[] memory positionsPrincipal, uint256 tranchePrincipal, uint256 tokensToAllocate) internal view returns (uint256[] memory, uint256) {
+        uint256[] memory allocations = new uint256[](positions.length);
+        uint256[] memory tranchePrincipalPayments = new uint256[](positions.length);
+        uint256 tranchePrincipalPaid = 0;
+        for (uint256 i = 0; i < positions.length; i++) {
+            // TODO: condense/simplify this logic
+            allocations[i] = positionsPrincipal[i] * 100000 / tranchePrincipal;
+            uint256 principal = allocations[i] * tokensToAllocate / 100000;
+            if (principal > positionsPrincipal[i]) {
+                principal = positionsPrincipal[i];
+            }
+            tranchePrincipalPayments[i] = principal;
+            tranchePrincipalPaid += principal;
+            console.log('xxx - credit position ', i);
+            console.log('xxx - principal: ', positionsPrincipal[i]);
+            console.log('xxx - principal allocated:' , principal);
+        }
+        return (tranchePrincipalPayments, tranchePrincipalPaid);
+    }
+
+
+    function _repayTranches(uint256[][] memory interestPayments, uint256[][] memory principalPayments) internal {
         for (uint256 i; i < tranches.length; i++) {
             bytes32[] memory positions = ids[i];
             for (uint256 j; j < positions.length; j++) {
@@ -293,29 +347,6 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
                 }
             }
         }
-
-        // cap payments to tokens available
-        if (debtRepaid > availableTokens) {
-            revert NotEnoughTokens();
-        }
-
-        // update reserves based on usage
-        if (debtRepaid > newTokens) {
-            // if using `unusedTokens` to repay line, reduce reserves
-            uint256 diff = debtRepaid - newTokens;
-            emit ReservesChanged(tranches[0].token, -int256(diff), 1);
-            unusedTokens[tranches[0].token] -= diff;
-        } else {
-            // else high revenue and bought more credit tokens than owed, fill reserves
-            uint256 diff = newTokens - debtRepaid;
-            emit ReservesChanged(tranches[0].token, int256(diff), 1);
-            unusedTokens[tranches[0].token] += diff;
-        }
-
-        console.log('xxx - FIN.');
-        emit RevenuePayment(claimToken, debtRepaid);
-
-        return newTokens;
     }
 
     /// see ISpigotedLine.useAndRepay
@@ -364,6 +395,25 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
         return newTokens;
     }
 
+    // /// see ISpigotedLine.claimAndTrade
+    // function claimAndTradePartial(
+    //     address claimToken,
+    //     address targetToken,
+    //     uint256 sellAmount,
+    //     bytes calldata zeroExTradeData
+    // ) external whileBorrowing nonReentrant returns (uint256) {
+    //     if (msg.sender != arbiter) {
+    //         revert CallerAccessDenied();
+    //     }
+    //     uint256 newTokens = _claimAndTradePartial(claimToken, targetToken, sellAmount, zeroExTradeData);
+
+    //     // add bought tokens to unused balance
+    //     unusedTokens[targetToken] += newTokens;
+    //     emit ReservesChanged(targetToken, int256(newTokens), 1);
+
+    //     return newTokens;
+    // }
+
     /**
      * @notice  - Claims revenue tokens escrowed in Spigot and trades them for credit tokens.
      *          - MUST trade all available claim tokens to target credit token.
@@ -402,6 +452,50 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
             return tokensBought;
         }
     }
+
+
+    /**
+     * @notice  - Claims revenue tokens escrowed in Spigot and trades them for credit tokens.
+     *          - MUST trade all available claim tokens to target credit token.
+     *          - Excess credit tokens not used to repay dent are stored in `unused`
+     * @dev     - priviliged internal function
+     * @param claimToken - The revenue token escrowed in the Spigot to sell in trade
+     * @param targetToken - The credit token that needs to be bought in order to pat down debt. Always `credits[ids[0]].token`
+     * @param zeroExTradeData - 0x API data to use in trade to sell `claimToken` for target
+     *
+     * @return - amount of target tokens bought
+     */
+    // TODO: add sellTokenAmount as parameter
+    // function _claimAndTradePartial(
+    //     address claimToken,
+    //     address targetToken,
+    //     uint256 sellAmount,
+    //     bytes calldata zeroExTradeData
+    // ) internal returns (uint256) {
+    //     if (claimToken == targetToken) {
+    //         // same asset. dont trade
+    //         return spigot.claimOwnerTokens(claimToken);
+    //     } else {
+    //         // trade revenue token for debt obligation
+    //         (uint256 tokensBought, uint256 totalUnused) = SpigotedLineLib.claimAndTradePartial(
+    //             claimToken,
+    //             targetToken,
+    //             sellAmount,
+    //             swapTarget,
+    //             address(spigot),
+    //             unusedTokens[claimToken],
+    //             zeroExTradeData
+    //         );
+
+    //         // we dont use revenue after this so can store now
+    //         /// @dev ReservesChanged event for claim token is emitted in SpigotedLineLib.claimAndTrade
+    //         unusedTokens[claimToken] = totalUnused;
+
+    //         // the target tokens purchased
+    //         return tokensBought;
+    //     }
+    // }
+
 
     //  SPIGOT OWNER FUNCTIONS
 

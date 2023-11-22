@@ -24,6 +24,8 @@ library SpigotedLineLib {
 
     error BadTradingPair();
 
+    error NotEnoughTokens();
+
     error CallerAccessDenied();
 
     error ReleaseSpigotFailed();
@@ -83,6 +85,7 @@ library SpigotedLineLib {
         // @dev claim has to be called after we get balance
         // reverts if there are no tokens to claim
         uint256 claimed = ISpigot(spigot).claimOwnerTokens(claimToken);
+
         trade(claimed + unused, claimToken, swapTarget, zeroExTradeData);
 
         // underflow revert ensures we have more tokens than we started with
@@ -125,6 +128,90 @@ library SpigotedLineLib {
             }
         }
     }
+
+    /**
+     * @dev                 - priviliged internal function!
+     * @notice              - Allows revenue tokens in 'escrowed' to be traded for credit tokens that aren't yet used to repay debt.
+                            - The newly exchanged credit tokens are held in 'unusedTokens' ready for a Lender to withdraw using useAndRepay
+                            - This feature allows a Borrower to take advantage of an increase in the value of the revenue token compared
+                            - to the credit token and to in effect use less revenue tokens to be later used to repay the same amount of debt.
+     * @dev                 - MUST trade all available claimTokens (unused + claimed) to targetTokens
+     * @param claimToken    - The revenue token escrowed in the Spigot to sell in trade
+     * @param targetToken   - The credit token that needs to be bought in order to pay down debt. Always `credits[ids[0]].token`
+     * @param swapTarget    - The 0x exchange router address to call for trades
+     * @param spigot        - The Spigot to claim from. Must be owned by adddress(this)
+     * @param unused        - Current amount of unused claimTokens
+     * @param zeroExTradeData - 0x API data to use in trade to sell `claimToken` for target
+     * @return (uint, uint) - amount of targetTokens bought, total unused claimTokens after trade
+     */
+    // function claimAndTradePartial(
+    //     address claimToken,
+    //     address targetToken,
+    //     uint256 sellAmount,
+    //     address payable swapTarget,
+    //     address spigot,
+    //     uint256 unused,
+    //     bytes calldata zeroExTradeData
+    // ) external returns (uint256, uint256) {
+    //     // can't trade into same token. causes double count for unused tokens
+    //     if (claimToken == targetToken) {
+    //         revert BadTradingPair();
+    //     }
+
+    //     // snapshot token balances now to diff after trade executes
+    //     uint256 oldClaimTokens = LineLib.getBalance(claimToken);
+
+    //     uint256 oldTargetTokens = LineLib.getBalance(targetToken);
+
+    //     // @dev claim has to be called after we get balance
+    //     // reverts if there are no tokens to claim
+    //     uint256 claimed = ISpigot(spigot).claimOwnerTokens(claimToken);
+
+    //     if (sellAmount > claimed + unused) {
+    //         revert NotEnoughTokens();
+    //     }
+    //     trade(sellAmount, claimToken, swapTarget, zeroExTradeData);
+
+    //     // underflow revert ensures we have more tokens than we started with
+    //     uint256 tokensBought = LineLib.getBalance(targetToken) - oldTargetTokens;
+
+    //     if (tokensBought == 0) {
+    //         revert TradeFailed();
+    //     } // ensure tokens bought
+
+    //     uint256 newClaimTokens = LineLib.getBalance(claimToken);
+
+    //     // ideally we could use oracle here to calculate # of tokens to receive
+    //     // but sellToken might not have oracle. buyToken must have oracle
+
+    //     emit TradeSpigotRevenue(claimToken, claimed, targetToken, tokensBought);
+
+    //     // used reserve revenue to repay debt
+    //     if (oldClaimTokens > newClaimTokens) {
+    //         unchecked {
+    //             // we check all values before math so can use unchecked
+    //             uint256 diff = oldClaimTokens - newClaimTokens;
+
+    //             emit ReservesChanged(claimToken, -int256(diff), 0);
+
+    //             // used more tokens than we had in revenue reserves.
+    //             // prevent borrower from pulling idle lender funds to repay other lenders
+    //             if (diff > unused) revert ReservesOverdrawn(claimToken, unused);
+    //             // reduce reserves by consumed amount
+    //             else return (tokensBought, unused - diff);
+    //         }
+    //     } else {
+    //         unchecked {
+    //             // `unused` unlikely to overflow
+    //             // excess revenue in trade. store in reserves
+    //             uint256 diff = newClaimTokens - oldClaimTokens;
+
+    //             emit ReservesChanged(claimToken, int256(diff), 0);
+
+    //             return (tokensBought, unused + diff);
+    //         }
+    //     }
+    // }
 
     /**
      * @dev                     - priviliged internal function!
