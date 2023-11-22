@@ -4,8 +4,8 @@
 pragma solidity ^0.8.16;
 import {Denominations} from "chainlink/Denominations.sol";
 import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
-import {MutualConsent} from "../utils/MutualConsent.sol";
-import {ILineOfCredit} from "../modules/credit/LineOfCredit.sol";
+import {MutualConsent} from "../../utils/MutualConsent.sol";
+import {ILineOfCredit} from "../credit/LineOfCredit.sol";
 
 contract BackedRevenueContract  {
 
