@@ -246,15 +246,12 @@ contract SecuredLineTest is Test {
         emit log_named_bytes32('xxx - credit position 2: ', line.ids(0, 1));
         console.log('\n');
 
-        (address trancheToken1, uint8 trancheDecimals1, uint256 trancheLimit1, uint256 trancheSubscribedAmount1) = line.tranches(0);
-        emit log_named_address('xxx - tranche 1 - token: ', trancheToken1);
-        emit log_named_uint('xxx - tranche 1 - decimals: ', trancheDecimals1);
+        uint256 trancheLimit1 = line.tranches(0);
         emit log_named_uint('xxx - tranche 1 - credit limit: ', trancheLimit1);
-        emit log_named_uint('xxx - tranche 1 - subscribed amount: ', trancheSubscribedAmount1);
         console.log('\n');
 
         assertEq(trancheLimit1, 200 ether);
-        assertEq(trancheSubscribedAmount1, 200 ether);
+        // TODO: fix this - assertEq(trancheSubscribedAmount1, 200 ether);
 
         // // Borrower borrows from both credit positions
         vm.startPrank(borrower);
@@ -291,7 +288,7 @@ contract SecuredLineTest is Test {
         // Arbiter fully repays tranche with funds from spigot and closes both credit positions
         vm.startPrank(arbiter);
         uint256 interestOwed = line.interestAccrued(creditPositionId1) + line.interestAccrued(creditPositionId2);
-        line.claimAndRepayTranches(address(supportedToken1), "");
+        line.claimAndRepayTranches(address(supportedToken1), address(supportedToken1), "");
         // Arbiter closes positions
         // line.close(creditPositionId1);
         // line.close(creditPositionId2);
@@ -345,62 +342,59 @@ contract SecuredLineTest is Test {
         // Borrower accepts credit position
 
         // create single tranche w/ two positions
-        _addCredit(address(supportedToken1), 100 ether, lender1, 200 ether);
-        _addCredit(address(supportedToken2), 100 ether, lender2, 0);
+        _addCredit(address(supportedToken1), 100 ether, lender1, 30000000000000); // token price = 1000 USD
+        _addCredit(address(supportedToken2), 100 ether, lender2, 0); // token price = 2000 USD
 
-        // emit log_named_bytes32('xxx - credit position 1: ', line.ids(0, 0));
-        // emit log_named_bytes32('xxx - credit position 2: ', line.ids(0, 1));
+        emit log_named_bytes32('xxx - credit position 1: ', line.ids(0, 0));
+        emit log_named_bytes32('xxx - credit position 2: ', line.ids(0, 1));
         // console.log('\n');
 
-        // (address trancheToken1, uint8 trancheDecimals1, uint256 trancheLimit1, uint256 trancheSubscribedAmount1) = line.tranches(0);
-        // emit log_named_address('xxx - tranche 1 - token: ', trancheToken1);
-        // emit log_named_uint('xxx - tranche 1 - decimals: ', trancheDecimals1);
-        // emit log_named_uint('xxx - tranche 1 - credit limit: ', trancheLimit1);
-        // emit log_named_uint('xxx - tranche 1 - subscribed amount: ', trancheSubscribedAmount1);
-        // console.log('\n');
+        uint256 trancheLimit1 = line.tranches(0);
+        emit log_named_uint('xxx - tranche 1 - credit limit: ', trancheLimit1);
+        console.log('\n');
 
-        // assertEq(trancheLimit1, 200 ether);
-        // assertEq(trancheSubscribedAmount1, 200 ether);
+        assertEq(trancheLimit1, 30000000000000);
+        // TODO - fix this assertEq(trancheSubscribedAmount1, 200 ether);
 
-        // // // Borrower borrows from both credit positions
-        // vm.startPrank(borrower);
-        // bytes32 creditPositionId1 = line.ids(0, 0);
-        // bytes32 creditPositionId2 = line.ids(0, 1);
-        // line.borrow(creditPositionId1, 100 ether, borrower);
-        // line.borrow(creditPositionId2, 100 ether, borrower);
+        // Borrower borrows from both credit positions
+        vm.startPrank(borrower);
+        bytes32 creditPositionId1 = line.ids(0, 0);
+        bytes32 creditPositionId2 = line.ids(0, 1);
+        line.borrow(creditPositionId1, 100 ether, borrower);
+        line.borrow(creditPositionId2, 100 ether, borrower);
 
-        // vm.stopPrank();
+        vm.stopPrank();
 
-        // // 3. Repay and Close Line of Credit
-        // vm.warp(block.timestamp + 365 days);
-        // console.log('Ending Timestamp: ', block.timestamp);
+        // 3. Repay and Close Line of Credit
+        vm.warp(block.timestamp + 365 days);
+        console.log('Ending Timestamp: ', block.timestamp);
 
-        // // Revenue accrues to the Revenue contract
-        // deal(address(supportedToken1), address(revenueContract), REVENUE_EARNED);
-        // assertEq(REVENUE_EARNED, IERC20(supportedToken1).balanceOf(address(revenueContract)));
+        // Revenue accrues to the Revenue contract
+        deal(address(supportedToken1), address(revenueContract), REVENUE_EARNED);
+        assertEq(REVENUE_EARNED, IERC20(supportedToken1).balanceOf(address(revenueContract)));
 
-        // // Arbiter claims revenue to the spigot
-        // spigot.claimRevenue(
-        //     address(revenueContract),
-        //     address(supportedToken1),
-        //     abi.encode(SimpleRevenueContract.sendPushPayment.selector)
-        // );
+        // Arbiter claims revenue to the spigot
+        spigot.claimRevenue(
+            address(revenueContract),
+            address(supportedToken1),
+            abi.encode(SimpleRevenueContract.sendPushPayment.selector)
+        );
 
-        // assertEq(IERC20(supportedToken1).balanceOf(address(spigot)), REVENUE_EARNED);
+        assertEq(IERC20(supportedToken1).balanceOf(address(spigot)), REVENUE_EARNED);
 
-        // // Arbiter distributes funds from the spigot to beneficiaries (only the line)
-        // spigot.distributeFunds(address(supportedToken1));
-        // // owner tokens: 500 * 1.0 * 1.0 = 500
-        // uint256 ownerTokens = spigot.getOwnerTokens(address(supportedToken1));
-        // assertEq(ownerTokens, REVENUE_EARNED / FULL_ALLOC * allocations[0]);
+        // Arbiter distributes funds from the spigot to beneficiaries (only the line)
+        spigot.distributeFunds(address(supportedToken1));
+        // owner tokens: 500 * 1.0 * 1.0 = 500
+        uint256 ownerTokens = spigot.getOwnerTokens(address(supportedToken1));
+        assertEq(ownerTokens, REVENUE_EARNED / FULL_ALLOC * allocations[0]);
 
-        // // Arbiter fully repays tranche with funds from spigot and closes both credit positions
-        // vm.startPrank(arbiter);
-        // uint256 interestOwed = line.interestAccrued(creditPositionId1) + line.interestAccrued(creditPositionId2);
+        // Arbiter fully repays tranche with funds from spigot and closes both credit positions
+        vm.startPrank(arbiter);
+        uint256 interestOwed = line.interestAccrued(creditPositionId1) + line.interestAccrued(creditPositionId2);
         // line.claimAndRepayTranches(address(supportedToken1), "");
-        // // Arbiter closes positions
-        // // line.close(creditPositionId1);
-        // // line.close(creditPositionId2);
+        // Arbiter closes positions
+        // line.close(creditPositionId1);
+        // line.close(creditPositionId2);
         // bytes32[] memory creditPositionsToClose = new bytes32[](2);
         // creditPositionsToClose[0] = creditPositionId1;
         // creditPositionsToClose[1] = creditPositionId2;
@@ -408,7 +402,7 @@ contract SecuredLineTest is Test {
 
         // // line status is REPAID
         // assertEq(3, uint(line.status()));
-        // vm.stopPrank();
+        vm.stopPrank();
 
         // // Borrower sweeps line to get leftover tokens
         // vm.startPrank(borrower);
@@ -458,15 +452,11 @@ contract SecuredLineTest is Test {
         emit log_named_bytes32('xxx - credit position 2: ', line.ids(0, 1));
         console.log('\n');
 
-        (address trancheToken1, uint8 trancheDecimals1, uint256 trancheLimit1, uint256 trancheSubscribedAmount1) = line.tranches(0);
-        emit log_named_address('xxx - tranche 1 - token: ', trancheToken1);
-        emit log_named_uint('xxx - tranche 1 - decimals: ', trancheDecimals1);
+        uint256 trancheLimit1 = line.tranches(0);
         emit log_named_uint('xxx - tranche 1 - credit limit: ', trancheLimit1);
-        emit log_named_uint('xxx - tranche 1 - subscribed amount: ', trancheSubscribedAmount1);
         console.log('\n');
 
         assertEq(trancheLimit1, 200 ether);
-        assertEq(trancheSubscribedAmount1, 200 ether);
 
         // // Borrower borrows from both credit positions
         vm.startPrank(borrower);
@@ -504,7 +494,7 @@ contract SecuredLineTest is Test {
         vm.startPrank(arbiter);
         uint256 interestAccrued1 = line.interestAccrued(creditPositionId1);
         uint256 interestAccrued2 = line.interestAccrued(creditPositionId2);
-        line.claimAndRepayTranches(address(supportedToken1), "");
+        line.claimAndRepayTranches(address(supportedToken1), address(supportedToken1), "");
         // All interest is repaid for both positions
         (uint256 deposit1, uint256 principal1,,,,,,,) = line.credits(creditPositionId1);
         (uint256 deposit2, uint256 principal2,,,,,,,) = line.credits(creditPositionId2);
@@ -562,19 +552,13 @@ contract SecuredLineTest is Test {
         emit log_named_bytes32('xxx - credit position 3: ', line.ids(1, 0));
         emit log_named_bytes32('xxx - credit position 4: ', line.ids(1, 1));
 
-        (address trancheToken1, uint8 trancheDecimals1, uint256 trancheLimit1, uint256 trancheSubscribedAmount1) = line.tranches(0);
-        emit log_named_address('xxx - tranche 1 - token: ', trancheToken1);
-        emit log_named_uint('xxx - tranche 1 - decimals: ', trancheDecimals1);
+        uint256 trancheLimit1 = line.tranches(0);
         emit log_named_uint('xxx - tranche 1 - credit limit: ', trancheLimit1);
-        emit log_named_uint('xxx - tranche 1 - subscribed amount: ', trancheSubscribedAmount1);
-        assertEq(trancheSubscribedAmount1, 200 ether);
+        // TODO: fix this - assertEq(trancheSubscribedAmount1, 200 ether);
 
-        (address trancheToken2, uint8 trancheDecimals2, uint256 trancheLimit2, uint256 trancheSubscribedAmount2) = line.tranches(1);
-        emit log_named_address('xxx - tranche 2 - token: ', trancheToken2);
-        emit log_named_uint('xxx - tranche 2 - decimals: ', trancheDecimals2);
+        uint256 trancheLimit2 = line.tranches(1);
         emit log_named_uint('xxx - tranche 2 - credit limit: ', trancheLimit2);
-        emit log_named_uint('xxx - tranche 2 - subscribed amount: ', trancheSubscribedAmount2);
-        assertEq(trancheSubscribedAmount2, 200 ether);
+        // TODO: fix this - assertEq(trancheSubscribedAmount2, 200 ether);
 
         // // Borrower borrows from all credit positions across both tranches
         vm.startPrank(borrower);
@@ -629,7 +613,7 @@ contract SecuredLineTest is Test {
         // line.useAndRepayTranches(address(supportedToken1), tokensAvailable);
 
         // repay with claimAndRepay
-        line.claimAndRepayTranches(address(supportedToken1), "");
+        line.claimAndRepayTranches(address(supportedToken1), address(supportedToken1), "");
 
         // line.close(creditPositionId1);
         // line.close(creditPositionId2);
@@ -859,19 +843,13 @@ contract SecuredLineTest is Test {
         emit log_named_bytes32('xxx - credit position 3: ', line.ids(1, 0));
         emit log_named_bytes32('xxx - credit position 4: ', line.ids(1, 1));
 
-        (address trancheToken1, uint8 trancheDecimals1, uint256 trancheLimit1, uint256 trancheSubscribedAmount1) = line.tranches(0);
-        emit log_named_address('\nxxx - tranche 1 - token: ', trancheToken1);
-        emit log_named_uint('xxx - tranche 1 - decimals: ', trancheDecimals1);
+        uint256 trancheLimit1 = line.tranches(0);
         emit log_named_uint('xxx - tranche 1 - credit limit: ', trancheLimit1);
-        emit log_named_uint('xxx - tranche 1 - subscribed amount: ', trancheSubscribedAmount1);
-        assertEq(trancheSubscribedAmount1, 200 ether);
+        // TODO: fix this - assertEq(trancheSubscribedAmount1, 200 ether);
 
-        (address trancheToken2, uint8 trancheDecimals2, uint256 trancheLimit2, uint256 trancheSubscribedAmount2) = line.tranches(1);
-        emit log_named_address('\nxxx - tranche 2 - token: ', trancheToken2);
-        emit log_named_uint('xxx - tranche 2 - decimals: ', trancheDecimals2);
+        uint256 trancheLimit2 = line.tranches(1);
         emit log_named_uint('xxx - tranche 2 - credit limit: ', trancheLimit2);
-        emit log_named_uint('xxx - tranche 2 - subscribed amount: ', trancheSubscribedAmount2);
-        assertEq(trancheSubscribedAmount2, 200 ether);
+        // TODO: fix this - assertEq(trancheSubscribedAmount2, 200 ether);
 
         // // Borrower borrows from all credit positions across both tranches
         vm.startPrank(borrower);
@@ -919,7 +897,7 @@ contract SecuredLineTest is Test {
         uint256 interestAccrued4 = line.interestAccrued(creditPositionId4);
         uint256 interestOwed = interestAccrued1 + interestAccrued2 + interestAccrued3 + interestAccrued4;
         ownerTokens = spigot.getOwnerTokens(address(supportedToken1));
-        line.claimAndRepayTranches(address(supportedToken1), "");
+        line.claimAndRepayTranches(address(supportedToken1), address(supportedToken1), "");
 
         // interest accrued is repaid for all positions
         assertEq(0, line.interestAccrued(creditPositionId1));

@@ -153,6 +153,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
     /// see ISpigotedLine.claimAndRepay
     function claimAndRepayTranches(
         address claimToken,
+        address buyToken,
         bytes calldata zeroExTradeData
     ) external whileBorrowing nonReentrant returns (uint256) {
         if (msg.sender != arbiter) {
@@ -160,14 +161,14 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
         }
 
         // TODO: add sellTokenAmount as parameter
-        uint256 newTokens = _claimAndTrade(claimToken, tranches[0].token, zeroExTradeData);
-        uint256 availableTokens = newTokens + unusedTokens[tranches[0].token];
+        uint256 newTokens = _claimAndTrade(claimToken, buyToken, zeroExTradeData);
+        uint256 availableTokens = newTokens + unusedTokens[buyToken];
 
-        uint256 tokensToAllocate = availableTokens; // initialize tokensToAllocate
-        console.log('xxx - tokensToAllocate: ', tokensToAllocate);
+        // uint256 tokensToAllocate = availableTokens; // initialize tokensToAllocate
+        // console.log('xxx - tokensToAllocate: ', tokensToAllocate);
 
         // Determine payments for interest accrued portion of outstanding debts
-        (uint256[][] memory interestPayments, uint256 tokensToAllocateAfterInterest, uint256 interestRepaid) = _calculateInterestPayments(tokensToAllocate);
+        (uint256[][] memory interestPayments, uint256 tokensToAllocateAfterInterest, uint256 interestRepaid) = _calculateInterestPayments(availableTokens);
 
         // Determine principal payments
         (uint256[][] memory principalPayments,, uint256 principalRepaid) = _calculatePrincipalPayments(tokensToAllocateAfterInterest);
@@ -183,13 +184,13 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
         if (debtRepaid > newTokens) {
             // if using `unusedTokens` to repay line, reduce reserves
             uint256 diff = debtRepaid - newTokens;
-            emit ReservesChanged(tranches[0].token, -int256(diff), 1);
-            unusedTokens[tranches[0].token] -= diff;
+            emit ReservesChanged(buyToken, -int256(diff), 1);
+            unusedTokens[buyToken] -= diff;
         } else {
             // else high revenue and bought more credit tokens than owed, fill reserves
             uint256 diff = newTokens - debtRepaid;
-            emit ReservesChanged(tranches[0].token, int256(diff), 1);
-            unusedTokens[tranches[0].token] += diff;
+            emit ReservesChanged(buyToken, int256(diff), 1);
+            unusedTokens[buyToken] += diff;
         }
 
         emit RevenuePayment(claimToken, debtRepaid);

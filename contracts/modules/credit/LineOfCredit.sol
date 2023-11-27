@@ -302,20 +302,26 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
     /// see ILineOfCredit.addTranche
     function createTranche(address token, uint256 amount, uint256 creditLimit) external onlyBorrower {
-        _createTranche(token, amount, creditLimit);
-
+        _createTranche(creditLimit);
     }
 
-    function _createTranche(address token, uint256 amount, uint256 creditLimit) internal {
-        (bool passed, bytes memory result) = token.call(abi.encodeWithSignature("decimals()"));
+    // function _createTranche(address token, uint256 amount, uint256 creditLimit) internal {
+    //     (bool passed, bytes memory result) = token.call(abi.encodeWithSignature("decimals()"));
 
-        if (!passed || result.length == 0) {
-            revert InvalidTokenDecimals();
-        }
+    //     if (!passed || result.length == 0) {
+    //         revert InvalidTokenDecimals();
+    //     }
 
-        uint8 decimals = abi.decode(result, (uint8));
+    //     uint8 decimals = abi.decode(result, (uint8));
 
-        tranches.push(Tranche(token, decimals, creditLimit, amount));
+    //     tranches.push(Tranche(token, decimals, creditLimit, amount));
+
+    //     bytes32[] memory newTranche;
+    //     ids.push(newTranche);
+    // }
+
+    function _createTranche(uint256 creditLimit) internal {
+        tranches.push(Tranche(creditLimit));
 
         bytes32[] memory newTranche;
         ids.push(newTranche);
@@ -328,7 +334,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         uint256 amount,
         address token,
         address lender,
-        uint256 creditLimit
+        uint256 creditLimit // TODO: usdCreditLimit
     ) external payable override nonReentrant whileActive mutualConsent(lender, borrower) returns (bytes32) {
         bytes32 id = _createCredit(lender, token, amount, creditLimit);
         _setRates(id, drate, frate);
@@ -505,29 +511,74 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
      * @param token - ERC20 token that is being lent and borrower
      * @param amount - amount of tokens lender will initially deposit
      */
+    // // TODO: usdCreditLimit
+    // function _createCredit(address lender, address token, uint256 amount, uint256 creditLimit) internal returns (bytes32 id) {
+
+    //     // subscribe to an existing tranche
+    //     if (creditLimit == 0) {
+    //         Tranche storage tranche = tranches[tranches.length - 1];
+
+    //         // there must be at least one tranche
+    //         if (tranches.length == 0) {
+    //             revert NoTranches();
+    //         }
+
+    //         // TODO: this is duplicative with createCredit call beloq
+    //         (bool passed, bytes memory result) = token.call(abi.encodeWithSignature("decimals()"));
+
+    //         if (!passed || result.length == 0) {
+    //             revert InvalidTokenDecimals();
+    //         }
+
+    //         uint8 decimals = abi.decode(result, (uint8));
+
+    //         // TODO: determine usdValue of the amount
+    //         // get usd price of token from oracle
+    //         int256 price = oracle.getLatestAnswer(token);
+
+    //         // calculateValue
+    //         uint256 subscribeAmount = CreditLib.calculateValue(price, amount, decimals);
+    //         uint256 amountSubscribed = CreditLib.calculateValue(price, tranche.amountSubscribed, decimals);
+
+    //         // cannot oversubscribe to tranche
+    //         if (amountSubscribed + subscribeAmount > tranche.creditLimit) {
+    //             revert TrancheOversubscribed(amount, tranche.creditLimit - amountSubscribed);
+    //         }
+
+    //         // tranche.amountSubscribed += amount;
+    //     }
+    //     // create a new tranche
+    //     else {
+    //         _createTranche(token, amount, creditLimit);
+    //     }
+
+    //     id = CreditLib.computeId(address(this), lender, token);
+
+    //     // MUST not double add the credit line. once lender is set it cant be deleted even if position is closed.
+    //     if (credits[id].lender != address(0) && credits[id].isOpen) {
+    //         revert PositionExists();
+    //     }
+
+    //     uint256 trancheIndex = ids.length > 0 ? ids.length - 1 : 0;
+    //     credits[id] = CreditLib.create(id, amount, lender, token, trancheIndex, address(oracle));
+
+    //     ids[trancheIndex].push(id); // add lender to last tranche within repayment queue
+
+    //     // if positions was 1st in Q, cycle to next valid position
+    //     if (ids[trancheIndex][0] == bytes32(0)) ids.stepQ(trancheIndex);
+
+    //     // TODO: remove this
+    //     unchecked {
+    //         ++count;
+    //     }
+
+    //     return id;
+    // }
+
+    // TODO: usdCreditLimit
     function _createCredit(address lender, address token, uint256 amount, uint256 creditLimit) internal returns (bytes32 id) {
 
-        // subscribe to an existing tranche
-        if (creditLimit == 0) {
-            Tranche storage tranche = tranches[tranches.length - 1];
-
-            // there must be at least one tranche
-            if (tranches.length == 0) {
-                revert NoTranches();
-            }
-
-            // cannot oversubscribe to tranche
-            if (tranche.amountSubscribed + amount > tranche.creditLimit) {
-                revert TrancheOversubscribed(amount, tranche.creditLimit - tranche.amountSubscribed);
-            }
-
-            tranche.amountSubscribed += amount;
-        }
-        // create a new tranche
-        else {
-            _createTranche(token, amount, creditLimit);
-        }
-
+        // Generate credit id
         id = CreditLib.computeId(address(this), lender, token);
 
         // MUST not double add the credit line. once lender is set it cant be deleted even if position is closed.
@@ -535,9 +586,48 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
             revert PositionExists();
         }
 
-        uint256 trancheIndex = ids.length > 0 ? ids.length - 1 : 0;
-        credits[id] = CreditLib.create(id, amount, lender, token, trancheIndex, address(oracle));
+        // subscribe to an existing tranche
+        if (creditLimit == 0 && tranches.length > 0) {
+            Tranche storage tranche = tranches[tranches.length - 1];
 
+            // there must be at least one tranche
+            if (tranches.length == 0) {
+                revert NoTranches();
+            }
+
+            // initialize amount subscribed with new position being created
+            uint8 decimals = CreditLib._getDecimals(token);
+            int256 price = oracle.getLatestAnswer(token);
+            uint256 amountSubscribed = CreditLib.calculateValue(price, amount, decimals);
+            console.log('xxx - decimals: ', decimals);
+            console.log('xxx - price: ', uint(price));
+            console.log('xxx - amount to add: ', amountSubscribed);
+
+            // get total USD amount subscribed to the tranche
+            bytes32[] memory trancheIds = ids[tranches.length - 1];
+            for (uint256 i = 0; i < trancheIds.length; i++) {
+                Credit memory credit = credits[trancheIds[i]];
+                int256 tokenPrice = oracle.getLatestAnswer(credit.token);
+                console.log('xxx - tokenDecimals: ', credit.decimals);
+                console.log('xxx - tokenPrice: ', uint(tokenPrice));
+                amountSubscribed += CreditLib.calculateValue(tokenPrice, credit.deposit, credit.decimals);
+            }
+            console.log('xxx - total amountSubscribed: ', amountSubscribed);
+            console.log('xxx - tranche credit Limit: ', tranche.creditLimit);
+            // cannot oversubscribe to tranche
+            if (amountSubscribed > tranche.creditLimit) {
+                revert TrancheOversubscribed(amount, amountSubscribed - tranche.creditLimit);
+            }
+
+        }
+        // create a new tranche
+        else {
+            _createTranche(creditLimit);
+        }
+
+        // Generate credit position
+        uint256 trancheIndex = tranches.length - 1;
+        credits[id] = CreditLib.create(id, amount, lender, token, trancheIndex, address(oracle));
         ids[trancheIndex].push(id); // add lender to last tranche within repayment queue
 
         // if positions was 1st in Q, cycle to next valid position

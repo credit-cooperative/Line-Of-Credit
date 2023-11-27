@@ -141,6 +141,18 @@ library CreditLib {
         return credit;
     }
 
+    function _getDecimals(address token) internal returns (uint8) {
+        (bool passed, bytes memory result) = token.call(abi.encodeWithSignature("decimals()"));
+
+        if (!passed || result.length == 0) {
+            revert InvalidTokenDecimals();
+        }
+
+        uint8 decimals = abi.decode(result, (uint8));
+
+        return decimals;
+    }
+
     /**
      * see ILineOfCredit._repay
      * @notice called by LineOfCredit._repay during every repayment function
