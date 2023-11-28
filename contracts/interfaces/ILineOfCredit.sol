@@ -125,6 +125,7 @@ interface ILineOfCredit {
     error PositionIsClosed();
     error NotEnoughTokens();
     error RepayAmountExceedsDebt(uint256 totalAvailable);
+    error TooManyTranches();
     error CantStepQ();
     error EthSupportDisabled();
     error BorrowFailed();

@@ -340,6 +340,11 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         address lender,
         uint256 creditLimit // TODO: usdCreditLimit
     ) external payable override nonReentrant whileActive mutualConsent(lender, borrower) returns (bytes32) {
+        // limit to 5 tranches
+        if (ids.length >= 5) {
+            revert TooManyTranches();
+        }
+
         bytes32 id = _createCredit(lender, token, amount, creditLimit);
         _setRates(id, drate, frate);
         LineLib.receiveTokenOrETH(token, lender, amount);
