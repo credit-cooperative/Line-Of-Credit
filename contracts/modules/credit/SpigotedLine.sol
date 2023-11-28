@@ -171,8 +171,10 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
 
         // Determine principal payments
         (uint256[][] memory principalPayments,, uint256 principalRepaid) = _calculatePrincipalPayments(tokensToAllocateAfterInterest, claimToken);
+        console.log('AAA - do I get here 3: ');
 
         uint256 debtRepaid = interestRepaid + principalRepaid;
+        console.log('AAA - debt repaid: ', debtRepaid);
 
         // cap payments to tokens available
         if (debtRepaid > availableTokens) {
@@ -211,7 +213,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
         // uint256 trancheIndex = 0;
         uint256[][] memory interestPayments = new uint256[][](tranches.length);
         // uint256 interestRepaid = 0;
-        while (tokensToAllocate > 0 && interestParams.trancheIndex < tranches.length) {
+        while (interestParams.tokensToAllocate > 0 && interestParams.trancheIndex < tranches.length) {
             // get the next tranche of positions
             console.log('\n');
             console.log('xxx - Tranche ', interestParams.trancheIndex);
@@ -252,7 +254,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
         // uint256 trancheIndex = 0;
         // uint256 principalRepaid = 0;
         uint256[][] memory principalPayments = new uint256[][](tranches.length);
-        while (tokensToAllocate > 0 && principalParams.trancheIndex < tranches.length) {
+        while (principalParams.tokensToAllocate > 0 && principalParams.trancheIndex < tranches.length) {
             // get the next tranche of positions
             console.log('\n');
             console.log('xxx - Tranche ', principalParams.trancheIndex);
@@ -263,6 +265,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
 
             // create distribution of principal payments for the tranche
             principalParams.tranchePrincipal = tranchePrincipal;
+            console.log('AAA - tranchePrincipal: ', principalParams.tranchePrincipal);
             (uint256[] memory tranchePrincipalPayments, uint256 tranchePrincipalPaid) = _getTranchePrincipalPayments(principalParams, positionsPrincipal);
 
             // add principal payments for each position in tranche to principalPayments array
@@ -278,6 +281,8 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
             // increment to the next tranche
             principalParams.trancheIndex++;
         }
+        console.log('AAA - tokensToAllocate: ', principalParams.tokensToAllocate);
+        console.log('AAA - principalRepaid: ', principalParams.principalRepaid);
         return (principalPayments, principalParams.tokensToAllocate, principalParams.principalRepaid);
     }
 
@@ -384,7 +389,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
         uint256 trancheIndex = principalParams.trancheIndex;
         uint256 tokensToAllocate = principalParams.tokensToAllocate;
         address repaymentToken = principalParams.repaymentToken;
-        uint256 tranchePrincipal = principalParams.principalRepaid;
+        uint256 tranchePrincipal = principalParams.tranchePrincipal;
 
         bytes32[] memory positions = ids[trancheIndex];
         uint256[] memory allocations = new uint256[](positions.length);
@@ -394,6 +399,8 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
             // TODO: condense/simplify this logic
             address creditToken = credits[positions[i]].token;
             if (creditToken == repaymentToken) {
+                console.log('AAB - positionsPrincipal: ', positionsPrincipal[i] * 100000);
+                console.log('AAB - tranchePrincipal: ', tranchePrincipal);
                 allocations[i] = positionsPrincipal[i] * 100000 / tranchePrincipal;
                 uint256 principal = allocations[i] * tokensToAllocate / 100000;
                 if (principal > positionsPrincipal[i]) {

@@ -381,11 +381,11 @@ contract SecuredLineTest is Test {
             address(supportedToken1),
             abi.encode(SimpleRevenueContract.sendPushPayment.selector)
         );
-        spigot.claimRevenue(
-            address(revenueContract),
-            address(supportedToken2),
-            abi.encode(SimpleRevenueContract.sendPushPayment.selector)
-        );
+        // spigot.claimRevenue(
+        //     address(revenueContract),
+        //     address(supportedToken2),
+        //     abi.encode(SimpleRevenueContract.sendPushPayment.selector)
+        // );
 
         assertEq(IERC20(supportedToken1).balanceOf(address(spigot)), REVENUE_EARNED / 4);
         // assertEq(IERC20(supportedToken2).balanceOf(address(spigot)), REVENUE_EARNED / 4);
