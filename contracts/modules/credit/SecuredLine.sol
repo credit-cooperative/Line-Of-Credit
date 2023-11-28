@@ -86,12 +86,12 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
         // send tokens to arbiter for OTC sales
 
         for (uint256 i = 0; i < tokens.length; i++) {
-            uint256 amount = _liquidate(ids[0], escrow.balanceOf(tokens[i]), tokens[i], msg.sender);
+            uint256 amount = _liquidate(ids[0],  IERC20(tokens[i]).balanceOf(address(EscrowedLine.escrow)), tokens[i], msg.sender);
             emit Ripcord(address(this), amount, tokens[i]);
         }
 
         // release spigot to arbiter
-        releaseSpigot(msg.sender);
+        SpigotedLine.releaseSpigot(msg.sender);
 
         _updateStatus(LineLib.STATUS.RIPCORDED);
 

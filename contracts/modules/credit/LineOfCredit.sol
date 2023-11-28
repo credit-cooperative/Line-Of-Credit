@@ -436,9 +436,9 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         require (msg.sender == arbiter);
         require (status == LineLib.STATUS.RIPCORDED);
 
-        for (uint256 i = 0; i < token.length; i++) {
-            uint256 amount = IERC20(token[i]).balanceOf(address(this));
-            IERC20(token[i]).safeTransfer(msg.sender, amount);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            uint256 amount = IERC20(tokens[i]).balanceOf(address(this));
+            IERC20(tokens[i]).safeTransfer(msg.sender, amount);
         }
     }
 

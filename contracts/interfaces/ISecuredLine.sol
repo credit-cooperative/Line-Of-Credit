@@ -28,5 +28,5 @@ interface ISecuredLine is IEscrowedLine, ISpigotedLine {
     function rollover(address newLine) external;
 
     // ripcord
-    function ripcord(address[] memory tokens) external;
+    function ripcord(address[] memory tokens) external returns(bool);
 }

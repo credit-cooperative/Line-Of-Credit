@@ -30,6 +30,8 @@ contract SecuredLineTest is Test {
     Spigot spigot;
     RevenueToken supportedToken1;
     RevenueToken supportedToken2;
+    RevenueToken supportedToken3;
+    RevenueToken supportedToken4;
     RevenueToken unsupportedToken;
     SimpleOracle oracle;
     SecuredLine line;
