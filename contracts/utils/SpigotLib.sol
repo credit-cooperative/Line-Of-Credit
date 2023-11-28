@@ -55,7 +55,6 @@ library SpigotLib {
         }
 
         uint256 existingBalance = LineLib.getBalance(token);
-        console.log('xxx - existing balance: ', existingBalance);
         if (self.settings[revenueContract].claimFunction == bytes4(0)) {
             // push payments
             claimed = existingBalance - self.operatorTokens[token] - self.allocationTokens[token] - getEscrowedTokens(self,token);

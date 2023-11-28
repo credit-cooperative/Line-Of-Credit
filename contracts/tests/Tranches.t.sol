@@ -881,10 +881,10 @@ contract SecuredLineTest is Test {
         _addCredit(address(supportedToken1), 100 ether, lender1, 200 ether);
 
         // add another credit position to the newly created tranche
-        _addCredit(address(supportedToken1), 100 ether, lender2, 0);
+        _addCredit(address(supportedToken2), 100 ether, lender2, 0);
 
         // create a second tranche
-        _addCredit(address(supportedToken1), 100 ether, lender3, 200 ether);
+        _addCredit(address(supportedToken2), 100 ether, lender3, 200 ether);
         _addCredit(address(supportedToken1), 100 ether, lender4, 0);
 
         emit log_named_bytes32('xxx - credit position 1: ', line.ids(0, 0));
@@ -900,64 +900,75 @@ contract SecuredLineTest is Test {
         emit log_named_uint('xxx - tranche 2 - credit limit: ', trancheLimit2);
         // TODO: fix this - assertEq(trancheSubscribedAmount2, 200 ether);
 
-        // // // Borrower borrows from all credit positions across both tranches
-        // vm.startPrank(borrower);
-        // bytes32 creditPositionId1 = line.ids(0, 0);
-        // bytes32 creditPositionId2 = line.ids(0, 1);
-        // bytes32 creditPositionId3 = line.ids(1, 0);
-        // bytes32 creditPositionId4 = line.ids(1, 1);
-        // line.borrow(creditPositionId1, 100 ether, borrower);
-        // line.borrow(creditPositionId2, 100 ether, borrower);
-        // line.borrow(creditPositionId3, 100 ether, borrower);
-        // line.borrow(creditPositionId4, 100 ether, borrower);
-        // vm.stopPrank();
+        // Borrower borrows from all credit positions across both tranches
+        vm.startPrank(borrower);
+        bytes32 creditPositionId1 = line.ids(0, 0);
+        bytes32 creditPositionId2 = line.ids(0, 1);
+        bytes32 creditPositionId3 = line.ids(1, 0);
+        bytes32 creditPositionId4 = line.ids(1, 1);
+        line.borrow(creditPositionId1, 100 ether, borrower);
+        line.borrow(creditPositionId2, 100 ether, borrower);
+        line.borrow(creditPositionId3, 100 ether, borrower);
+        line.borrow(creditPositionId4, 100 ether, borrower);
+        vm.stopPrank();
 
-        // // 3. Repay and Close Line of Credit
-        // vm.warp(block.timestamp + 365 days);
-        // console.log('\nEnding Timestamp: ', block.timestamp);
+        // 3. Repay and Close Line of Credit
+        vm.warp(block.timestamp + 365 days);
+        console.log('\nEnding Timestamp: ', block.timestamp);
 
-        // // Revenue accrues to the Revenue contract
-        // deal(address(supportedToken1), address(revenueContract), REVENUE_EARNED);
-        // assertEq(REVENUE_EARNED, IERC20(supportedToken1).balanceOf(address(revenueContract)));
+        // Revenue accrues to the Revenue contract
+        deal(address(supportedToken1), address(revenueContract), REVENUE_EARNED / 2);
+        deal(address(supportedToken2), address(revenueContract2), REVENUE_EARNED / 2);
+        assertEq(REVENUE_EARNED / 2, IERC20(supportedToken1).balanceOf(address(revenueContract)));
+        assertEq(REVENUE_EARNED / 2, IERC20(supportedToken2).balanceOf(address(revenueContract2)));
 
-        // // Arbiter claims revenue to the spigot
-        // spigot.claimRevenue(
-        //     address(revenueContract),
-        //     address(supportedToken1),
-        //     abi.encode(SimpleRevenueContract.sendPushPayment.selector)
-        // );
+        // Arbiter claims revenue to the spigot
+        spigot.claimRevenue(
+            address(revenueContract),
+            address(supportedToken1),
+            abi.encode(SimpleRevenueContract.sendPushPayment.selector)
+        );
+        spigot.claimRevenue(
+            address(revenueContract2),
+            address(supportedToken2),
+            abi.encode(SimpleRevenueContract.sendPushPayment.selector)
+        );
 
-        // assertEq(IERC20(supportedToken1).balanceOf(address(spigot)), REVENUE_EARNED);
+        assertEq(IERC20(supportedToken1).balanceOf(address(spigot)), REVENUE_EARNED / 2);
+        assertEq(IERC20(supportedToken2).balanceOf(address(spigot)), REVENUE_EARNED / 2);
 
-        // // Arbiter distributes funds from the spigot to beneficiaries (only the line)
-        // spigot.distributeFunds(address(supportedToken1));
-        // // owner tokens: 500 * 1.0 * 1.0 = 500
-        // // total = 250 (operator) + 147.5 (owner) + 102.5 (beneficiary) = 500
-        // uint256 ownerTokens = spigot.getOwnerTokens(address(supportedToken1));
-        // assertEq(ownerTokens, REVENUE_EARNED / FULL_ALLOC * allocations[0]);
+        // Arbiter distributes funds from the spigot to beneficiaries (only the line)
+        spigot.distributeFunds(address(supportedToken1));
+        spigot.distributeFunds(address(supportedToken2));
+        // owner tokens 1: 250 * 1.0 * 1.0 = 250
+        uint256 ownerTokens1 = spigot.getOwnerTokens(address(supportedToken1));
+        assertEq(ownerTokens1, REVENUE_EARNED / 2 / FULL_ALLOC * allocations[0]);
+        uint256 ownerTokens2 = spigot.getOwnerTokens(address(supportedToken2));
+        assertEq(ownerTokens2, REVENUE_EARNED / 2 / FULL_ALLOC * allocations[0]);
 
-        // // Arbiter repays interestAccrued on both senior and junior tranche with funds
-        // // from spigot
-        // vm.startPrank(arbiter);
-        // // (,uint principal,,,,,,) = line.credits(line.ids(0, 0));
-        // uint256 interestAccrued1 = line.interestAccrued(line.ids(0, 0));
-        // uint256 interestAccrued2 = line.interestAccrued(line.ids(0, 1));
-        // uint256 interestAccrued3 = line.interestAccrued(line.ids(1, 0));
-        // uint256 interestAccrued4 = line.interestAccrued(line.ids(1, 1));
-        // uint256 interestOwed = interestAccrued1 + interestAccrued2 + interestAccrued3 + interestAccrued4;
-        // ownerTokens = spigot.getOwnerTokens(address(supportedToken1));
+        // Arbiter repays interestAccrued on both senior and junior tranche with funds
+        // from spigot
+        vm.startPrank(arbiter);
+        // (,uint principal,,,,,,) = line.credits(line.ids(0, 0));
+        uint256 interestAccrued1 = line.interestAccrued(line.ids(0, 0)) + line.interestAccrued(line.ids(1, 1));
+        uint256 interestAccrued2 = line.interestAccrued(line.ids(0, 1)) + line.interestAccrued(line.ids(1, 0));
+        ownerTokens1 = spigot.getOwnerTokens(address(supportedToken1));
+        ownerTokens2 = spigot.getOwnerTokens(address(supportedToken2));
 
-        // // repay with useAndRepay
-        // // uint256 tokensAvailable = line.claimAndTrade(address(supportedToken1), "");
-        // // console.log('xxx - tokensAvailable: ', tokensAvailable);
-        // // line.useAndRepayTranches(address(supportedToken1), tokensAvailable);
+        // repay positions with supportedToken1 with claimAndRepay
+        line.claimAndRepayTranches(address(supportedToken1), "");
 
-        // // repay with claimAndRepay
-        // line.claimAndRepayTranches(address(supportedToken1), "");
+        // close positions for supportedToken1
+        line.close(creditPositionId1);
+        line.close(creditPositionId4);
 
-        // // line.close(creditPositionId1);
-        // // line.close(creditPositionId2);
-        // // line.close(creditPositionId3);
+        // repay positions with supportedToken2 with claimAndRepay
+        line.claimAndRepayTranches(address(supportedToken2), "");
+
+        // close positions for supportedToken2
+        line.close(creditPositionId2);
+        line.close(creditPositionId3);
+
         // // line.close(creditPositionId4);
         // bytes32[] memory creditPositionsToClose = new bytes32[](4);
         // creditPositionsToClose[0] = creditPositionId1;
@@ -966,22 +977,33 @@ contract SecuredLineTest is Test {
         // creditPositionsToClose[3] = creditPositionId4;
         // line.closePositions(creditPositionsToClose);
 
-        // // line status is REPAID
-        // assertEq(3, uint(line.status()));
+        // line status is REPAID
+        assertEq(3, uint(line.status()));
 
-        // vm.stopPrank();
+        vm.stopPrank();
 
-        // // Borrower sweeps line to get leftover tokens
-        // vm.startPrank(borrower);
-        // uint256 startingBorrowerBalance = IERC20(supportedToken1).balanceOf(borrower);
-        // line.sweep(borrower, address(supportedToken1), 0);
-        // uint256 endingBorrowerBalance = IERC20(supportedToken1).balanceOf(borrower);
-        // console.log('xxx - startingBorrowerBalance: ', startingBorrowerBalance);
-        // console.log('xxx - endingBorrowerBalance: ', endingBorrowerBalance);
-        // console.log('xxx - ownerTokens: ', ownerTokens);
-        // console.log('xxx - interestOwed: ', interestOwed);
-        // assertEq(endingBorrowerBalance - startingBorrowerBalance, ownerTokens - interestOwed - 400 ether);
-        // vm.stopPrank();
+        // Borrower sweeps line to get leftover tokens
+        vm.startPrank(borrower);
+        uint256 startingBorrowerBalance1 = IERC20(supportedToken1).balanceOf(borrower);
+        line.sweep(borrower, address(supportedToken1), 0);
+        uint256 endingBorrowerBalance1 = IERC20(supportedToken1).balanceOf(borrower);
+        console.log('xxx - startingBorrowerBalance1: ', startingBorrowerBalance1);
+        console.log('xxx - endingBorrowerBalance1: ', endingBorrowerBalance1);
+        console.log('xxx - ownerTokens1: ', ownerTokens1);
+        console.log('xxx - interestAccrued1: ', interestAccrued1);
+        assertEq(endingBorrowerBalance1 - startingBorrowerBalance1, ownerTokens1 - interestAccrued1 - 200 ether);
+        console.log('xxx - endingBorrowerBalance1 - startingBorrowerBalance1: ', endingBorrowerBalance1 - startingBorrowerBalance1);
+
+        uint256 startingBorrowerBalance2 = IERC20(supportedToken2).balanceOf(borrower);
+        line.sweep(borrower, address(supportedToken2), 0);
+        uint256 endingBorrowerBalance2 = IERC20(supportedToken2).balanceOf(borrower);
+        console.log('xxx - startingBorrowerBalance2: ', startingBorrowerBalance2);
+        console.log('xxx - endingBorrowerBalance2: ', endingBorrowerBalance2);
+        console.log('xxx - ownerTokens2: ', ownerTokens2);
+        console.log('xxx - interestAccrued2: ', interestAccrued2);
+        assertEq(endingBorrowerBalance2 - startingBorrowerBalance2, ownerTokens2 - interestAccrued2 - 200 ether);
+        console.log('xxx - endingBorrowerBalance2 - startingBorrowerBalance2: ', endingBorrowerBalance2 - startingBorrowerBalance2);
+        vm.stopPrank();
 
     }
 
