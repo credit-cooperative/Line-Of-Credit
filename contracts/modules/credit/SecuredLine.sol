@@ -78,7 +78,7 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
     // needs mututal consent of borrower and arbiter
     // updates status to ABORTED
 
-    function recoverEscrowTokensAndSpigotedContracts(address[] memory tokens) external onlyArbiter mutualConsent(arbiter, borrower) returns (bool) {
+    function recoverEscrowTokensAndSpigotedContracts(address[] memory tokens) external onlyBorrowerOrArbiter mutualConsent(arbiter, borrower) returns (bool) {
         // send tokens to arbiter stakeholder distribution
     
         for (uint256 i = 0; i < tokens.length; i++) {
