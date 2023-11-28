@@ -210,6 +210,9 @@ interface ILineOfCredit {
      */
     function withdraw(bytes32 id, uint256 amount) external;
 
+    
+    function withdrawRipcord(address[] memory tokens) external;
+
     // Arbiter functions
     /**
      * @notice - Allow the Arbiter to signify that the Borrower is incapable of repaying debt permanently.

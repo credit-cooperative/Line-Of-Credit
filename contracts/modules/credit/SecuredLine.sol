@@ -78,7 +78,7 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
     // needs mututal consent of borrower and arbiter
     // updates status to RIPCORDED
 
-    function ripcord(address[] tokens) external mutualConsent(arbiter, borrower) returns  (bool) {
+    function ripcord(address[] memory tokens) external mutualConsent(arbiter, borrower) returns  (bool) {
         if (msg.sender != arbiter || msg.sender != borrower) {
             revert CallerAccessDenied();
         }
@@ -94,8 +94,6 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
         releaseSpigot(msg.sender);
 
         _updateStatus(LineLib.STATUS.RIPCORDED);
-
-        emit Ripcord(address(this), amount, address(escrow.token()));
 
         return true;
     }

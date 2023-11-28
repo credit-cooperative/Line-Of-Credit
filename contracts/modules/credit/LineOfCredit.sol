@@ -432,7 +432,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
     // for Ripcord Scenario
 
-    function withdrawRipcord(address[] token) external override nonReentrant {
+    function withdrawRipcord(address[] memory tokens) external override nonReentrant {
         require (msg.sender == arbiter);
         require (status == LineLib.STATUS.RIPCORDED);
 

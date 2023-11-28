@@ -26,4 +26,7 @@ interface ISecuredLine is IEscrowedLine, ISpigotedLine {
      * @param newLine - the new, uninitialized Line deployed by borrower
      */
     function rollover(address newLine) external;
+
+    // ripcord
+    function ripcord(address[] memory tokens) external;
 }
