@@ -105,8 +105,12 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         _;
     }
 
+    // TODO - modify this?
     modifier whileBorrowing() {
-        if (count == 0 || credits[ids[0][0]].principal == 0) {
+        console.log('xxx - principal: ', credits[ids[0][0]].principal);
+        if (count == 0) {
+        // TODO: how important is it to check if principal is 0?
+        // if (count == 0 || credits[ids[0][0]].principal == 0) {
             revert NotBorrowing();
         }
         _;
@@ -503,79 +507,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         return (status = status_);
     }
 
-    /**
-     * @notice - Generates position id and stores lender's position
-     * @dev - positions have unique composite-index on [owner, lenderAddress, tokenAddress]
-     * @dev - privileged internal function. MUST check params and logic flow before calling
-     * @param lender - address that will own and manage position
-     * @param token - ERC20 token that is being lent and borrower
-     * @param amount - amount of tokens lender will initially deposit
-     */
-    // // TODO: usdCreditLimit
-    // function _createCredit(address lender, address token, uint256 amount, uint256 creditLimit) internal returns (bytes32 id) {
-
-    //     // subscribe to an existing tranche
-    //     if (creditLimit == 0) {
-    //         Tranche storage tranche = tranches[tranches.length - 1];
-
-    //         // there must be at least one tranche
-    //         if (tranches.length == 0) {
-    //             revert NoTranches();
-    //         }
-
-    //         // TODO: this is duplicative with createCredit call beloq
-    //         (bool passed, bytes memory result) = token.call(abi.encodeWithSignature("decimals()"));
-
-    //         if (!passed || result.length == 0) {
-    //             revert InvalidTokenDecimals();
-    //         }
-
-    //         uint8 decimals = abi.decode(result, (uint8));
-
-    //         // TODO: determine usdValue of the amount
-    //         // get usd price of token from oracle
-    //         int256 price = oracle.getLatestAnswer(token);
-
-    //         // calculateValue
-    //         uint256 subscribeAmount = CreditLib.calculateValue(price, amount, decimals);
-    //         uint256 amountSubscribed = CreditLib.calculateValue(price, tranche.amountSubscribed, decimals);
-
-    //         // cannot oversubscribe to tranche
-    //         if (amountSubscribed + subscribeAmount > tranche.creditLimit) {
-    //             revert TrancheOversubscribed(amount, tranche.creditLimit - amountSubscribed);
-    //         }
-
-    //         // tranche.amountSubscribed += amount;
-    //     }
-    //     // create a new tranche
-    //     else {
-    //         _createTranche(token, amount, creditLimit);
-    //     }
-
-    //     id = CreditLib.computeId(address(this), lender, token);
-
-    //     // MUST not double add the credit line. once lender is set it cant be deleted even if position is closed.
-    //     if (credits[id].lender != address(0) && credits[id].isOpen) {
-    //         revert PositionExists();
-    //     }
-
-    //     uint256 trancheIndex = ids.length > 0 ? ids.length - 1 : 0;
-    //     credits[id] = CreditLib.create(id, amount, lender, token, trancheIndex, address(oracle));
-
-    //     ids[trancheIndex].push(id); // add lender to last tranche within repayment queue
-
-    //     // if positions was 1st in Q, cycle to next valid position
-    //     if (ids[trancheIndex][0] == bytes32(0)) ids.stepQ(trancheIndex);
-
-    //     // TODO: remove this
-    //     unchecked {
-    //         ++count;
-    //     }
-
-    //     return id;
-    // }
-
-    // TODO: usdCreditLimit
+    // TODO: creditLimit in usd
     function _createCredit(address lender, address token, uint256 amount, uint256 creditLimit) internal returns (bytes32 id) {
 
         // Generate credit id
@@ -689,6 +621,13 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         // if positions was 1st in Q, cycle to next valid position
         if (ids[trancheIndex][0] == bytes32(0)) ids.stepQ(trancheIndex);
+
+        // if all positions for the tranche are closed, cycle to next valid tranche
+        // if (ids[trancheIndex].length == 0) {
+        //     delete ids[trancheIndex];
+        //     delete tranches[trancheIndex];
+        // }
+        console.log('ZZZ - positions in tranche: ', ids[trancheIndex].length);
 
         unchecked {
             --count;

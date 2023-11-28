@@ -148,8 +148,6 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
         return newTokens;
     }
 
-    // TODO: update to handle multiple tranches w/ creditToken != claimToken
-    // TODO: move to useAndRepay to abstract trading from repayment
     /// see ISpigotedLine.claimAndRepay
     function claimAndRepayTranches(
         address claimToken,
