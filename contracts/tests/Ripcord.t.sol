@@ -21,10 +21,10 @@ import { LineLib } from "../utils/LineLib.sol";
 import { MutualConsent } from "../utils/MutualConsent.sol";
 
 import { MockLine } from "../mock/MockLine.sol";
-import { SimpleOracle } from "../mock/SimpleOracle.sol";
+import { ComplexOracle } from "../mock/ComplexOracle.sol";
 import { RevenueToken } from "../mock/RevenueToken.sol";
 
-contract SecuredLineTest is Test {
+contract RipcordTest is Test {
 
     Escrow escrow;
     Spigot spigot;
@@ -33,7 +33,7 @@ contract SecuredLineTest is Test {
     RevenueToken supportedToken3;
     RevenueToken supportedToken4;
     RevenueToken unsupportedToken;
-    SimpleOracle oracle;
+    ComplexOracle oracle;
     SecuredLine line;
     uint mintAmount = 100 ether;
     uint MAX_INT = 115792089237316195423570985008687907853269984665640564039457584007913129639935;
@@ -84,7 +84,7 @@ contract SecuredLineTest is Test {
         creditTokens[2] = address(supportedToken1);
 
         spigot = new Spigot(address(this), borrower);
-        oracle = new SimpleOracle(address(supportedToken1), address(supportedToken2));
+        oracle = new ComplexOracle(address(supportedToken1), address(supportedToken2), address(supportedToken3), address(supportedToken4));
 
         escrow = new Escrow(minCollateralRatio, address(oracle), arbiter, borrower, arbiter);
 
@@ -127,6 +127,10 @@ contract SecuredLineTest is Test {
         supportedToken1.mint(lender, mintAmount);
         supportedToken2.mint(borrower, mintAmount);
         supportedToken2.mint(lender, mintAmount);
+        supportedToken3.mint(borrower, mintAmount);
+        supportedToken3.mint(lender, mintAmount);
+        supportedToken4.mint(borrower, mintAmount);
+        supportedToken4.mint(lender, mintAmount);
         unsupportedToken.mint(borrower, mintAmount);
         unsupportedToken.mint(lender, mintAmount);
 
@@ -135,6 +139,10 @@ contract SecuredLineTest is Test {
         supportedToken1.approve(address(line), MAX_INT);
         supportedToken2.approve(address(escrow), MAX_INT);
         supportedToken2.approve(address(line), MAX_INT);
+        supportedToken3.approve(address(escrow), MAX_INT);
+        supportedToken3.approve(address(line), MAX_INT);
+        supportedToken4.approve(address(escrow), MAX_INT);
+        supportedToken4.approve(address(line), MAX_INT);
         unsupportedToken.approve(address(escrow), MAX_INT);
         unsupportedToken.approve(address(line), MAX_INT);
         vm.stopPrank();
@@ -144,9 +152,15 @@ contract SecuredLineTest is Test {
         supportedToken1.approve(address(line), MAX_INT);
         supportedToken2.approve(address(escrow), MAX_INT);
         supportedToken2.approve(address(line), MAX_INT);
+        supportedToken3.approve(address(escrow), MAX_INT);
+        supportedToken3.approve(address(line), MAX_INT);
+        supportedToken4.approve(address(escrow), MAX_INT);
+        supportedToken4.approve(address(line), MAX_INT);
         unsupportedToken.approve(address(escrow), MAX_INT);
         unsupportedToken.approve(address(line), MAX_INT);
         vm.stopPrank();
+
+        
 
     }
 
@@ -159,7 +173,7 @@ contract SecuredLineTest is Test {
         vm.stopPrank();
     }
 
-    function can_ripcord() public {
+    function test_can_ripcord() public {
         _addCredit(address(supportedToken3), 1 ether);
         _addCredit(address(supportedToken4), 1 ether);
 
@@ -194,8 +208,8 @@ contract SecuredLineTest is Test {
         line.withdrawRipcord(tokens2);
         vm.stopPrank();
 
-        assertEq(supportedToken1.balanceOf(address(arbiter)), 0);
-
+        assertEq(supportedToken3.balanceOf(address(arbiter)), 1 ether);
+        assertEq(supportedToken4.balanceOf(address(arbiter)), 1 ether);
 
     }
 }

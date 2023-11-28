@@ -79,11 +79,12 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
     // updates status to RIPCORDED
 
     function ripcord(address[] memory tokens) external mutualConsent(arbiter, borrower) returns  (bool) {
-        if (msg.sender != arbiter || msg.sender != borrower) {
+        if (msg.sender != arbiter) {
             revert CallerAccessDenied();
         }
 
         // send tokens to arbiter for OTC sales
+        
 
         for (uint256 i = 0; i < tokens.length; i++) {
             uint256 amount = _liquidate(ids[0],  IERC20(tokens[i]).balanceOf(address(EscrowedLine.escrow)), tokens[i], msg.sender);
@@ -91,9 +92,10 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
         }
 
         // release spigot to arbiter
+        _updateStatus(LineLib.STATUS.RIPCORDED);
         SpigotedLine.releaseSpigot(msg.sender);
 
-        _updateStatus(LineLib.STATUS.RIPCORDED);
+        
 
         return true;
     }

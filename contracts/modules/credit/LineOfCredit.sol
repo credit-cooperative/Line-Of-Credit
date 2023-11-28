@@ -212,7 +212,8 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         LineLib.STATUS s = status;
         if (
             s == LineLib.STATUS.REPAID || // end state - good
-            s == LineLib.STATUS.INSOLVENT // end state - bad
+            s == LineLib.STATUS.INSOLVENT || // end state - bad
+            s == LineLib.STATUS.RIPCORDED // end state - bad
         ) {
             return s;
         }
