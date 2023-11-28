@@ -91,8 +91,32 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
         return true;
     }
 
+    function recoverSpigotedContracts() external onlyBorrowerOrArbiter mutualConsent(arbiter, borrower) returns (bool) {
+        // update status to ABORTED
+        _updateStatus(LineLib.STATUS.ABORTED);
+
+        // release spigot to arbiter
+        _recoverSpigot();
+
+        return true;
+    }
+
+    function recoverEscrowTokens(address[] memory tokens) external onlyBorrowerOrArbiter mutualConsent(arbiter, borrower) returns (bool) {
+        // update status to ABORTED
+        _updateStatus(LineLib.STATUS.ABORTED);
+
+        // send tokens to arbiter stakeholder distribution
+        _recoverEscrow(tokens);
+
+        return true;
+    }
+
     function _recoverEscrow(address[] memory tokens) internal {
         // send tokens to arbiter stakeholder distribution
+        if (tokens.length == 0) {
+            return;
+        }
+
         for (uint256 i = 0; i < tokens.length; i++) {
             uint256 amount = _liquidate(ids[0],  IERC20(tokens[i]).balanceOf(address(EscrowedLine.escrow)), tokens[i], msg.sender);
             emit RecoveredEscrow(address(this), amount, tokens[i]);
