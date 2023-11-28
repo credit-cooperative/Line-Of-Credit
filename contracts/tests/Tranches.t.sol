@@ -1078,37 +1078,31 @@ contract SecuredLineTest is Test {
         // line status is ACTIVE
         assertEq(1, uint(line.status()));
 
-        // (uint256 numActivePositions, uint256 numTranches) = line.counts();
-        // console.log('ZZZ - numActivePositions: ', numActivePositions);
-        // console.log('ZZZ - numTranches: ', numTranches);
-        // assertEq(4, numActivePositions);
-        // assertEq(2, numTranches);
+        // create first tranche when adding first position
+        _addCredit(address(supportedToken1), 100 ether, lender1, 200 ether);
 
-        // // create first tranche when adding first position
-        // _addCredit(address(supportedToken1), 100 ether, lender1, 200 ether);
+        // add another credit position to the newly created tranche
+        _addCredit(address(supportedToken2), 100 ether, lender2, 0);
 
-        // // add another credit position to the newly created tranche
-        // _addCredit(address(supportedToken2), 100 ether, lender2, 0);
+        // create a second tranche
+        _addCredit(address(supportedToken2), 100 ether, lender3, 200 ether);
+        _addCredit(address(supportedToken1), 100 ether, lender4, 0);
 
-        // // create a second tranche
-        // _addCredit(address(supportedToken2), 100 ether, lender3, 200 ether);
-        // _addCredit(address(supportedToken1), 100 ether, lender4, 0);
+        // emit log_named_bytes32('xxx - credit position 1: ', line.ids(0, 0));
+        // emit log_named_bytes32('xxx - credit position 2: ', line.ids(0, 1));
+        // emit log_named_bytes32('xxx - credit position 3: ', line.ids(1, 0));
+        // emit log_named_bytes32('xxx - credit position 4: ', line.ids(1, 1));
 
-        // // emit log_named_bytes32('xxx - credit position 1: ', line.ids(0, 0));
-        // // emit log_named_bytes32('xxx - credit position 2: ', line.ids(0, 1));
-        // // emit log_named_bytes32('xxx - credit position 3: ', line.ids(1, 0));
-        // // emit log_named_bytes32('xxx - credit position 4: ', line.ids(1, 1));
-
-        // (uint256 numActivePositions, uint256 numTranches) = line.counts();
-        // // assertEq(4, numActivePositions);
-        // // assertEq(2, numTranches);
+        (numActivePositions, numTranches) = line.counts();
+        assertEq(4, numActivePositions);
+        assertEq(2, numTranches);
         // console.log('xxx - numActivePositions: ', numActivePositions);
         // console.log('xxx - numTranches: ', numTranches);
 
         // trancheLimit1 = line.tranches(0);
         // emit log_named_uint('xxx - tranche 1 - credit limit: ', trancheLimit1);
 
-        // uint256 trancheLimit2 = line.tranches(1);
+        // trancheLimit2 = line.tranches(1);
         // emit log_named_uint('xxx - tranche 2 - credit limit: ', trancheLimit2);
 
     }

@@ -89,24 +89,11 @@ library CreditListLib {
 
         uint256 len = ids.length;
 
-        console.log('\n');
-        console.log('777', len);
-        console.log('777', tranche);
-        console.log('\n');
-
         // if there is only one tranche, replace ids with an empty 2d array
-        // if (len <= 1) {
-        //     // bytes32[][] storage emptyIds;
-        //     ids = new bytes32[][](0);
-        //     return true;
-        // }
-
         // if tranche index is last tranche, then pop the array
         if (tranche == len - 1 || len <= 1) {
             // if last tranche is empty, remove it
-            console.log('ZZZ - do I make it here 1?');
             ids.pop();
-            console.log('ZZZ - do I make it here 2?', ids.length);
             return true;
         }
 
@@ -121,8 +108,9 @@ library CreditListLib {
             return true;
         }
 
-        // // we never check the first id, because we already know it's null
-        // for (uint i = 1; i < len; ) {
+        // TODO: add support for up to 5 levels of tranching
+        // // loop if len > 2
+        // for (uint i = tranche; i < len; i++) {
         //     if (ids[tranche][i] != bytes32(0)) {
         //         (ids[tranche][0], ids[tranche][i]) = (ids[tranche][i], ids[tranche][0]); // swap the ids in storage
         //         emit SortedIntoQ(ids[tranche][0], 0, i, ids[tranche][i]);
