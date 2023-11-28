@@ -237,7 +237,7 @@ library SpigotedLineLib {
             return true;
         }
 
-        if (status == LineLib.STATUS.RIPCORDED && msg.sender == arbiter) {
+        if (status == LineLib.STATUS.ABORTED && msg.sender == arbiter) {
             if (!ISpigot(spigot).updateOwner(to)) {
                 revert ReleaseSpigotFailed();
             }

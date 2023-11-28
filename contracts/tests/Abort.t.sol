@@ -24,7 +24,7 @@ import { MockLine } from "../mock/MockLine.sol";
 import { ComplexOracle } from "../mock/ComplexOracle.sol";
 import { RevenueToken } from "../mock/RevenueToken.sol";
 
-contract RipcordTest is Test {
+contract AbortTest is Test {
 
     Escrow escrow;
     Spigot spigot;
@@ -173,24 +173,24 @@ contract RipcordTest is Test {
         vm.stopPrank();
     }
 
-    function test_can_ripcord() public {
+    function test_can_abort() public {
         _addCredit(address(supportedToken3), 1 ether);
         _addCredit(address(supportedToken4), 1 ether);
 
-        // an array of addresses to run ripcord on
+        // an array of addresses to run abort on
         address[] memory tokens = new address[](2);
         tokens[0] = address(supportedToken1);
         tokens[1] = address(supportedToken2);
 
         vm.startPrank(borrower);
-        line.ripcord(tokens);
+        line.recoverEscrowTokensAndSpigotedContracts(tokens);
         vm.stopPrank();
 
         vm.startPrank(arbiter);
-        line.ripcord(tokens);
+        line.recoverEscrowTokensAndSpigotedContracts(tokens);
         vm.stopPrank();
 
-        assertEq(uint(line.status()), uint(LineLib.STATUS.RIPCORDED));
+        assertEq(uint(line.status()), uint(LineLib.STATUS.ABORTED));
 
         assertEq(supportedToken1.balanceOf(address(arbiter)), 1 ether);
 
@@ -199,13 +199,13 @@ contract RipcordTest is Test {
         // check ownership of spigot
         assertEq(spigot.owner(), arbiter);
 
-        // withdraw ripcord functtion
+        // withdraw abort functtion
         // an array of tokens that have been added via addCredit
         address[] memory tokens2 = new address[](2);
         tokens2[0] = address(supportedToken3);
         tokens2[1] = address(supportedToken4);
         vm.startPrank(arbiter);
-        line.withdrawRipcord(tokens2);
+        line.recoverTokens(tokens2);
         vm.stopPrank();
 
         assertEq(supportedToken3.balanceOf(address(arbiter)), 1 ether);

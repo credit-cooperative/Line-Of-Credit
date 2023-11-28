@@ -33,7 +33,7 @@ library LineLib {
         LIQUIDATABLE,
         REPAID,
         INSOLVENT,
-        RIPCORDED
+        ABORTED
     }
 
     /**

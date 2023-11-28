@@ -123,6 +123,13 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         _;
     }
 
+    modifier onlyArbiter() {
+        if (msg.sender != arbiter) {
+            revert CallerAccessDenied();
+        }
+        _;
+    }
+
     /**
      * @notice - mutualConsent() but hardcodes borrower address and uses the position id to
                  get Lender address instead of passing it in directly
@@ -213,7 +220,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         if (
             s == LineLib.STATUS.REPAID || // end state - good
             s == LineLib.STATUS.INSOLVENT || // end state - bad
-            s == LineLib.STATUS.RIPCORDED // end state - bad
+            s == LineLib.STATUS.ABORTED // end state - bad
         ) {
             return s;
         }
@@ -431,11 +438,11 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         credits[id] = CreditLib.withdraw(_accrue(credits[id], id), id, msg.sender, amount);
     }
 
-    // for Ripcord Scenario
+    // for abort Scenario
 
-    function withdrawRipcord(address[] memory tokens) external override nonReentrant {
+    function recoverTokens(address[] memory tokens) external override nonReentrant {
         require (msg.sender == arbiter);
-        require (status == LineLib.STATUS.RIPCORDED);
+        require (status == LineLib.STATUS.ABORTED);
 
         for (uint256 i = 0; i < tokens.length; i++) {
             uint256 amount = IERC20(tokens[i]).balanceOf(address(this));

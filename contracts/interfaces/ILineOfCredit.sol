@@ -211,7 +211,7 @@ interface ILineOfCredit {
     function withdraw(bytes32 id, uint256 amount) external;
 
     
-    function withdrawRipcord(address[] memory tokens) external;
+    function recoverTokens(address[] memory tokens) external;
 
     // Arbiter functions
     /**
