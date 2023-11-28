@@ -212,4 +212,71 @@ contract AbortTest is Test {
         assertEq(supportedToken4.balanceOf(address(arbiter)), 1 ether);
 
     }
+
+    function test_can_abort_only_spigot() public{
+        _addCredit(address(supportedToken3), 1 ether);
+        _addCredit(address(supportedToken4), 1 ether);
+
+
+        vm.startPrank(borrower);
+        line.recoverSpigotedContracts();
+        vm.stopPrank();
+
+        vm.startPrank(arbiter);
+        line.recoverSpigotedContracts();
+        vm.stopPrank();
+
+        assertEq(uint(line.status()), uint(LineLib.STATUS.ABORTED));
+
+        // check ownership of spigot
+        assertEq(spigot.owner(), arbiter);
+
+        // withdraw abort functtion
+        // an array of tokens that have been added via addCredit
+        address[] memory tokens2 = new address[](2);
+        tokens2[0] = address(supportedToken3);
+        tokens2[1] = address(supportedToken4);
+        vm.startPrank(arbiter);
+        line.recoverTokens(tokens2);
+        vm.stopPrank();
+
+        assertEq(supportedToken3.balanceOf(address(arbiter)), 1 ether);
+        assertEq(supportedToken4.balanceOf(address(arbiter)), 1 ether);
+    }
+
+    function test_can_abort_only_escrow() public{
+        _addCredit(address(supportedToken3), 1 ether);
+        _addCredit(address(supportedToken4), 1 ether);
+
+        // an array of addresses to run abort on
+        address[] memory tokens = new address[](2);
+        tokens[0] = address(supportedToken1);
+        tokens[1] = address(supportedToken2);
+
+        vm.startPrank(borrower);
+        line.recoverEscrowTokens(tokens);
+        vm.stopPrank();
+
+        vm.startPrank(arbiter);
+        line.recoverEscrowTokens(tokens);
+        vm.stopPrank();
+
+        assertEq(uint(line.status()), uint(LineLib.STATUS.ABORTED));
+
+        assertEq(supportedToken1.balanceOf(address(arbiter)), 1 ether);
+
+        assertEq(supportedToken2.balanceOf(address(arbiter)), 1 ether);
+
+        // withdraw abort functtion
+        // an array of tokens that have been added via addCredit
+        address[] memory tokens2 = new address[](2);
+        tokens2[0] = address(supportedToken3);
+        tokens2[1] = address(supportedToken4);
+        vm.startPrank(arbiter);
+        line.recoverTokens(tokens2);
+        vm.stopPrank();
+
+        assertEq(supportedToken3.balanceOf(address(arbiter)), 1 ether);
+        assertEq(supportedToken4.balanceOf(address(arbiter)), 1 ether);
+    }
 }
