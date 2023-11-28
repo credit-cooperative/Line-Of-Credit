@@ -29,6 +29,24 @@ interface ILineOfCredit {
         // uint256 amountSubscribed; // the amount of credit deployed to the tranche
     }
 
+    struct TrancheInterestAccrued {
+        address repaymentToken;
+        uint256 trancheIndex;
+        uint256 tokensToAllocate;
+        uint256 trancheInterestAccrued;
+        uint256 interestRepaid;
+        // uint256[] positionsInterestAccrued;
+    }
+
+    struct TranchePrincipal {
+        address repaymentToken;
+        uint256 trancheIndex;
+        uint256 tokensToAllocate;
+        uint256 tranchePrincipal;
+        uint256 principalRepaid;
+        // uint256[] positionsInterestAccrued;
+    }
+
     // General Events
     event UpdateStatus(uint256 indexed status); // store as normal uint so it can be indexed in subgraph
 

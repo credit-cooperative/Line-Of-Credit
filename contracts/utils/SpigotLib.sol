@@ -55,10 +55,11 @@ library SpigotLib {
         }
 
         uint256 existingBalance = LineLib.getBalance(token);
+        console.log('xxx - existing balance: ', existingBalance);
         if (self.settings[revenueContract].claimFunction == bytes4(0)) {
             // push payments
             claimed = existingBalance - self.operatorTokens[token] - self.allocationTokens[token] - getEscrowedTokens(self,token);
-
+            console.log('xxx - claimed 1: ', claimed);
             // underflow revert ensures we have more tokens than we started with and actually claimed revenue
         } else {
             // pull payments
@@ -72,10 +73,12 @@ library SpigotLib {
 
             // claimed = total balance - existing balance
             claimed = LineLib.getBalance(token) - existingBalance;
+            console.log('xxx - claimed 2: ', claimed);
             // underflow revert ensures we have more tokens than we started with and actually claimed revenue
         }
 
         if (claimed == 0) {
+            console.log('xxx - am I really reverting here?');
             revert NoRevenue();
         }
 
@@ -94,7 +97,7 @@ library SpigotLib {
         bytes calldata data
     ) external returns (uint256 claimed) {
         claimed = _claimRevenue(self, revenueContract, token, data);
-
+        console.log('xxx - claimed: ', claimed);
         // splits revenue stream according to Spigot settings
         uint256 allocationTokens = (claimed * self.settings[revenueContract].ownerSplit) / 100;
         // update escrowed balance
