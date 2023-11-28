@@ -627,11 +627,10 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         // if positions was 1st in Q, cycle to next valid position
         if (ids[trancheIndex][0] == bytes32(0)) ids.stepQ(trancheIndex);
 
-        // if all positions for the tranche are closed, cycle to next valid tranche
-        // if (ids[trancheIndex].length == 0) {
-        //     delete ids[trancheIndex];
-        //     delete tranches[trancheIndex];
-        // }
+        console.log('ZZZ - tranch length: ', ids[trancheIndex].length);
+        // if after cycling to next valid position in the tranche, the first position is bytes32(0) then replace tranche with the next tranche
+        if (ids[trancheIndex][0] == bytes32(0)) ids.stepTranche(trancheIndex);
+
         console.log('ZZZ - positions in tranche: ', ids[trancheIndex].length);
 
         unchecked {
