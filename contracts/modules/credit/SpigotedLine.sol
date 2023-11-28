@@ -171,10 +171,8 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
 
         // Determine principal payments
         (uint256[][] memory principalPayments,, uint256 principalRepaid) = _calculatePrincipalPayments(tokensToAllocateAfterInterest, claimToken);
-        console.log('AAA - do I get here 3: ');
 
         uint256 debtRepaid = interestRepaid + principalRepaid;
-        console.log('AAA - debt repaid: ', debtRepaid);
 
         // cap payments to tokens available
         if (debtRepaid > availableTokens) {

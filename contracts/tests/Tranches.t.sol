@@ -208,7 +208,7 @@ contract SecuredLineTest is Test {
     // TODO: test full repayment lifecycle with CC lender tranching plus beneficiaries
 
     // REALISTIC SCENARIO - single tranche with two CC lenders
-    function test_full_repayment_lifecycle_w_single_tranche() public {
+    function test_full_repayment_lifecycle_w_single_tranche_one_credit_token() public {
 
        // Line owns the Spigot and Escrow modules
         assertEq(address(line), spigot.owner());
@@ -376,16 +376,19 @@ contract SecuredLineTest is Test {
         assertEq(REVENUE_EARNED / 4, IERC20(supportedToken2).balanceOf(address(revenueContract)));
 
         // Arbiter claims revenue to the spigot
+        bytes4 claimFunc = 0x000000;
         spigot.claimRevenue(
             address(revenueContract),
             address(supportedToken1),
-            abi.encode(SimpleRevenueContract.sendPushPayment.selector)
+            // abi.encodeWithSelector(claimFunc)
+            // abi.encode(SimpleRevenueContract.sendPushPayment.selector)
         );
-        // spigot.claimRevenue(
-        //     address(revenueContract),
-        //     address(supportedToken2),
-        //     abi.encode(SimpleRevenueContract.sendPushPayment.selector)
-        // );
+        spigot.claimRevenue(
+            address(revenueContract),
+            address(supportedToken2),
+            abi.encode(SimpleRevenueContract.sendPushPayment.selector)
+            abi.encodeWithSelector(claimFunc)
+        );
 
         assertEq(IERC20(supportedToken1).balanceOf(address(spigot)), REVENUE_EARNED / 4);
         // assertEq(IERC20(supportedToken2).balanceOf(address(spigot)), REVENUE_EARNED / 4);
@@ -441,7 +444,7 @@ contract SecuredLineTest is Test {
     }
 
    // REALISTIC SCENARIO - single tranche with two CC lenders
-    function test_partial_repayment_lifecycle_w_single_tranche() public {
+    function test_partial_repayment_lifecycle_w_single_tranche_one_credit_token() public {
 
        // Line owns the Spigot and Escrow modules
         assertEq(address(line), spigot.owner());
