@@ -433,22 +433,23 @@ contract SecuredLineTest is Test {
         console.log('xxx - num active creidt positions - close 2: ', line.count());
 
         // credit positions are zero address in ids array
-        assertEq(bytes32(0), line.ids(0, 0));
-        emit log_named_bytes32('xxx - 1st credit position NULL: ', line.ids(0, 0));
-        assertEq(bytes32(0), line.ids(0, 1));
-        emit log_named_bytes32('xxx - 2nd credit position NULL: ', line.ids(0, 1));
+        // assertEq(bytes32(0), line.ids(0, 0));
+        // emit log_named_bytes32('xxx - 1st credit position NULL: ', line.ids(0, 0));
+        // assertEq(bytes32(0), line.ids(0, 1));
+        // emit log_named_bytes32('xxx - 2nd credit position NULL: ', line.ids(0, 1));
         (uint256 numActivePositions, uint256 numTranches) = line.counts();
 
-        // ids should be length 0
+        // credit positions are removed from ids array
         assertEq(0, numActivePositions);
         assertEq(0, numTranches);
-        console.log('xxx - num tranches: ', numTranches);
+        console.log('ZZZ - num tranches: ', numTranches);
+
         // bytes32[] memory creditPositionsToClose = new bytes32[](2);
         // creditPositionsToClose[0] = creditPositionId1;
         // creditPositionsToClose[1] = creditPositionId2;
         // line.closePositions(creditPositionsToClose);
 
-        // // line status is REPAID
+        // line status is REPAID
         assertEq(3, uint(line.status()));
         vm.stopPrank();
 
@@ -459,6 +460,41 @@ contract SecuredLineTest is Test {
         // uint256 endingBorrowerBalance = IERC20(supportedToken1).balanceOf(borrower);
         // assertEq(endingBorrowerBalance - startingBorrowerBalance, ownerTokens - interestOwed - 200 ether);
         // vm.stopPrank();
+
+        // lender withdraws funds
+        vm.startPrank(lender1);
+        line.withdraw(creditPositionId1, 114 ether);
+        vm.stopPrank();
+
+        vm.startPrank(lender2);
+        line.withdraw(creditPositionId2, 114 ether);
+        vm.stopPrank();
+
+        // extend the line
+        vm.startPrank(borrower);
+        line.extend(60 days);
+        vm.stopPrank();
+
+        // line status is ACTIVE
+        assertEq(1, uint(line.status()));
+
+        // create single tranche w/ two positions
+        _addCredit(address(supportedToken1), 100 ether, lender1, 30000000000000); // token price = 1000 USD
+        _addCredit(address(supportedToken2), 100 ether, lender2, 0); // token price = 2000 USD
+
+        emit log_named_bytes32('xxx - credit position 1: ', line.ids(0, 0));
+        emit log_named_bytes32('xxx - credit position 2: ', line.ids(0, 1));
+        // // console.log('\n');
+
+        trancheLimit1 = line.tranches(0);
+        emit log_named_uint('xxx - tranche 1 - credit limit: ', trancheLimit1);
+        console.log('\n');
+
+        assertEq(trancheLimit1, 30000000000000);
+
+        (numActivePositions, numTranches) = line.counts();
+        assertEq(2, numActivePositions);
+        assertEq(1, numTranches);
     }
 
    // REALISTIC SCENARIO - single tranche with two CC lenders
@@ -969,6 +1005,12 @@ contract SecuredLineTest is Test {
         line.close(creditPositionId2);
         line.close(creditPositionId3);
 
+        (uint256 numActivePositions, uint256 numTranches) = line.counts();
+        console.log('\n');
+        console.log('ZZZ - numActivePositions: ', numActivePositions);
+        console.log('ZZZ - numTranches: ', numTranches);
+        console.log('\n');
+
         // // close positions in order
         // line.close(creditPositionId4);
         // line.close(creditPositionId3);
@@ -1036,26 +1078,32 @@ contract SecuredLineTest is Test {
         // line status is ACTIVE
         assertEq(1, uint(line.status()));
 
-        // create first tranche when adding first position
-        _addCredit(address(supportedToken1), 100 ether, lender1, 200 ether);
-
-        // add another credit position to the newly created tranche
-        _addCredit(address(supportedToken2), 100 ether, lender2, 0);
-
-        // create a second tranche
-        _addCredit(address(supportedToken2), 100 ether, lender3, 200 ether);
-        _addCredit(address(supportedToken1), 100 ether, lender4, 0);
-
-        // emit log_named_bytes32('xxx - credit position 1: ', line.ids(0, 0));
-        // emit log_named_bytes32('xxx - credit position 2: ', line.ids(0, 1));
-        // emit log_named_bytes32('xxx - credit position 3: ', line.ids(1, 0));
-        // emit log_named_bytes32('xxx - credit position 4: ', line.ids(1, 1));
-
-        (uint256 numActivePositions, uint256 numTranches) = line.counts();
+        // (uint256 numActivePositions, uint256 numTranches) = line.counts();
+        // console.log('ZZZ - numActivePositions: ', numActivePositions);
+        // console.log('ZZZ - numTranches: ', numTranches);
         // assertEq(4, numActivePositions);
         // assertEq(2, numTranches);
-        console.log('xxx - numActivePositions: ', numActivePositions);
-        console.log('xxx - numTranches: ', numTranches);
+
+        // // create first tranche when adding first position
+        // _addCredit(address(supportedToken1), 100 ether, lender1, 200 ether);
+
+        // // add another credit position to the newly created tranche
+        // _addCredit(address(supportedToken2), 100 ether, lender2, 0);
+
+        // // create a second tranche
+        // _addCredit(address(supportedToken2), 100 ether, lender3, 200 ether);
+        // _addCredit(address(supportedToken1), 100 ether, lender4, 0);
+
+        // // emit log_named_bytes32('xxx - credit position 1: ', line.ids(0, 0));
+        // // emit log_named_bytes32('xxx - credit position 2: ', line.ids(0, 1));
+        // // emit log_named_bytes32('xxx - credit position 3: ', line.ids(1, 0));
+        // // emit log_named_bytes32('xxx - credit position 4: ', line.ids(1, 1));
+
+        // (uint256 numActivePositions, uint256 numTranches) = line.counts();
+        // // assertEq(4, numActivePositions);
+        // // assertEq(2, numTranches);
+        // console.log('xxx - numActivePositions: ', numActivePositions);
+        // console.log('xxx - numTranches: ', numTranches);
 
         // trancheLimit1 = line.tranches(0);
         // emit log_named_uint('xxx - tranche 1 - credit limit: ', trancheLimit1);

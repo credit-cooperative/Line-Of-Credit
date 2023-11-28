@@ -11,6 +11,7 @@ import {ReentrancyGuard} from "openzeppelin/utils/ReentrancyGuard.sol";
 
 import {LineLib} from "../../utils/LineLib.sol";
 import {CreditLib} from "../../utils/CreditLib.sol";
+import {TrancheListLib} from "../../utils/TrancheListLib.sol";
 import {CreditListLib} from "../../utils/CreditListLib.sol";
 import {MutualConsent} from "../../utils/MutualConsent.sol";
 import {InterestRateCredit} from "../interest-rate/InterestRateCredit.sol";
@@ -28,6 +29,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     using CreditListLib for bytes32[][];
+    using TrancheListLib for Tranche[];
 
     /// @notice - the timestamp that all creditors must be repaid by
     uint256 public deadline;
@@ -340,7 +342,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         address lender,
         uint256 creditLimit // TODO: usdCreditLimit
     ) external payable override nonReentrant whileActive mutualConsent(lender, borrower) returns (bytes32) {
-        // limit to 5 tranches
+        // limit to 2 tranches
         if (ids.length >= 5) {
             revert TooManyTranches();
         }
@@ -627,11 +629,18 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         // if positions was 1st in Q, cycle to next valid position
         if (ids[trancheIndex][0] == bytes32(0)) ids.stepQ(trancheIndex);
 
-        console.log('ZZZ - tranch length: ', ids[trancheIndex].length);
-        // if after cycling to next valid position in the tranche, the first position is bytes32(0) then replace tranche with the next tranche
-        if (ids[trancheIndex][0] == bytes32(0)) ids.stepTranche(trancheIndex);
-
+        // console.log('\n');
         console.log('ZZZ - positions in tranche: ', ids[trancheIndex].length);
+        console.log('ZZZ - numTranches 1: ', ids.length);
+        console.log('ZZZ - 1st credit position is zero: ', ids[trancheIndex][0] == bytes32(0));
+        console.log('ZZZ - 2nd credit position is zero: ', ids[trancheIndex][1] == bytes32(0));
+        // if after cycling to next valid position in the tranche, the first position is bytes32(0) then replace tranche with the next tranche
+        if (ids[trancheIndex][0] == bytes32(0)) {
+            ids.stepTranche(trancheIndex);
+            tranches.removeTranche(trancheIndex);
+        }
+
+        console.log('ZZZ - numTranches 2: ', ids.length);
 
         unchecked {
             --count;
