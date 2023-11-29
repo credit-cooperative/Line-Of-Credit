@@ -51,10 +51,11 @@ interface ISpigotedLine {
     /**
      * @notice - Directly repays a Lender using unused tokens already held by Line with no trading
      * @dev    - callable by `borrower` or first lender in repayment queue
+     * @param creditToken  - token to repay
      * @param amount       - amount of unused tokens to use to repay Lender
      * @return             - if function executed successfully
      */
-    function useAndRepay(uint256 amount) external returns (bool);
+    function useAndRepay(address creditToken, uint256 amount) external returns (bool);
 
     /**
      * @notice  - Claims revenue tokens from the Spigot, trades them for credit tokens via a Dex aggregator (Ox protocol) and uses the bought credit tokens to repay debt.

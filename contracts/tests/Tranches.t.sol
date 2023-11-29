@@ -291,7 +291,7 @@ contract SecuredLineTest is Test {
         // Arbiter fully repays tranche with funds from spigot and closes both credit positions
         vm.startPrank(arbiter);
         uint256 interestOwed = line.interestAccrued(creditPositionId1) + line.interestAccrued(creditPositionId2);
-        line.claimAndRepayTranches(address(supportedToken1), "");
+        line.claimAndRepay(address(supportedToken1), "");
         // Arbiter closes positions
         // line.close(creditPositionId1);
         // line.close(creditPositionId2);
@@ -408,9 +408,9 @@ contract SecuredLineTest is Test {
 
         // Arbiter fully repays tranche with funds from spigot and closes both credit positions
         vm.startPrank(arbiter);
-        // line.claimAndRepayTranches(address(supportedToken2), "");
+        // line.claimAndRepay(address(supportedToken2), "");
         uint256 interestOwed1Before = line.interestAccrued(creditPositionId1);
-        line.claimAndRepayTranches(address(supportedToken1), "");
+        line.claimAndRepay(address(supportedToken1), "");
         uint256 interestOwed1After = line.interestAccrued(creditPositionId1);
         (, uint256 principal1,,,,,,,) = line.credits(creditPositionId1);
         console.log('xxx - interestOwed1Before: ', interestOwed1Before);
@@ -419,7 +419,7 @@ contract SecuredLineTest is Test {
         emit log_named_bytes32('xxx - 1st credit position: ', line.ids(0, 0));
 
         uint256 interestOwed2Before = line.interestAccrued(creditPositionId2);
-        line.claimAndRepayTranches(address(supportedToken2), "");
+        line.claimAndRepay(address(supportedToken2), "");
         uint256 interestOwed2After = line.interestAccrued(creditPositionId2);
         (, uint256 principal2,,,,,,,) = line.credits(creditPositionId2);
         console.log('xxx - interestOwed2Before: ', interestOwed2Before);
@@ -579,7 +579,7 @@ contract SecuredLineTest is Test {
         vm.startPrank(arbiter);
         uint256 interestAccrued1 = line.interestAccrued(creditPositionId1);
         uint256 interestAccrued2 = line.interestAccrued(creditPositionId2);
-        line.claimAndRepayTranches(address(supportedToken1), "");
+        line.claimAndRepay(address(supportedToken1), "");
         // All interest is repaid for both positions
         (uint256 deposit1, uint256 principal1,,,,,,,) = line.credits(creditPositionId1);
         (uint256 deposit2, uint256 principal2,,,,,,,) = line.credits(creditPositionId2);
@@ -693,12 +693,12 @@ contract SecuredLineTest is Test {
         ownerTokens = spigot.getOwnerTokens(address(supportedToken1));
 
         // repay with useAndRepay
-        // uint256 tokensAvailable = line.claimAndTrade(address(supportedToken1), "");
-        // console.log('xxx - tokensAvailable: ', tokensAvailable);
-        // line.useAndRepayTranches(address(supportedToken1), tokensAvailable);
+        uint256 tokensAvailable = line.claimAndTrade(address(supportedToken1), address(supportedToken1), "");
+        console.log('xxx - tokensAvailable: ', tokensAvailable);
+        line.useAndRepay(address(supportedToken1), tokensAvailable);
 
         // repay with claimAndRepay
-        line.claimAndRepayTranches(address(supportedToken1), "");
+        // line.claimAndRepay(address(supportedToken1), "");
 
         // line.close(creditPositionId1);
         // line.close(creditPositionId2);
@@ -993,14 +993,14 @@ contract SecuredLineTest is Test {
         ownerTokens2 = spigot.getOwnerTokens(address(supportedToken2));
 
         // repay positions with supportedToken1 with claimAndRepay
-        line.claimAndRepayTranches(address(supportedToken1), "");
+        line.claimAndRepay(address(supportedToken1), "");
 
         // close positions for supportedToken1
         line.close(creditPositionId1);
         line.close(creditPositionId4);
 
         // repay positions with supportedToken2 with claimAndRepay
-        line.claimAndRepayTranches(address(supportedToken2), "");
+        line.claimAndRepay(address(supportedToken2), "");
 
         // close positions for supportedToken2
         line.close(creditPositionId2);
@@ -1214,8 +1214,8 @@ contract SecuredLineTest is Test {
         ownerTokens2 = spigot.getOwnerTokens(address(supportedToken2));
 
         // repay positions with supportedToken1 and supportedToken2 with claimAndRepay
-        line.claimAndRepayTranches(address(supportedToken1), "");
-        line.claimAndRepayTranches(address(supportedToken2), "");
+        line.claimAndRepay(address(supportedToken1), "");
+        line.claimAndRepay(address(supportedToken2), "");
 
         (uint256 numActivePositions, uint256 numTranches) = line.counts();
         assertEq(6, numActivePositions);
@@ -1421,7 +1421,7 @@ contract SecuredLineTest is Test {
         uint256 interestAccrued4 = line.interestAccrued(creditPositionId4);
         uint256 interestOwed = interestAccrued1 + interestAccrued2 + interestAccrued3 + interestAccrued4;
         ownerTokens = spigot.getOwnerTokens(address(supportedToken1));
-        line.claimAndRepayTranches(address(supportedToken1), "");
+        line.claimAndRepay(address(supportedToken1), "");
 
         // interest accrued is repaid for all positions
         assertEq(0, line.interestAccrued(creditPositionId1));
