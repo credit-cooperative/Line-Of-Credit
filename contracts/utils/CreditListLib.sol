@@ -85,13 +85,13 @@ library CreditListLib {
      */
     // TODO - add events to this function
     // NOTE - tranches are always closed in order of seniority? (not true with multi token)
-    function stepTranche(bytes32[][] storage ids, uint256 tranche) external returns (bool) {
-
+    function stepTranche(bytes32[][] storage ids, uint256 trancheIndex) external returns (bool) {
         uint256 len = ids.length;
+        require(trancheIndex < len, "Index out of bounds");
 
         // if there is only one tranche, replace ids with an empty 2d array
         // if tranche index is last tranche, then pop the array
-        if (tranche == len - 1 || len <= 1) {
+        if (trancheIndex == len - 1 || len <= 1) {
             // if last tranche is empty, remove it
             ids.pop();
             return true;
@@ -108,19 +108,20 @@ library CreditListLib {
             return true;
         }
 
-        // TODO: add support for up to 5 levels of tranching
-        // // loop if len > 2
-        // for (uint i = tranche; i < len; i++) {
-        //     if (ids[tranche][i] != bytes32(0)) {
-        //         (ids[tranche][0], ids[tranche][i]) = (ids[tranche][i], ids[tranche][0]); // swap the ids in storage
-        //         emit SortedIntoQ(ids[tranche][0], 0, i, ids[tranche][i]);
-        //         return true; // if we make the swap, return early
-        //     }
-        //     unchecked {
-        //         ++i;
-        //     }
-        // }
-        // emit QueueCleared();
+        if (len > 2) {
+            // move tranche that's being closed to the end of the array
+            // then pop it
+            // Shift elements to the left starting from the index to be removed
+            for (uint i = trancheIndex; i < ids.length - 1; i++) {
+                ids[i] = ids[i + 1];
+            }
+
+            // Remove the last element (duplicated at the end)
+            ids.pop();
+
+            // TODO: add event
+        }
+
         return false;
     }
 

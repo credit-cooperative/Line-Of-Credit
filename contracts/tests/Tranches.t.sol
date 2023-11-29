@@ -33,7 +33,6 @@ contract SecuredLineTest is Test {
     Spigot spigot;
     RevenueToken supportedToken1;
     RevenueToken supportedToken2;
-    RevenueToken unsupportedToken;
     SimpleRevenueContract revenueContract;
     SimpleRevenueContract revenueContract2;
     SimpleOracle oracle;
@@ -57,8 +56,9 @@ contract SecuredLineTest is Test {
     address lender2;
     address lender3;
     address lender4;
+    address lender5;
+    address lender6;
     address externalLender;
-    address _multisigAdmin;
 
     address[] beneficiaries;
     uint256[] allocations;
@@ -72,13 +72,13 @@ contract SecuredLineTest is Test {
         lender2 = address(11);
         lender3 = address(12);
         lender4 = address(13);
+        lender5 = address(14);
+        lender6 = address(15);
         externalLender = address(30);
         arbiter = address(this);
-        _multisigAdmin = address(0xdead);
 
         supportedToken1 = new RevenueToken();
         supportedToken2 = new RevenueToken();
-        unsupportedToken = new RevenueToken();
 
         revenueContract = new SimpleRevenueContract(borrower, address(supportedToken1));
         revenueContract2 = new SimpleRevenueContract(borrower, address(supportedToken2));
@@ -136,24 +136,21 @@ contract SecuredLineTest is Test {
         supportedToken1.mint(lender2, mintAmount);
         supportedToken1.mint(lender3, mintAmount);
         supportedToken1.mint(lender4, mintAmount);
+        supportedToken1.mint(lender5, mintAmount);
+        supportedToken1.mint(lender6, mintAmount);
         supportedToken2.mint(borrower, mintAmount);
         supportedToken2.mint(lender1, mintAmount);
         supportedToken2.mint(lender2, mintAmount);
         supportedToken2.mint(lender3, mintAmount);
         supportedToken2.mint(lender4, mintAmount);
-        unsupportedToken.mint(borrower, mintAmount);
-        unsupportedToken.mint(lender1, mintAmount);
-        unsupportedToken.mint(lender2, mintAmount);
-        unsupportedToken.mint(lender3, mintAmount);
-        unsupportedToken.mint(lender4, mintAmount);
+        supportedToken2.mint(lender5, mintAmount);
+        supportedToken2.mint(lender6, mintAmount);
 
         vm.startPrank(borrower);
         supportedToken1.approve(address(escrow), MAX_INT);
         supportedToken1.approve(address(line), MAX_INT);
         supportedToken2.approve(address(escrow), MAX_INT);
         supportedToken2.approve(address(line), MAX_INT);
-        unsupportedToken.approve(address(escrow), MAX_INT);
-        unsupportedToken.approve(address(line), MAX_INT);
         vm.stopPrank();
 
         vm.startPrank(lender1);
@@ -161,8 +158,6 @@ contract SecuredLineTest is Test {
         supportedToken1.approve(address(line), MAX_INT);
         supportedToken2.approve(address(escrow), MAX_INT);
         supportedToken2.approve(address(line), MAX_INT);
-        unsupportedToken.approve(address(escrow), MAX_INT);
-        unsupportedToken.approve(address(line), MAX_INT);
         vm.stopPrank();
 
         vm.startPrank(lender2);
@@ -170,8 +165,6 @@ contract SecuredLineTest is Test {
         supportedToken1.approve(address(line), MAX_INT);
         supportedToken2.approve(address(escrow), MAX_INT);
         supportedToken2.approve(address(line), MAX_INT);
-        unsupportedToken.approve(address(escrow), MAX_INT);
-        unsupportedToken.approve(address(line), MAX_INT);
         vm.stopPrank();
 
         vm.startPrank(lender3);
@@ -179,8 +172,6 @@ contract SecuredLineTest is Test {
         supportedToken1.approve(address(line), MAX_INT);
         supportedToken2.approve(address(escrow), MAX_INT);
         supportedToken2.approve(address(line), MAX_INT);
-        unsupportedToken.approve(address(escrow), MAX_INT);
-        unsupportedToken.approve(address(line), MAX_INT);
         vm.stopPrank();
 
         vm.startPrank(lender4);
@@ -188,11 +179,21 @@ contract SecuredLineTest is Test {
         supportedToken1.approve(address(line), MAX_INT);
         supportedToken2.approve(address(escrow), MAX_INT);
         supportedToken2.approve(address(line), MAX_INT);
-        unsupportedToken.approve(address(escrow), MAX_INT);
-        unsupportedToken.approve(address(line), MAX_INT);
         vm.stopPrank();
 
+        vm.startPrank(lender5);
+        supportedToken1.approve(address(escrow), MAX_INT);
+        supportedToken1.approve(address(line), MAX_INT);
+        supportedToken2.approve(address(escrow), MAX_INT);
+        supportedToken2.approve(address(line), MAX_INT);
+        vm.stopPrank();
 
+        vm.startPrank(lender6);
+        supportedToken1.approve(address(escrow), MAX_INT);
+        supportedToken1.approve(address(line), MAX_INT);
+        supportedToken2.approve(address(escrow), MAX_INT);
+        supportedToken2.approve(address(line), MAX_INT);
+        vm.stopPrank();
 
 
     }
@@ -1106,6 +1107,219 @@ contract SecuredLineTest is Test {
         // emit log_named_uint('xxx - tranche 2 - credit limit: ', trancheLimit2);
 
     }
+
+    // four Credit Coop lenders across two tranches
+    function test_full_repayment_lifecycle_w_three_tranches_w_multiple_credit_tokens() public {
+
+        // Line owns the Spigot and Escrow modules
+        assertEq(address(line), spigot.owner());
+        assertEq(address(line), escrow.line());
+
+        // Line status is active
+        assertEq(1, uint(line.status()));
+
+        // Borrower transfers ownership of revenue contract to Spigot
+        vm.startPrank(borrower);
+        revenueContract.transferOwnership(address(spigot));
+        revenueContract2.transferOwnership(address(spigot));
+        vm.stopPrank();
+
+        // Arbiter adds revenue contract to the Spigot and b
+        ISpigot.Setting memory settings = ISpigot.Setting({
+            ownerSplit: ownerSplit,
+            claimFunction: SimpleRevenueContract.sendPushPayment.selector,
+            transferOwnerFunction: SimpleRevenueContract.transferOwnership.selector
+        });
+
+        vm.startPrank(arbiter);
+        line.addSpigot(address(revenueContract), settings);
+        line.addSpigot(address(revenueContract2), settings);
+        vm.stopPrank();
+
+        // 2. Fund Line of Credit and Borrow
+        // Lender proposes credit position
+        // Borrower accepts credit position
+
+        // create first tranche when adding first position
+        _addCredit(address(supportedToken1), 100 ether, lender1, 200 ether);
+
+        // add another credit position to the newly created tranche
+        _addCredit(address(supportedToken2), 100 ether, lender2, 0);
+
+        // create a second tranche
+        _addCredit(address(supportedToken2), 100 ether, lender3, 200 ether);
+        _addCredit(address(supportedToken1), 100 ether, lender4, 0);
+
+        // create a third tranche
+        _addCredit(address(supportedToken1), 100 ether, lender5, 200 ether);
+        _addCredit(address(supportedToken2), 100 ether, lender6, 0);
+
+        // Borrower borrows from all credit positions across both tranches
+        vm.startPrank(borrower);
+        bytes32 creditPositionId1 = line.ids(0, 0);
+        bytes32 creditPositionId2 = line.ids(0, 1);
+        bytes32 creditPositionId3 = line.ids(1, 0);
+        bytes32 creditPositionId4 = line.ids(1, 1);
+        bytes32 creditPositionId5 = line.ids(2, 0);
+        bytes32 creditPositionId6 = line.ids(2, 1);
+        line.borrow(creditPositionId1, 100 ether, borrower);
+        line.borrow(creditPositionId2, 100 ether, borrower);
+        line.borrow(creditPositionId3, 100 ether, borrower);
+        line.borrow(creditPositionId4, 100 ether, borrower);
+        line.borrow(creditPositionId5, 100 ether, borrower);
+        line.borrow(creditPositionId6, 100 ether, borrower);
+        vm.stopPrank();
+
+        // 3. Repay and Close Line of Credit
+        vm.warp(block.timestamp + 365 days);
+        console.log('\nEnding Timestamp: ', block.timestamp);
+
+        // Revenue accrues to the Revenue contract
+        deal(address(supportedToken1), address(revenueContract), REVENUE_EARNED);
+        deal(address(supportedToken2), address(revenueContract2), REVENUE_EARNED);
+        assertEq(REVENUE_EARNED, IERC20(supportedToken1).balanceOf(address(revenueContract)));
+        assertEq(REVENUE_EARNED, IERC20(supportedToken2).balanceOf(address(revenueContract2)));
+
+        // Arbiter claims revenue to the spigot
+        spigot.claimRevenue(
+            address(revenueContract),
+            address(supportedToken1),
+            abi.encode(SimpleRevenueContract.sendPushPayment.selector)
+        );
+        spigot.claimRevenue(
+            address(revenueContract2),
+            address(supportedToken2),
+            abi.encode(SimpleRevenueContract.sendPushPayment.selector)
+        );
+
+        assertEq(IERC20(supportedToken1).balanceOf(address(spigot)), REVENUE_EARNED);
+        assertEq(IERC20(supportedToken2).balanceOf(address(spigot)), REVENUE_EARNED);
+
+        // Arbiter distributes funds from the spigot to beneficiaries (only the line)
+        spigot.distributeFunds(address(supportedToken1));
+        spigot.distributeFunds(address(supportedToken2));
+        // owner tokens 1: 500 * 1.0 * 1.0 = 500
+        uint256 ownerTokens1 = spigot.getOwnerTokens(address(supportedToken1));
+        assertEq(ownerTokens1, REVENUE_EARNED / FULL_ALLOC * allocations[0]);
+        uint256 ownerTokens2 = spigot.getOwnerTokens(address(supportedToken2));
+        assertEq(ownerTokens2, REVENUE_EARNED / FULL_ALLOC * allocations[0]);
+
+        // Arbiter repays interestAccrued on both senior and junior tranche with funds
+        // from spigot
+        vm.startPrank(arbiter);
+        // (,uint principal,,,,,,) = line.credits(line.ids(0, 0));
+        uint256 interestAccrued1 = line.interestAccrued(line.ids(0, 0)) + line.interestAccrued(line.ids(1, 1)) + line.interestAccrued(line.ids(2, 0));
+        uint256 interestAccrued2 = line.interestAccrued(line.ids(0, 1)) + line.interestAccrued(line.ids(1, 0)) + line.interestAccrued(line.ids(2, 1));
+        ownerTokens1 = spigot.getOwnerTokens(address(supportedToken1));
+        ownerTokens2 = spigot.getOwnerTokens(address(supportedToken2));
+
+        // repay positions with supportedToken1 and supportedToken2 with claimAndRepay
+        line.claimAndRepayTranches(address(supportedToken1), "");
+        line.claimAndRepayTranches(address(supportedToken2), "");
+
+        (uint256 numActivePositions, uint256 numTranches) = line.counts();
+        assertEq(6, numActivePositions);
+        assertEq(3, numTranches);
+
+        // close positions in 2nd tranche
+        line.close(creditPositionId4);
+        line.close(creditPositionId3);
+
+        (numActivePositions, numTranches) = line.counts();
+        assertEq(4, numActivePositions);
+        assertEq(2, numTranches);
+
+        // close positions in 1st tranche
+        line.close(creditPositionId1);
+        line.close(creditPositionId2);
+
+        (numActivePositions, numTranches) = line.counts();
+        assertEq(2, numActivePositions);
+        assertEq(1, numTranches);
+
+        // close positions in last tranche
+        line.close(creditPositionId6);
+        line.close(creditPositionId5);
+
+        (numActivePositions, numTranches) = line.counts();
+        assertEq(0, numActivePositions);
+        assertEq(0, numTranches);
+
+        // line status is REPAID
+        assertEq(3, uint(line.status()));
+
+        vm.stopPrank();
+
+        // lenders withdraw positions
+        vm.startPrank(lender1);
+        line.withdraw(creditPositionId1, 114 ether);
+        vm.stopPrank();
+
+        vm.startPrank(lender2);
+        line.withdraw(creditPositionId2, 114 ether);
+        vm.stopPrank();
+
+        vm.startPrank(lender3);
+        line.withdraw(creditPositionId3, 114 ether);
+        vm.stopPrank();
+
+        vm.startPrank(lender4);
+        line.withdraw(creditPositionId4, 114 ether);
+        vm.stopPrank();
+
+        vm.startPrank(lender5);
+        line.withdraw(creditPositionId5, 114 ether);
+        vm.stopPrank();
+
+        vm.startPrank(lender6);
+        line.withdraw(creditPositionId6, 114 ether);
+        vm.stopPrank();
+
+        // extend the line
+        vm.startPrank(borrower);
+        line.extend(60 days);
+        vm.stopPrank();
+
+        // line status is ACTIVE
+        assertEq(1, uint(line.status()));
+
+        // create first tranche when adding first position
+        _addCredit(address(supportedToken1), 100 ether, lender1, 200 ether);
+
+        // add another credit position to the newly created tranche
+        _addCredit(address(supportedToken2), 100 ether, lender2, 0);
+
+        (numActivePositions, numTranches) = line.counts();
+        assertEq(2, numActivePositions);
+        assertEq(1, numTranches);
+
+        // create a second tranche
+        _addCredit(address(supportedToken2), 100 ether, lender3, 200 ether);
+        _addCredit(address(supportedToken1), 100 ether, lender4, 0);
+
+        (numActivePositions, numTranches) = line.counts();
+        assertEq(4, numActivePositions);
+        assertEq(2, numTranches);
+
+        // // emit log_named_bytes32('xxx - credit position 1: ', line.ids(0, 0));
+        // // emit log_named_bytes32('xxx - credit position 2: ', line.ids(0, 1));
+        // // emit log_named_bytes32('xxx - credit position 3: ', line.ids(1, 0));
+        // // emit log_named_bytes32('xxx - credit position 4: ', line.ids(1, 1));
+
+        // (numActivePositions, numTranches) = line.counts();
+        // assertEq(4, numActivePositions);
+        // assertEq(2, numTranches);
+        // // console.log('xxx - numActivePositions: ', numActivePositions);
+        // // console.log('xxx - numTranches: ', numTranches);
+
+        // // trancheLimit1 = line.tranches(0);
+        // // emit log_named_uint('xxx - tranche 1 - credit limit: ', trancheLimit1);
+
+        // // trancheLimit2 = line.tranches(1);
+        // // emit log_named_uint('xxx - tranche 2 - credit limit: ', trancheLimit2);
+
+    }
+
 
     // four Credit Coop lenders across two tranches
     function test_partial_repayment_lifecycle_w_two_tranches() public {
