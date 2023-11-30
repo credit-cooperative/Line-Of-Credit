@@ -444,17 +444,21 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         credits[id] = _repay(credit, id, amount, msg.sender);
     }
 
-    // // TODO: make this repay an entire tranche
-    // function depositAndRepayTranche(uint256 amount) external payable override nonReentrant whileBorrowing {
-    //     bytes32 id = ids[0][0];
-    //     Credit memory credit = _accrue(credits[id], id);
+    // TODO: make this repay an entire tranche
+    function depositAndRepayTranches(address[] tokens, uint256[] amounts[]) external payable override nonReentrant whileBorrowing {
 
-    //     if (amount > credit.principal + credit.interestAccrued) {
-    //         revert RepayAmountExceedsDebt(credit.principal + credit.interestAccrued);
-    //     }
+        // get first tranche
 
-    //     credits[id] = _repay(credit, id, amount, msg.sender);
-    // }
+
+        // bytes32 id = ids[0][0];
+        // Credit memory credit = _accrue(credits[id], id);
+
+        // if (amount > credit.principal + credit.interestAccrued) {
+        //     revert RepayAmountExceedsDebt(credit.principal + credit.interestAccrued);
+        // }
+
+        // credits[id] = _repay(credit, id, amount, msg.sender);
+    }
 
     function getExtension() external view returns (uint256) {
         return deadline + deadlineExtension;
