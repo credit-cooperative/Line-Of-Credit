@@ -6,7 +6,7 @@
 
 ### Deploy LoC Modules ###
 
-source ../.env
+source .env
 
 read -p "Did you change FOUNDRY_PROFILE to the correct chain? [y/N] " answer
 
@@ -28,7 +28,7 @@ read arbiter_address
 echo  -n "Swap Target Address: "
 read swap_target_address
 
-echo -n "Min C Ratio: "
+echo -n "Min C Ratio (In BPS): "
 read min_c_ratio
 
 echo -n "Default Split: "
