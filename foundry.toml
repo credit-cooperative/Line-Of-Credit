@@ -75,6 +75,10 @@ libraries = [
     "contracts/utils/LineFactoryLib.sol:LineFactoryLib:0x244c9A8746735C315B8eF914e4D70a017fF197D9",
 ]
 
+
+[profile.sepolia]
+libraries = []
+
 [profile.mainnet]
 libraries = [
     "contracts/utils/LineLib.sol:LineLib:0xe639a9c07f39ED07F04f348D06f76dc80DC3EDeb",

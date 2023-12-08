@@ -2,7 +2,7 @@
 
 # make sure the libraries array in the toml file looks like this 'libraries = []' with no spaces inside the brackets
 
-brew install jq
+# brew install jq
 
 ### DEPLOY FACTORY MODULES ###
 
