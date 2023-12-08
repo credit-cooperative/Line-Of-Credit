@@ -312,11 +312,7 @@ contract AbortTest is Test {
 
         // try to add credit
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken3), lender);
-        vm.stopPrank();
-
-        vm.startPrank(lender);
-        vm.expectRevert();
+        vm.expectRevert(ILineOfCredit.NotActive.selector);
         line.addCredit(dRate, fRate, 1 ether, address(supportedToken3), lender);
         vm.stopPrank();
 
@@ -356,11 +352,12 @@ contract AbortTest is Test {
 
         // try to add credit
         vm.startPrank(borrower);
+        vm.expectRevert(ILineOfCredit.NotActive.selector);
         line.addCredit(dRate, fRate, 1 ether, address(supportedToken3), lender);
         vm.stopPrank();
 
         vm.startPrank(lender);
-        vm.expectRevert();
+        vm.expectRevert(ILineOfCredit.NotActive.selector);
         line.addCredit(dRate, fRate, 1 ether, address(supportedToken3), lender);
         vm.stopPrank();
     }
@@ -406,11 +403,12 @@ contract AbortTest is Test {
         // try to add credit
 
         vm.startPrank(borrower);
+        vm.expectRevert(ILineOfCredit.NotActive.selector);
         line.addCredit(dRate, fRate, 1 ether, address(supportedToken3), lender);
         vm.stopPrank();
 
         vm.startPrank(lender);
-        vm.expectRevert();
+        vm.expectRevert(ILineOfCredit.NotActive.selector);
         line.addCredit(dRate, fRate, 1 ether, address(supportedToken3), lender);
         vm.stopPrank();
     }
