@@ -32,7 +32,8 @@ library LineLib {
         ACTIVE,
         LIQUIDATABLE,
         REPAID,
-        INSOLVENT
+        INSOLVENT,
+        ABORTED
     }
 
     /**
