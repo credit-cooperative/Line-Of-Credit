@@ -826,8 +826,9 @@ contract SpigotTest is Test {
     }
 
     function test_cannot_deposit_and_distribute_if_not_operator() public {
-        token.mint(address("badboy"), 200000);
-        vm.startPrank(address("badboy"));
+        address notOperator = address(300);
+        token.mint(notOperator, 200000);
+        vm.startPrank(notOperator);
         vm.expectRevert(ISpigot.CallerAccessDenied.selector);
         spigot.depositAndDistribute(address(token), 200000);
     }
