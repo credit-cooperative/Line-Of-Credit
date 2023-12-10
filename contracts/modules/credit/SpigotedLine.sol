@@ -261,7 +261,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
     }
 
     /// see ISpigotedLine.releaseSpigot
-    function releaseSpigot(address to) external returns (bool) {
+    function releaseSpigot(address to) public returns (bool) {
         return SpigotedLineLib.releaseSpigot(address(spigot), _updateStatus(_healthcheck()), borrower, arbiter, to);
     }
 

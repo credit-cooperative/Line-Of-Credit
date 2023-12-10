@@ -237,6 +237,13 @@ library SpigotedLineLib {
             return true;
         }
 
+        if (status == LineLib.STATUS.ABORTED && msg.sender == arbiter) {
+            if (!ISpigot(spigot).updateOwner(to)) {
+                revert ReleaseSpigotFailed();
+            }
+            return true;
+        }
+
         revert CallerAccessDenied();
     }
 
