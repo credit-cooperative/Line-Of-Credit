@@ -772,6 +772,13 @@ contract SpigotTest is Test {
 
     }
 
+    function test_deposit_and_distribute_funds_via_operator() public {
+        token.mint(operator, 20000);
+        vm.startPrank(operator);
+        spigot.depositAndDistribute(address(token), 20000);
+        vm.stopPrank();
+    }
+
     // TODO: test distributeFunds + original Spigot trade functionality repays credit positions on Line of Credit
         // claimAndTrade
         // useAndRepay
