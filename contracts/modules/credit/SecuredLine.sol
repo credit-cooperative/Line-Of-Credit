@@ -74,6 +74,62 @@ contract SecuredLine is SpigotedLine, EscrowedLine, ISecuredLine {
         return _liquidate(ids[0], amount, targetToken, msg.sender);
     }
 
+    // a ripcord function that liquidates all tokens in escrow and sends them to the arbiter and releases spigot to the arbiter
+    // needs mututal consent of borrower and arbiter
+    // updates status to ABORTED
+
+    function recoverEscrowTokensAndSpigotedContracts(address[] memory tokens) external onlyBorrowerOrArbiter mutualConsent(arbiter, borrower) returns (bool) {
+        // update status to ABORTED
+        _updateStatus(LineLib.STATUS.ABORTED);
+
+        // send tokens to arbiter stakeholder distribution
+        _recoverEscrow(tokens);
+
+        // release spigot to arbiter
+        _recoverSpigot();
+
+        return true;
+    }
+
+    function recoverSpigotedContracts() external onlyBorrowerOrArbiter mutualConsent(arbiter, borrower) returns (bool) {
+        // update status to ABORTED
+        _updateStatus(LineLib.STATUS.ABORTED);
+
+        // release spigot to arbiter
+        _recoverSpigot();
+
+        return true;
+    }
+
+    function recoverEscrowTokens(address[] memory tokens) external onlyBorrowerOrArbiter mutualConsent(arbiter, borrower) returns (bool) {
+        // update status to ABORTED
+        _updateStatus(LineLib.STATUS.ABORTED);
+
+        // send tokens to arbiter stakeholder distribution
+        _recoverEscrow(tokens);
+
+        return true;
+    }
+
+    function _recoverEscrow(address[] memory tokens) internal {
+        // send tokens to arbiter stakeholder distribution
+        if (tokens.length == 0) {
+            return;
+        }
+
+        for (uint256 i = 0; i < tokens.length; i++) {
+            uint256 amount = _liquidate(ids[0],  IERC20(tokens[i]).balanceOf(address(EscrowedLine.escrow)), tokens[i], msg.sender);
+            emit RecoveredEscrow(address(this), amount, tokens[i]);
+        }
+    }
+
+    function _recoverSpigot() internal {
+        // release spigot to arbiter
+        SpigotedLine.releaseSpigot(msg.sender);
+        emit RecoveredSpigot(msg.sender, address(spigot));
+    
+    }
+
     function _healthcheck() internal override(EscrowedLine, LineOfCredit) returns (LineLib.STATUS) {
         // check core (also cheap & internal) covenants before checking collateral conditions
         LineLib.STATUS s = LineOfCredit._healthcheck();

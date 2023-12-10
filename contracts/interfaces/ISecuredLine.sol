@@ -14,6 +14,10 @@ interface ISecuredLine is IEscrowedLine, ISpigotedLine {
     error CannotAmendAndExtendLine();
     error CannotAmendLine();
 
+    // Events
+    event RecoveredEscrow(address indexed to, uint256 amount, address token);
+    event RecoveredSpigot(address indexed to, address indexed spigot);
+
     // Borrower functions
 
     /**
@@ -23,4 +27,7 @@ interface ISecuredLine is IEscrowedLine, ISpigotedLine {
      * @param newLine - the new, uninitialized Line deployed by borrower
      */
     function rollover(address newLine) external;
+
+    // abort
+    function recoverEscrowTokensAndSpigotedContracts(address[] memory tokens) external returns(bool);
 }
