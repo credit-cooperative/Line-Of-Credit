@@ -830,7 +830,6 @@ contract SpigotTest is Test {
         vm.startPrank(address("badboy"));
         vm.expectRevert(ISpigot.CallerAccessDenied.selector);
         spigot.depositAndDistribute(address(token), 200000);
-
     }
 
     // TODO: test distributeFunds + original Spigot trade functionality repays credit positions on Line of Credit
