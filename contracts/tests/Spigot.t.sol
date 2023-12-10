@@ -54,6 +54,7 @@ contract SpigotTest is Test {
     uint256[] allocations;
     uint256[] debtOwed;
     address[] creditTokens;
+    uint MAX_INT = 115792089237316195423570985008687907853269984665640564039457584007913129639935;
 
 
     function setUp() public {
@@ -547,6 +548,46 @@ contract SpigotTest is Test {
     // Distribute Funds
 
     // TODO: handle rounding issues
+    function test_cant_distribute_if_allocation_amount_is_0() public {
+
+        vm.expectRevert(ISpigot.NoTokensToDistribute.selector);
+        spigot.distributeFunds(address(token));
+    }
+
+    function test_if_too_small_amount_breaks_stuff() public {
+
+        // Single
+        // 1 beneficiary: the spigot owner
+
+        // 2 beneficiaries
+
+        // 3 beneficiaries
+        // send 400000 revenue tokens to the Spigot
+        token.mint(address(spigot), 40000);
+        spigot.claimRevenue(revenueContract, address(token), "");
+        emit log_named_uint("spigot balance", token.balanceOf(address(spigot)));
+        uint256[] memory tokensToDistribute = spigot.distributeFunds(address(token));
+        console.log('xxx - tokensToDistribute[0]: ', tokensToDistribute[0]);
+        console.log('xxx - tokensToDistribute[1]: ', tokensToDistribute[1]);
+        console.log('xxx - tokensToDistribute[2]: ', tokensToDistribute[2]);
+
+        // distributions array
+        assertEq(tokensToDistribute[0], 20000);
+        assertEq(tokensToDistribute[1], 10000);
+        assertEq(tokensToDistribute[2], 10000);
+
+        console.log('xxx - beneficiaries[0] balance: ', token.balanceOf(beneficiaries[0]));
+        console.log('xxx - beneficiaries[1] balance: ', token.balanceOf(beneficiaries[1]));
+        console.log('xxx - beneficiaries[2] balance: ', token.balanceOf(beneficiaries[2]));
+
+        // amounts transferred to beneficiaries
+        assertEq(tokensToDistribute[0], spigot.getOwnerTokens(address(token)));
+        assertEq(0, token.balanceOf(beneficiaries[0]));
+        assertEq(tokensToDistribute[1], token.balanceOf(beneficiaries[1]));
+        assertEq(tokensToDistribute[2], token.balanceOf(beneficiaries[2]));
+
+    }
+
     function test_distributeFunds_repays_all_beneficiaries_with_same_repayment_token() public {
 
         // Single
@@ -773,10 +814,23 @@ contract SpigotTest is Test {
     }
 
     function test_deposit_and_distribute_funds_via_operator() public {
-        token.mint(operator, 20000);
-        vm.startPrank(operator);
-        spigot.depositAndDistribute(address(token), 20000);
+        token.mint(borrower, 200000);
+        
+        vm.startPrank(borrower);
+        token.approve(address(spigot), MAX_INT);
+        spigot.depositAndDistribute(address(token), 200000);
+        // assertEq(spigot.getAllocationAmount(address(token)), 200000);
+        // spigot.distributeFunds(address(token));
+        assertEq(spigot.getAllocationAmount(address(token)), 0);
         vm.stopPrank();
+    }
+
+    function test_cannot_deposit_and_distribute_if_not_operator() public {
+        token.mint(address("badboy"), 200000);
+        vm.startPrank(address("badboy"));
+        vm.expectRevert(ISpigot.CallerAccessDenied.selector);
+        spigot.depositAndDistribute(address(token), 200000);
+
     }
 
     // TODO: test distributeFunds + original Spigot trade functionality repays credit positions on Line of Credit

@@ -171,8 +171,8 @@ contract Spigot is ISpigot, ReentrancyGuard {
         return state._distributeFunds(token);
     }
 
-    function _depositAndDistribute(address token, uint256 amount) external isInitialized returns (uint256[] memory) {
-        return state._depositAndDistribute(token, amount);
+    function depositAndDistribute(address token, uint256 amount) external isInitialized {
+        state._depositAndDistribute(token, amount);
     }
 
 
@@ -374,6 +374,10 @@ contract Spigot is ISpigot, ReentrancyGuard {
 
     function getLenderTokens(address token, address lender) external isInitialized view returns (uint256) {
         return state.getLenderTokens(token, lender);
+    }
+
+    function getAllocationAmount(address token) external isInitialized view returns (uint256){
+        return state.getAllocationAmount(token);
     }
     // function getSplitAllocation() public view returns (uint256[] memory) { return (allocations); }
 }

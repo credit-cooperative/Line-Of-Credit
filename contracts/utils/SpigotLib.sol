@@ -184,15 +184,14 @@ library SpigotLib {
 
 
     // deposit to allocation tokens and distribute funds
-    function _depositAndDistribute(SpigotState storage self, address token, uint256 amount) external returns (bool) {
+    function _depositAndDistribute(SpigotState storage self, address token, uint256 amount) external {
         if (msg.sender != self.operator) {
             revert CallerAccessDenied();
         }
-
+     
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
         self.allocationTokens[token] += amount;
-
-        return _distributeFunds(self, token);
+        _distributeFunds(self, token);
     }
 
     // repay a lender with allo tokens
@@ -621,6 +620,10 @@ library SpigotLib {
         }
 
         return totalBennyTokens;
+    }
+
+    function getAllocationAmount(SpigotState storage self, address token) public view returns (uint256) {
+        return self.allocationTokens[token];
     }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
