@@ -182,63 +182,21 @@ library SpigotLib {
         return true;
     }
 
-    function repay(SpigotState storage self, address lender, uint256 amount ) external {
-        _repay(self, lender, amount, msg.sender);
-    }
 
-    function _repay(SpigotState storage self, address lender, uint256 amount, address sender) internal returns (ISpigot.Beneficiary memory) {
-
-        // check if lender has outtstanding debt, subtract amount from that debt and then send the amount to the lender address
-        //TODO: do we bother even depositing into line?? just make sure accounting is done ane be done with it
-        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
-            if (self.beneficiaries[i] == lender){
-                if (self.beneficiaryInfo[lender].outstandingDebt > 0){
-                    if (amount > self.beneficiaryInfo[lender].outstandingDebt ){
-                        revert AmountExceedsDebt();
-                    } else {
-                        self.beneficiaryInfo[lender].outstandingDebt -= amount;
-                        IERC20(self.beneficiaryInfo[lender].creditToken).safeTransferFrom(sender, lender, amount);
-                    }
-                }
-                else if (beneficiaryInfo[lender].outstandingDebt == 0){
-                    revert NoDebtOutstanding();
-                }
-            }
-        }
-        revert LenderNotFound();
-    }
-
-    // deposit to operator tokens
-    function deposit(SpigotState storage self, address token, uint256 amount) external returns (bool) {
+    // deposit to allocation tokens and distribute funds
+    function _depositAndDistribute(SpigotState storage self, address token, uint256 amount) external returns (bool) {
         if (msg.sender != self.operator) {
             revert CallerAccessDenied();
         }
 
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
-        self.operatorTokens[token] += amount;
+        self.allocationTokens[token] += amount;
 
-        return true;
+        return _distributeFunds(self, token);
     }
 
-    // repay a lender with operator tokens
+    // repay a lender with allo tokens
     
-    function useAndRepay(SpigotState storage self, address lender, uint256 amount) external returns (bool) {
-        if (msg.sender != self.operator) {
-            revert CallerAccessDenied();
-        }
-
-        if (amount > self.operatorTokens[self.beneficiaryInfo[lender].creditToken]){
-            revert AmountExceedsBalance();
-        }
-
-        operatorTokens[self.beneficiaryInfo[lender].creditToken] -= amount;
-
-        _repay(self, lender, amount, address(this));
-
-        
-
-        // check if lender has outtstanding debt, subtract amount from that debt and then send the amount to the lender address
-    }
 
     /** see Spigot.addSpigot */
     function addSpigot(

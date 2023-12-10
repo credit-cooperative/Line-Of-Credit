@@ -171,6 +171,10 @@ contract Spigot is ISpigot, ReentrancyGuard {
         return state._distributeFunds(token);
     }
 
+    function _depositAndDistribute(address token, uint256 amount) external isInitialized returns (uint256[] memory) {
+        return state._depositAndDistribute(token, amount);
+    }
+
 
     /*//////////////////////////////////////////////////////
                        // ADMIN FUNCTIONS //
