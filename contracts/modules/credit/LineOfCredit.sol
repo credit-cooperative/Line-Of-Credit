@@ -72,13 +72,13 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
      * @param borrower_   - The debitor for all credit lines in this contract.
      * @param ttl_        - The time to live for all credit lines for the Line of Credit facility (sets the maturity/term of the Line of Credit)
      */
-    constructor(address oracle_, address arbiter_, address borrower_, uint256 ttl_, address _tokenAddress) {
+    constructor(address oracle_, address arbiter_, address borrower_, uint256 ttl_) {
         oracle = IOracle(oracle_);
         arbiter = arbiter_;
         borrower = borrower_;
         deadline = block.timestamp + ttl_; //the deadline is the term/maturity/expiry date of the Line of Credit facility
         interestRate = new InterestRateCredit();
-        tokenContract = LendingPositionToken(_tokenAddress);
+        
         emit DeployLine(oracle_, arbiter_, borrower_);
     }
 
@@ -88,6 +88,11 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         }
         _init();
         _updateStatus(LineLib.STATUS.ACTIVE);
+    }
+
+    function initTokenizedPosition(address _tokenAddress){
+        require (address(tokenContract) == address(0));
+        tokenContract = LendingPositionToken(_tokenAddress);
     }
 
     function _init() internal virtual {

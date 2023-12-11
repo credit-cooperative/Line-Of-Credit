@@ -208,7 +208,7 @@ interface ILineOfCredit {
      * @param id - the position id that Lender is withdrawing from
      * @param amount - amount of tokens the Lender would like to withdraw (withdrawn amount may be lower)
      */
-    function withdraw(bytes32 id, uint256 amount) external;
+    function withdraw(uint256 tokenId, uint256 amount) external;
 
     
     function recoverTokens(address[] memory tokens) external;
