@@ -17,6 +17,7 @@ import {InterestRateCredit} from "../interest-rate/InterestRateCredit.sol";
 
 import {IOracle} from "../../interfaces/IOracle.sol";
 import {ILineOfCredit} from "../../interfaces/ILineOfCredit.sol";
+import {LendingPositionToken} from "../tokenized-positions/LendingPositionToken.sol";
 
 /**
  * @title  - Credit Cooperative Unsecured Line of Credit
@@ -36,6 +37,9 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
     /// @notice - the account that can drawdown and manage debt positions
     address public borrower;
+
+    LendingPositionToken public tokenContract;
+    mapping(uint256 => bytes32) public tokenToPosition;
 
     /// @notice - neutral 3rd party that mediates btw borrower and all lenders
     address public immutable arbiter;
@@ -68,13 +72,13 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
      * @param borrower_   - The debitor for all credit lines in this contract.
      * @param ttl_        - The time to live for all credit lines for the Line of Credit facility (sets the maturity/term of the Line of Credit)
      */
-    constructor(address oracle_, address arbiter_, address borrower_, uint256 ttl_) {
+    constructor(address oracle_, address arbiter_, address borrower_, uint256 ttl_, address _tokenAddress) {
         oracle = IOracle(oracle_);
         arbiter = arbiter_;
         borrower = borrower_;
         deadline = block.timestamp + ttl_; //the deadline is the term/maturity/expiry date of the Line of Credit facility
         interestRate = new InterestRateCredit();
-
+        tokenContract = LendingPositionToken(_tokenAddress);
         emit DeployLine(oracle_, arbiter_, borrower_);
     }
 
@@ -307,8 +311,11 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         address token,
         address lender
     ) external payable override nonReentrant whileActive mutualConsent(lender, borrower) returns (bytes32) {
+
         bytes32 id = _createCredit(lender, token, amount);
 
+        uint256 tokenId = tokenContract.mint(msg.sender);
+        tokenToPosition[tokenId] = id;
         _setRates(id, drate, frate);
 
         LineLib.receiveTokenOrETH(token, lender, amount);
@@ -433,8 +440,11 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     }
 
     /// see ILineOfCredit.withdraw
-    function withdraw(bytes32 id, uint256 amount) external override nonReentrant {
+    function withdraw(uint256 tokenId, uint256 amount) external override nonReentrant {
         // accrues interest and transfer funds to Lender addres
+        require(tokenContract.ownerOf(tokenId) == msg.sender, "Not token owner");
+
+        bytes32 id = tokenToPosition[tokenId];
         credits[id] = CreditLib.withdraw(_accrue(credits[id], id), id, msg.sender, amount);
     }
 
