@@ -30,6 +30,9 @@ contract DeployTokenScript is Script {
         ccCoinOne.mint(mintee1, mintAmount);
         ccCoinTwo.mint(mintee1, mintAmount);
 
+        ccCoinOne.mint(mintee2, mintAmount);
+        ccCoinTwo.mint(mintee2, mintAmount);
+
         vm.stopBroadcast();
     }
 }
