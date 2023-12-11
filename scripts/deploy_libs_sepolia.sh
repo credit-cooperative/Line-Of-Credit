@@ -14,40 +14,41 @@ LineLib=$(forge create --rpc-url $SEPOLIA_RPC_URL --private-key $SEPOLIA_PRIVATE
 LineLibAddress=$(echo "$LineLib" | jq -r '.deployedTo')
 LineLibEntry="contracts\/utils\/LineLib.sol:LineLib:$LineLibAddress"
 
-sed -i '' '/\[profile\.sepolia\]/,/^\[/s/^libraries = \[.*\]/libraries = \["'$LineLibEntry'"\]/' ../foundry.toml
+sed -i'' -e '/\[profile\.sepolia\]/,/^\[/s/^libraries = \[.*\]/libraries = \["'$LineLibEntry'"\]/' ../foundry.toml
 
-# CreditLib=$(forge create --rpc-url $SEPOLIA_RPC_URL --private-key $SEPOLIA_PRIVATE_KEY --etherscan-api-key $SEPOLIA_ETHERSCAN_API_KEY --optimizer-runs 200 contracts/utils/CreditLib.sol:CreditLib --verify --json)
-# CreditLibAddress=$(echo "$CreditLib" | jq -r '.deployedTo')
-# CreditLibEntry="contracts\/utils\/CreditLib.sol:CreditLib:$CreditLibAddress"
 
-# sed -i '' '/\[profile\.sepolia\]/,/^\[/s/^libraries = \["'$LineLibEntry'"\]/libraries = \["'$LineLibEntry'","'$CreditLibEntry'"\]/' ../foundry.toml
+CreditLib=$(forge create --rpc-url $SEPOLIA_RPC_URL --private-key $SEPOLIA_PRIVATE_KEY --etherscan-api-key $SEPOLIA_ETHERSCAN_API_KEY --optimizer-runs 200 contracts/utils/CreditLib.sol:CreditLib --verify --json)
+CreditLibAddress=$(echo "$CreditLib" | jq -r '.deployedTo')
+CreditLibEntry="contracts\/utils\/CreditLib.sol:CreditLib:$CreditLibAddress"
 
-# CreditListLib=$(forge create --rpc-url $SEPOLIA_RPC_URL --private-key $SEPOLIA_PRIVATE_KEY --etherscan-api-key $SEPOLIA_ETHERSCAN_API_KEY --optimizer-runs 200 contracts/utils/CreditListLib.sol:CreditListLib --verify --json)
-# CreditListLibAddress=$(echo "$CreditListLib" | jq -r '.deployedTo')
-# CreditListLibEntry="contracts\/utils\/CreditListLib.sol:CreditListLib:$CreditListLibAddress"
+sed -i'' -e '/\[profile\.sepolia\]/,/^\[/s/^libraries = \["'$LineLibEntry'"\]/libraries = \["'$LineLibEntry'","'$CreditLibEntry'"\]/' ../foundry.toml
 
-# sed -i '' '/\[profile\.sepolia\]/,/^\[/s/^libraries = \["'$LineLibEntry'","'$CreditLibEntry'"\]/libraries = \["'$LineLibEntry'","'$CreditLibEntry'","'$CreditListLibEntry'"\]/' ../foundry.toml
+CreditListLib=$(forge create --rpc-url $SEPOLIA_RPC_URL --private-key $SEPOLIA_PRIVATE_KEY --etherscan-api-key $SEPOLIA_ETHERSCAN_API_KEY --optimizer-runs 200 contracts/utils/CreditListLib.sol:CreditListLib --verify --json)
+CreditListLibAddress=$(echo "$CreditListLib" | jq -r '.deployedTo')
+CreditListLibEntry="contracts\/utils\/CreditListLib.sol:CreditListLib:$CreditListLibAddress"
 
-# SpigotLib=$(forge create --rpc-url $SEPOLIA_RPC_URL --private-key $SEPOLIA_PRIVATE_KEY --etherscan-api-key $SEPOLIA_ETHERSCAN_API_KEY --optimizer-runs 200 contracts/utils/SpigotLib.sol:SpigotLib --verify --json)
-# SpigotLibAddress=$(echo "$SpigotLib" | jq -r '.deployedTo')
-# SpigotLibEntry="contracts\/utils\/SpigotLib.sol:SpigotLib:$SpigotLibAddress"
+sed -i'' -e '/\[profile\.sepolia\]/,/^\[/s/^libraries = \["'$LineLibEntry'","'$CreditLibEntry'"\]/libraries = \["'$LineLibEntry'","'$CreditLibEntry'","'$CreditListLibEntry'"\]/' ../foundry.toml
 
-# sed -i '' '/\[profile\.sepolia\]/,/^\[/s/^libraries = \["'$LineLibEntry'","'$CreditLibEntry'","'$CreditListLibEntry'"\]/libraries = \["'$LineLibEntry'","'$CreditLibEntry'","'$CreditListLibEntry'","'$SpigotLibEntry'"\]/' ../foundry.toml
+SpigotLib=$(forge create --rpc-url $SEPOLIA_RPC_URL --private-key $SEPOLIA_PRIVATE_KEY --etherscan-api-key $SEPOLIA_ETHERSCAN_API_KEY --optimizer-runs 200 contracts/utils/SpigotLib.sol:SpigotLib --verify --json)
+SpigotLibAddress=$(echo "$SpigotLib" | jq -r '.deployedTo')
+SpigotLibEntry="contracts\/utils\/SpigotLib.sol:SpigotLib:$SpigotLibAddress"
 
-# EscrowLib=$(forge create --rpc-url $SEPOLIA_RPC_URL --private-key $SEPOLIA_PRIVATE_KEY --etherscan-api-key $SEPOLIA_ETHERSCAN_API_KEY --optimizer-runs 200 contracts/utils/EscrowLib.sol:EscrowLib --verify --json)
-# EscrowLibAddress=$(echo "$EscrowLib" | jq -r '.deployedTo')
-# EscrowLibEntry="contracts\/utils\/EscrowLib.sol:EscrowLib:$EscrowLibAddress"
+sed -i'' -e '/\[profile\.sepolia\]/,/^\[/s/^libraries = \["'$LineLibEntry'","'$CreditLibEntry'","'$CreditListLibEntry'"\]/libraries = \["'$LineLibEntry'","'$CreditLibEntry'","'$CreditListLibEntry'","'$SpigotLibEntry'"\]/' ../foundry.toml
 
-# sed -i '' '/\[profile\.sepolia\]/,/^\[/s/^libraries = \["'$LineLibEntry'","'$CreditLibEntry'","'$CreditListLibEntry'","'$SpigotLibEntry'"\]/libraries = \["'$LineLibEntry'","'$CreditLibEntry'","'$CreditListLibEntry'","'$SpigotLibEntry'","'$EscrowLibEntry'"\]/' ../foundry.toml
+EscrowLib=$(forge create --rpc-url $SEPOLIA_RPC_URL --private-key $SEPOLIA_PRIVATE_KEY --etherscan-api-key $SEPOLIA_ETHERSCAN_API_KEY --optimizer-runs 200 contracts/utils/EscrowLib.sol:EscrowLib --verify --json)
+EscrowLibAddress=$(echo "$EscrowLib" | jq -r '.deployedTo')
+EscrowLibEntry="contracts\/utils\/EscrowLib.sol:EscrowLib:$EscrowLibAddress"
 
-# SpigotedLineLib=$(forge create --rpc-url $SEPOLIA_RPC_URL --private-key $SEPOLIA_PRIVATE_KEY --etherscan-api-key $SEPOLIA_ETHERSCAN_API_KEY --optimizer-runs 200 contracts/utils/SpigotedLineLib.sol:SpigotedLineLib --verify --json)
-# SpigotedLineLibAddress=$(echo "$SpigotedLineLib" | jq -r '.deployedTo')
-# SpigotedLineLibEntry="contracts\/utils\/SpigotedLineLib.sol:SpigotedLineLib:$SpigotedLineLibAddress"
+sed -i'' -e '/\[profile\.sepolia\]/,/^\[/s/^libraries = \["'$LineLibEntry'","'$CreditLibEntry'","'$CreditListLibEntry'","'$SpigotLibEntry'"\]/libraries = \["'$LineLibEntry'","'$CreditLibEntry'","'$CreditListLibEntry'","'$SpigotLibEntry'","'$EscrowLibEntry'"\]/' ../foundry.toml
 
-# sed -i '' '/\[profile\.sepolia\]/,/^\[/s/^libraries = \["'$LineLibEntry'","'$CreditLibEntry'","'$CreditListLibEntry'","'$SpigotLibEntry'","'$EscrowLibEntry'"\]/libraries = \["'$LineLibEntry'","'$CreditLibEntry'","'$CreditListLibEntry'","'$SpigotLibEntry'","'$EscrowLibEntry'","'$SpigotedLineLibEntry'"\]/' ../foundry.toml
+SpigotedLineLib=$(forge create --rpc-url $SEPOLIA_RPC_URL --private-key $SEPOLIA_PRIVATE_KEY --etherscan-api-key $SEPOLIA_ETHERSCAN_API_KEY --optimizer-runs 200 contracts/utils/SpigotedLineLib.sol:SpigotedLineLib --verify --json)
+SpigotedLineLibAddress=$(echo "$SpigotedLineLib" | jq -r '.deployedTo')
+SpigotedLineLibEntry="contracts\/utils\/SpigotedLineLib.sol:SpigotedLineLib:$SpigotedLineLibAddress"
 
-# LineFactoryLib=$(forge create --rpc-url $SEPOLIA_RPC_URL --private-key $SEPOLIA_PRIVATE_KEY --etherscan-api-key $SEPOLIA_ETHERSCAN_API_KEY --optimizer-runs 200 contracts/utils/LineFactoryLib.sol:LineFactoryLib --verify --json)
-# LineFactoryLibAddress=$(echo "$LineFactoryLib" | jq -r '.deployedTo')
-# LineFactoryLibEntry="contracts\/utils\/LineFactoryLib.sol:LineFactoryLib:$LineFactoryLibAddress"
+sed -i'' -e '/\[profile\.sepolia\]/,/^\[/s/^libraries = \["'$LineLibEntry'","'$CreditLibEntry'","'$CreditListLibEntry'","'$SpigotLibEntry'","'$EscrowLibEntry'"\]/libraries = \["'$LineLibEntry'","'$CreditLibEntry'","'$CreditListLibEntry'","'$SpigotLibEntry'","'$EscrowLibEntry'","'$SpigotedLineLibEntry'"\]/' ../foundry.toml
 
-# sed -i '' '/\[profile\.sepolia\]/,/^\[/s/^libraries = \["'$LineLibEntry'","'$CreditLibEntry'","'$CreditListLibEntry'","'$SpigotLibEntry'","'$EscrowLibEntry'","'$SpigotedLineLibEntry'"\]/libraries = \["'$LineLibEntry'","'$CreditLibEntry'","'$CreditListLibEntry'","'$SpigotLibEntry'","'$EscrowLibEntry'","'$SpigotedLineLibEntry'","'$LineFactoryLibEntry'"\]/' ../foundry.toml
+LineFactoryLib=$(forge create --rpc-url $SEPOLIA_RPC_URL --private-key $SEPOLIA_PRIVATE_KEY --etherscan-api-key $SEPOLIA_ETHERSCAN_API_KEY --optimizer-runs 200 contracts/utils/LineFactoryLib.sol:LineFactoryLib --verify --json)
+LineFactoryLibAddress=$(echo "$LineFactoryLib" | jq -r '.deployedTo')
+LineFactoryLibEntry="contracts\/utils\/LineFactoryLib.sol:LineFactoryLib:$LineFactoryLibAddress"
+
+sed -i'' -e '/\[profile\.sepolia\]/,/^\[/s/^libraries = \["'$LineLibEntry'","'$CreditLibEntry'","'$CreditListLibEntry'","'$SpigotLibEntry'","'$EscrowLibEntry'","'$SpigotedLineLibEntry'"\]/libraries = \["'$LineLibEntry'","'$CreditLibEntry'","'$CreditListLibEntry'","'$SpigotLibEntry'","'$EscrowLibEntry'","'$SpigotedLineLibEntry'","'$LineFactoryLibEntry'"\]/' ../foundry.toml

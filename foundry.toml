@@ -77,7 +77,15 @@ libraries = [
 
 
 [profile.sepolia]
-libraries = []
+libraries = [
+    "contracts/utils/LineLib.sol:LineLib:0xCE95035acd9B5aE1304F652412dB849F8629F377",
+    "contracts/utils/CreditLib.sol:CreditLib:0x18a744de156c9A1A6B6832fd4E47679146F087fA",
+    "contracts/utils/CreditListLib.sol:CreditListLib:0xd3aC493cd5f02A5376849ccb494F233323AABE85",
+    "contracts/utils/SpigotLib.sol:SpigotLib:0x3182c0f682B84D0586F7d2C38fa24a7E720d2359",
+    "contracts/utils/EscrowLib.sol:EscrowLib:0x2492eF0F83F7041867eC067582d5157290e09B06",
+    "contracts/utils/SpigotedLineLib.sol:SpigotedLineLib:0xa5De6E2A9503E227cA345f8aeb795A187a32F34e",
+    "contracts/utils/LineFactoryLib.sol:LineFactoryLib:0x9dBeE9024C5DBd990783157c66ac65066cF277E4"
+]
 
 [profile.mainnet]
 libraries = [
