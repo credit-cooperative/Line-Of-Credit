@@ -150,8 +150,10 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
     function useAndRepay(uint256 amount) external whileBorrowing returns (bool) {
         bytes32 id = ids[0];
         Credit memory credit = credits[id];
+        uint256 tokenId = credit.tokenId;
+        address lender = LineOfCredit.getLender(tokenId);
 
-        if (msg.sender != borrower && msg.sender != credit.lender) {
+        if (msg.sender != borrower && msg.sender != lender) {
             revert CallerAccessDenied();
         }
 

@@ -16,7 +16,7 @@ interface ILineOfCredit {
         uint256 interestRepaid; // Interest repaid by a Borrower to the Line of Credit contract but not yet withdrawn by a Lender
         uint8 decimals; // Decimals of Credit Token for calcs
         address token; // The token being lent out (Credit Token)
-        address lender; // The person to repay
+        uint256 tokenId; // The person to repay
         bool isOpen; // Status of position
     }
 
@@ -121,7 +121,7 @@ interface ILineOfCredit {
     * @param amount  - The amount of Credit Token to initially deposit by the Lender
     * @param token   - The Credit Token, i.e. the token to be lent out
     * @param lender  - The address that will manage credit line
-    * @return id     - Lender's position id to look up in `credits`
+    * @return tokenId     - Lender's position id to look up in `erc721` to get the posiition id
   */
     function addCredit(
         uint128 drate,
@@ -136,21 +136,21 @@ interface ILineOfCredit {
      *                   - accrues interest before updating terms, per InterestRate docs
      *                   - can do so even when LIQUIDATABLE for the purpose of refinancing and/or renego
      * @dev              - callable by Borrower or Lender
-     * @param id         - position id that we are updating
+     * @param tokenId         - position id that we are updating
      * @param drate      - new drawn rate. In bps, 4 decimals
      * @param frate      - new facility rate. In bps, 4 decimals
      */
-    function setRates(bytes32 id, uint128 drate, uint128 frate) external;
+    function setRates(uint256 tokenId, uint128 drate, uint128 frate) external;
 
     /**
      * @notice           - Lets a Lender and a Borrower increase the credit limit on a position
      * @dev              - line status must be ACTIVE
      * @dev              - callable by borrower
      * @dev              - The function retains the `payable` designation, despite not accepting Eth via mutualConsent modifier, as a gas-optimization
-     * @param id         - position id that we are updating
+     * @param tokenId         - position id that we are updating
      * @param amount     - amount to deposit by the Lender
      */
-    function increaseCredit(bytes32 id, uint256 amount) external payable;
+    function increaseCredit(uint256 tokenId, uint256 amount) external payable;
 
     // Borrower functions
 
@@ -205,7 +205,7 @@ interface ILineOfCredit {
      *         - Withdraws from repaid interest (profit) first and then deposit is reduced
      * @dev - can only withdraw tokens from their own position. If multiple lenders lend DAI, the lender1 can't withdraw using lender2's tokens
      * @dev - callable by Lender on `id`
-     * @param id - the position id that Lender is withdrawing from
+     * @param tokenId - the position id that Lender is withdrawing from
      * @param amount - amount of tokens the Lender would like to withdraw (withdrawn amount may be lower)
      */
     function withdraw(uint256 tokenId, uint256 amount) external;
@@ -280,7 +280,7 @@ interface ILineOfCredit {
      * @notice - info on the next lender position that must be repaid
      * @return - (bytes32, address, address, uint, uint) - id, lender, token, principal, interestAccrued
      */
-    function nextInQ() external view returns (bytes32, address, address, uint256, uint256, uint256, uint128, uint128);
+    function nextInQ() external view returns (bytes32, uint256, address, uint256, uint256, uint256, uint128, uint128);
 
     /**
      * @notice - how many tokens can be withdrawn from positions by borrower or lender

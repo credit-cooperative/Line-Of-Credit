@@ -8,10 +8,18 @@ contract LendingPositionToken is ERC721 {
 
     constructor() ERC721("LendingPositionToken", "LPT") {}
 
-    function mint(address lender) public returns (uint256) {
+    function mint(address to) public returns (uint256) {
         _tokenIds++;
         uint256 newItemId = _tokenIds;
-        _mint(lender, newItemId);
+        _mint(to, newItemId);
         return newItemId;
+    }
+
+    function getUnderlyingAssets(uint256 tokenId)
+        public
+        view
+        returns (address[] memory)
+    {
+        // logic to get data from underlying position
     }
 }
