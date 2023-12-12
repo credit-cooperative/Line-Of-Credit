@@ -3,7 +3,7 @@ package-lock.json
 out
 docs
 .env
-lib
+# lib
 
 *.log
 
@@ -13,5 +13,5 @@ lib
 cache
 artifacts
 
-#dapp tools 
+#dapp tools
 hevm.libs.*
