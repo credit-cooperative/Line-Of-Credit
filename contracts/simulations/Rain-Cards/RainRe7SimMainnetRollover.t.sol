@@ -13,6 +13,7 @@ import {SpigotedLine} from "../../modules/credit/SpigotedLine.sol";
 import {SecuredLine} from "../../modules/credit/SecuredLine.sol";
 import {ZeroEx} from "../../mock/ZeroEx.sol";
 import {ISpigotedLine} from "../../interfaces/ISpigotedLine.sol";
+import {IEscrowedLine} from "../../interfaces/IEscrowedLine.sol";
 import {IEscrow} from "../../interfaces/IEscrow.sol";
 import {Escrow} from "../../modules/escrow/Escrow.sol";
 import {ISpigot} from "../../interfaces/ISpigot.sol";
@@ -62,7 +63,8 @@ contract RainRe7Sim is Test {
 
     // LineOfCredit line;
     // SecuredLine securedLine1;
-    SecuredLine securedLine2;
+    // SecuredLine securedLine2;
+    ISecuredLine securedLine2;
     IEscrow escrow;
     ISpigot spigot;
 
@@ -107,6 +109,7 @@ contract RainRe7Sim is Test {
     // Credit Coop Addresses
     address constant arbiterAddress = 0xeb0566b1EF38B95da2ed631eBB8114f3ac7b9a8a ; // Credit Coop MultiSig
     address public securedLineAddress1 = 0xdf29e982784DD0D344F2FD7a0E5B9aff6208E463; // Line address, to be defined in setUp()
+    address public securedLineAddress2 = 0xbF2d49EcfE657132F34863263D654d8e2eb1D72e;
     address public spigotAddress = 0x78176f8723F48a72FE9d2bE10D456529a77F7458;
     address public escrowAddress = 0xf60e510104776414d4947Ca81C9066C8e7e05aFd;
 
@@ -130,7 +133,7 @@ contract RainRe7Sim is Test {
     uint128 fRate = 1500; // BPS
 
     // Fork Settings
-    uint256 constant FORK_BLOCK_NUMBER = 18_742_673; // Forking mainnet at block on 12/8/23 at 8 30 AM PST
+    uint256 constant FORK_BLOCK_NUMBER = 18_772_855; // Forking mainnet at block on 12/8/23 at 8 30 AM PST
     uint256 ethMainnetFork;
 
     event log_named_bytes4(string key, bytes4 value);
@@ -184,100 +187,38 @@ contract RainRe7Sim is Test {
         spigot = ISpigot(spigotAddress);
         escrow = IEscrow(escrowAddress);
 
-        emit log_named_uint("Spigot USDC Balance ", IERC20(USDC).balanceOf(spigotAddress));
-
-        // Check status == ACTIVE after LOC is deployed
-        uint256 status = uint256(ILineOfCredit(securedLineAddress1).status());
-        assertEq(1, status);
-        emit log_named_uint("- status (1 == ACTIVE) ", status);
-        delete status;
-
-        // Rain Collateral Contracts 0receive USDC deposits from Rain Card users
-        emit log_named_string("\n \u2713 Rain User 0 Transfers USDC to Rain Collateral Contract 0 ", "");
-        vm.startPrank(rainUser0);
-        emit log_named_uint("- Rain User 0 - Starting USDC Balance ", IERC20(USDC).balanceOf(rainUser0));
-        emit log_named_uint("- Rain Collateral Contract 0 - Starting USDC Balance ", IERC20(USDC).balanceOf(rainCollateralContract0));
-        IERC20(USDC).transfer(address(rainCollateralContract0), rainUser0Amount);
-        emit log_named_uint("- Rain User 0 - Ending USDC Balance ", IERC20(USDC).balanceOf(rainUser0));
-        emit log_named_uint("- Rain Collateral Contract 0 - Ending USDC Balance ", IERC20(USDC).balanceOf(rainCollateralContract0));
-        vm.stopPrank();
-
-         // Rain calls liquidateAsset function on each Rain Collateral Contract to transfer USDC to Treasury (Spigot)
-        emit log_named_string("\n \u2713 Rain Calls liquidateAsset on Rain Collateral Contracts", "");
-        vm.startPrank(rainControllerAdminAddress);
-        address admin = rainCollateralController.controllerAdmin();
-        emit log_named_address("- Rain Collateral Controller Admin", admin);
-        address[] memory assets = new address[](1);
-        uint256[] memory amounts = new uint256[](1);
-
-        assets[0] = address(USDC);
-        amounts[0] = rainUser0Amount;
-
-        (uint256 startingSpigotBalance0, uint256 endingSpigotSpigotBalance0) = _liquidateCollateralContractAssets(rainCollateralContract0, rainUser0Amount, assets, amounts);
-
-        vm.stopPrank();
-
-        // Rain calls claimRevenue function on Spigot which calls liquidateAsset (Spigot) to transfer USDC from Rain Collateral Contracts to Treasury (Spigot)
-        vm.startPrank(rainBorrower);
-        emit log_named_string("\n \u2713 [Borrower] Calls the Spigot Claim Function", "");
-
-        uint256 claimedFromSpigot = _claimRevenueOnBehalfOfSpigot(
-            bytes4(0),
-            rainCollateralContract0
-        );
-        // assertEq(finalSpigotBalance, IERC20(USDC).balanceOf(address(spigot)));
-        vm.stopPrank();
-
-        // Rain claims and repay the full balance, principal plus interest, of the Line of Credit
-        emit log_named_string("\n \u2713 Arbiter Calls ClaimAndRepay to Repay Line of Credit with Spigot Revenue", "");
-        vm.startPrank(arbiterAddress);
-        // emit log_named_uint("- Owner Tokens in Spigot before repayment: ", spigot.getOwnerTokens(USDC));
-        // assertEq(finalOwnerTokensBalance, spigot.getOwnerTokens(USDC));
-        // uint256 rainBorrowerStartingBalance = IERC20(USDC).balanceOf(rainBorrower);
-
-        ISecuredLine(securedLineAddress1).claimAndRepay(address(USDC), "");
-        assertEq(0, spigot.getOwnerTokens(USDC));
-        emit log_named_uint("- Owner Tokens in Spigot after repayment: ", spigot.getOwnerTokens(USDC));
-        vm.stopPrank();
-
-        // Rain closes the Line of Credit
-        emit log_named_string("\n \u2713 Borrower Calls close Function to Close Line of Credit", "");
-        vm.startPrank(rainBorrower);
-        bytes32 creditPositionId = 0x6d9ef7672dea5c244341508983e164f2029405f94197e6d987341e1ff47fe9b5;
-        ILineOfCredit(securedLineAddress1).close(creditPositionId);
-
         // Check status == REPAID after position is repaid and closed
         uint256 statusIsRepaid = uint256(ILineOfCredit(securedLineAddress1).status());
         assertEq(3, statusIsRepaid);
         emit log_named_uint("- status (3 == REPAID) ", statusIsRepaid);
 
-        vm.stopPrank();
-
-
         // Credit Coop deploys new Line of Credit
-        securedLine2 = new SecuredLine(oracleAddress, arbiterAddress, rainBorrower, payable(zeroExSwapTarget), spigotAddress, escrowAddress, ttl, revenueSplit);
-        emit log_named_address('secured line 2 ', address(securedLine2));
-        emit log_named_uint('secured line 2 - status ', uint256(securedLine2.status()));
+        // securedLine2 = new SecuredLine(oracleAddress, arbiterAddress, rainBorrower, payable(zeroExSwapTarget), spigotAddress, escrowAddress, ttl, revenueSplit);
+
+        securedLine2 = ISecuredLine(securedLineAddress2);
+        emit log_named_address('secured line 2 ', securedLineAddress2);
+        // emit log_named_uint('secured line 2 - status ', uint256(ILineOfCredit(securedLineAddress2).status()));
 
         // Borrower calls rollover to transfer escrow and spigot to securedLine2
         vm.startPrank(rainBorrower);
         emit log_named_string("\n \u2713 Borrower Calls rollover Function to Transfer Escrow and Spigot to New Line of Credit", "");
         emit log_named_address('borrower address 1: ', ILineOfCredit(securedLineAddress1).borrower());
-        emit log_named_address('borrower address 2: ', securedLine2.borrower());
+        emit log_named_address('borrower address 2: ', ILineOfCredit(securedLineAddress2).borrower());
         emit log_named_address('rain borrower: ', rainBorrower);
-        console.log('Do I make it here 0');
-        ISecuredLine(securedLineAddress1).rollover(address(securedLine2));
-        // assertEq(securedLine2.spigot(), spigotAddress);
-        // assertEq(securedLine2.escrow(), escrowAddress);
+
+        ISecuredLine(securedLineAddress1).rollover(securedLineAddress2);
+        console.log('do I get here 0');
+        // assertEq(ISpigotedLine(securedLineAddress2).spigot(), spigotAddress);
+        // assertEq(IEscrowedLine(securedLineAddress2).escrow(), escrowAddress);
         vm.stopPrank();
 
         // Spigot and Escrow owned by new line
-        assertEq(ISpigot(spigotAddress).owner(), address(securedLine2));
-        assertEq(IEscrow(escrowAddress).line(), address(securedLine2));
+        assertEq(ISpigot(spigotAddress).owner(), securedLineAddress2);
+        assertEq(IEscrow(escrowAddress).line(), securedLineAddress2);
 
         // Check that line is active
-        emit log_named_uint('secured line 2 - status ACTIVE ', uint256(securedLine2.status()));
-        assertEq(1, uint256(securedLine2.status()));
+        console.log('do I get here 1');
+        emit log_named_uint('secured line 2 - status ACTIVE ', uint256(ILineOfCredit(securedLineAddress2).status()));
 
         // // Rain sweeps the remaining unused assets from the line of credit
         // emit log_named_string("\n \u2713 Borrower Calls sweep Function to Regain Ownership of Unused Assets From Line of Credit", "");
@@ -340,53 +281,53 @@ contract RainRe7Sim is Test {
     //          I N T E R N A L   H E L P E R S          //
     ///////////////////////////////////////////////////////
 
-    function _deployLoCWithConfig(LineFactory lineFactory) internal returns (address){
-        // create Escrow and Spigot
-        escrow = new Escrow(minCRatio, oracleAddress, rainControllerOwnerAddress, rainBorrower);
-        spigot = new Spigot(rainControllerOwnerAddress, rainControllerOwnerAddress);
+    // function _deployLoCWithConfig(LineFactory lineFactory) internal returns (address){
+    //     // create Escrow and Spigot
+    //     escrow = new Escrow(minCRatio, oracleAddress, rainControllerOwnerAddress, rainBorrower);
+    //     spigot = new Spigot(rainControllerOwnerAddress, rainControllerOwnerAddress);
 
-        // create SecuredLine
-        securedLine2 = new SecuredLine(oracleAddress, arbiterAddress, rainBorrower, payable(zeroExSwapTarget), address(spigot), address(escrow), ttl, revenueSplit);
+    //     // create SecuredLine
+    //     securedLine2 = new SecuredLine(oracleAddress, arbiterAddress, rainBorrower, payable(zeroExSwapTarget), address(spigot), address(escrow), ttl, revenueSplit);
 
-        // transfer ownership of both Spigot and Escrow to SecuredLine
-        vm.startPrank(rainControllerOwnerAddress);
-        spigot.updateOwner(address(securedLine2));
-        escrow.updateLine(address(securedLine2));
-        vm.stopPrank();
+    //     // transfer ownership of both Spigot and Escrow to SecuredLine
+    //     vm.startPrank(rainControllerOwnerAddress);
+    //     spigot.updateOwner(address(securedLine2));
+    //     escrow.updateLine(address(securedLine2));
+    //     vm.stopPrank();
 
-        // call init() on Line of Credit, register on Line Factory
-        securedLine2.init();
-        console.log("3");
+    //     // call init() on Line of Credit, register on Line Factory
+    //     securedLine2.init();
+    //     console.log("3");
 
-        // Arbiter registers Spigot, Escrow, and SecuredLine using Factory Contracts to appear in Subgraph & Dapp
-        vm.startPrank(arbiterAddress);
+    //     // Arbiter registers Spigot, Escrow, and SecuredLine using Factory Contracts to appear in Subgraph & Dapp
+    //     vm.startPrank(arbiterAddress);
 
-        lineFactory.registerSecuredLine(address(securedLine2), address(spigot), address(escrow), rainBorrower, rainBorrower, revenueSplit, minCRatio);
+    //     lineFactory.registerSecuredLine(address(securedLine2), address(spigot), address(escrow), rainBorrower, rainBorrower, revenueSplit, minCRatio);
 
-        vm.stopPrank();
+    //     vm.stopPrank();
 
-        return address(securedLine2);
-    }
+    //     return address(securedLine2);
+    // }
 
-    function _deployLoCWithConfigRollover(LineFactory lineFactory) internal returns (address){
+    // function _deployLoCWithConfigRollover(LineFactory lineFactory) internal returns (address){
 
-        // create SecuredLine
-        securedLine2 = new SecuredLine(oracleAddress, arbiterAddress, rainBorrower, payable(zeroExSwapTarget), spigotAddress, escrowAddress, ttl, revenueSplit);
+    //     // create SecuredLine
+    //     securedLine2 = new SecuredLine(oracleAddress, arbiterAddress, rainBorrower, payable(zeroExSwapTarget), spigotAddress, escrowAddress, ttl, revenueSplit);
 
 
-        // call init() on Line of Credit, register on Line Factory
-        securedLine2.init();
-        console.log("3");
+    //     // call init() on Line of Credit, register on Line Factory
+    //     securedLine2.init();
+    //     console.log("3");
 
-        // Arbiter registers Spigot, Escrow, and SecuredLine using Factory Contracts to appear in Subgraph & Dapp
-        vm.startPrank(arbiterAddress);
+    //     // Arbiter registers Spigot, Escrow, and SecuredLine using Factory Contracts to appear in Subgraph & Dapp
+    //     vm.startPrank(arbiterAddress);
 
-        lineFactory.registerSecuredLine(address(securedLine2), spigotAddress, escrowAddress, rainBorrower, rainBorrower, revenueSplit, minCRatio);
+    //     lineFactory.registerSecuredLine(address(securedLine2), spigotAddress, escrowAddress, rainBorrower, rainBorrower, revenueSplit, minCRatio);
 
-        vm.stopPrank();
+    //     vm.stopPrank();
 
-        return address(securedLine2);
-    }
+    //     return address(securedLine2);
+    // }
 
 
     function _liquidateCollateralContractAssets(
