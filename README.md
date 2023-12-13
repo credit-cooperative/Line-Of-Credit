@@ -21,12 +21,12 @@ git submodule deinit --force .
 git submodule update --init --recursive
 ```
 
-If still faceing issues, try these commands
+If still faceing issues, try this command:
 ```
 git reset HEAD <path-to-lib>
-git pull --recurse-submodules
-
 ```
+
+
 Also try updating foundry suite by running:
 
 ```
