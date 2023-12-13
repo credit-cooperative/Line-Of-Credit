@@ -21,6 +21,13 @@ git submodule deinit --force .
 git submodule update --init --recursive
 ```
 
+If still faceing issues, try these commapnds
+```
+git reset HEAD <path-to-lib>
+git pull --recurse-submodules
+
+```
+
 ## Deploying
 
 ### Testnet Deployments
