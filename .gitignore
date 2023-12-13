@@ -3,7 +3,7 @@ package-lock.json
 out
 docs
 .env
-lib
+# lib
 
 *.log
 
