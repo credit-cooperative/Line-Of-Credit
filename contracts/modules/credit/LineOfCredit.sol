@@ -159,6 +159,10 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
      * @param tokenId - the id of the token that owns the position
     */
     modifier mutualConsentById(uint256 tokenId) {
+        if (msg.sender != borrower) {
+            tokenContract.openProposal(tokenId);
+        }
+        
         address lender = tokenContract.ownerOf(tokenId);
         if (_mutualConsent(borrower, lender)) {
             // Run whatever code is needed for the 2/2 consent
@@ -348,6 +352,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     function setRates(uint256 tokenId, uint128 drate, uint128 frate) external override onlyTokenHolderOrBorrower(tokenId) mutualConsentById(tokenId) {
         bytes32 id = tokenToPosition[tokenId];
         credits[id] = _accrue(credits[id], id);
+        tokenContract.closeProposal(tokenId); //TODO: where should this happen?
         _setRates(id, drate, frate);
     }
 
@@ -363,6 +368,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         uint256 amount
     ) external payable override nonReentrant whileActive onlyTokenHolderOrBorrower(tokenId) mutualConsentById(tokenId) {
         address lender = getLender(tokenId);
+        tokenContract.closeProposal(tokenId); //TODO: where should this happen?
         bytes32 id = tokenToPosition[tokenId];
         Credit memory credit = _accrue(credits[id], id);
 

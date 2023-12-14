@@ -23,4 +23,6 @@ interface ILendingPositionToken {
     function mint(address to, address line) external returns (uint256);
     function getUnderlyingInfo(uint256 tokenId) external view returns (UnderlyingInfo memory);
     function getCRatio(uint256 tokenId) external returns (uint256);
+    function openProposal(uint256 tokenId) external;
+    function closeProposal(uint256 tokenId) external;
 }
