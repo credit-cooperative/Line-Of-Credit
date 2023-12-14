@@ -5,5 +5,5 @@ pragma solidity ^0.8.17;
 
 interface ILendingPositionToken {
     function mint(address to) external returns (uint256);
-    function getUnderlyingAssets(uint256 tokenId) external view returns (address[] memory);
+    function getUnderlyingInfo(uint256 tokenId) external view returns (address[] memory);
 }

@@ -414,6 +414,10 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
         return unusedTokens[token];
     }
 
+    function getSplit() external view returns (uint8) {
+        return defaultRevenueSplit;
+    }
+
     // allow claiming/trading in ETH
     receive() external payable {}
 }
