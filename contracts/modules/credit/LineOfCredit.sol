@@ -90,7 +90,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         _updateStatus(LineLib.STATUS.ACTIVE);
     }
 
-    function initTokenizedPosition(address _tokenAddress){
+    function initTokenizedPosition(address _tokenAddress) external onlyArbiter {
         require (address(tokenContract) == address(0));
         tokenContract = LendingPositionToken(_tokenAddress);
     }
@@ -330,7 +330,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         uint256 amount,
         address token,
         address lender
-    ) external payable override nonReentrant whileActive mutualConsent(lender, borrower) returns (bytes32) {
+    ) external payable override nonReentrant whileActive mutualConsent(lender, borrower) returns (uint256) {
         
         uint256 tokenId = tokenContract.mint(msg.sender);
         bytes32 id = _createCredit(tokenId, token, amount);
@@ -341,7 +341,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         LineLib.receiveTokenOrETH(token, lender, amount);
 
-        return id;
+        return tokenId;
     }
 
     /// see ILineOfCredit.setRates

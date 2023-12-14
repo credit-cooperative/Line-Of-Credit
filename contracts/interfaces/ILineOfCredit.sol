@@ -129,7 +129,7 @@ interface ILineOfCredit {
         uint256 amount,
         address token,
         address lender
-    ) external payable returns (bytes32);
+    ) external payable returns (uint256);
 
     /**
      * @notice           - lets Lender and Borrower update rates on the lender's position

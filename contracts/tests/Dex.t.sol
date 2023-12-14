@@ -100,7 +100,7 @@ contract EthRevenue is Test {
     uint256 principal;
     uint256 interestAccrued;
     uint256 interestRepaid;
-    address creditLender;
+    uint256 tokenId;
     bool isOpen;
 
     RevenueToken supportedToken1;
@@ -172,7 +172,7 @@ contract EthRevenue is Test {
         address LPTAddress = address(_deployLendingPositionToken());
 
         line.initTokenizedPosition(LPTAddress);
-        
+
 
         beneficiaries = new address[](1);
         beneficiaries[0] = address(line);
@@ -225,7 +225,7 @@ contract EthRevenue is Test {
     }
 
     function _deployLendingPositionToken() internal returns (LendingPositionToken) {
-        return new LendingPositionToken(address(line), "LPT", "LPT");
+        return new LendingPositionToken();
     }   
 
     /*////////////////////////////////////////////////
@@ -313,7 +313,7 @@ contract EthRevenue is Test {
         // withdraw the lender's funds + profit using the original position ID (line.ids(0) is now empty)
         (deposit, , , interestRepaid, , , , ) = line.credits(id);
         vm.startPrank(lender);
-        line.withdraw(id, deposit + interestRepaid);
+        line.withdraw(tokenId, deposit + interestRepaid);
         vm.stopPrank();
 
         assertEq(address(line).balance, 0, "line should have no more Eth");
@@ -382,7 +382,7 @@ contract EthRevenue is Test {
         // lender withdraws their deposit + interest earned
         (deposit, , , interestRepaid, , , , ) = line.credits(line.ids(0));
         vm.startPrank(lender);
-        line.withdraw(line.ids(0), deposit + interestRepaid); //10000.27
+        line.withdraw(tokenId, deposit + interestRepaid); //10000.27
         vm.stopPrank();
 
         vm.startPrank(borrower);
@@ -503,7 +503,8 @@ contract EthRevenue is Test {
 
         startHoax(lender);
         IERC20(DAI).approve(address(line), BORROW_AMOUNT_DAI);
-        id = line.addCredit(dRate, fRate, BORROW_AMOUNT_DAI, DAI, lender);
+        tokenId = line.addCredit(dRate, fRate, BORROW_AMOUNT_DAI, DAI, lender);
+        id = line.tokenToPosition(tokenId);
         emit log_named_bytes32("position id", id);
         vm.stopPrank();
 
