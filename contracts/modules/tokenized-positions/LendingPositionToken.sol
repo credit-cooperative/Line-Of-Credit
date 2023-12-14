@@ -12,7 +12,7 @@ import {ILendingPositionToken} from "../../interfaces/ILendingPositionToken.sol"
 
 // TODO: Add back IERC721Enumerable and functions or use https://docs.simplehash.com/reference/nfts-by-owners to get owner of token
 
-contract LendingPositionToken is ERC721,  ILendingPositionToken {
+contract LendingPositionToken is ERC721, ILendingPositionToken {
     uint256 private _tokenIds;
     mapping(uint256 => address) private tokenToLine;
 
