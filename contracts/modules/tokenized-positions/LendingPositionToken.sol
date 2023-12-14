@@ -6,7 +6,7 @@ import "openzeppelin/interfaces/IERC721Enumerable.sol";
 import {ILineOfCredit} from "../../interfaces/ILineOfCredit.sol";
 import {InterestRateCredit} from "../interest-rate/InterestRateCredit.sol";
 
-// TODO: Add back IERC721Enumerable and functions
+// TODO: Add back IERC721Enumerable and functions or use https://docs.simplehash.com/reference/nfts-by-owners
 contract LendingPositionToken is ERC721 {
     uint256 private _tokenIds;
     mapping(uint256 => address) private tokenToLine;
@@ -33,8 +33,8 @@ contract LendingPositionToken is ERC721 {
 
         (ILineOfCredit.Credit memory credit, bytes32 id) = ILineOfCredit(line).getPositionFromTokenId(tokenId);
         // TODO: How to get interest rate contract instance?
-        interestRateCredit = ILineOfCredit(line).interestRate();
-        (uint128 dRate, uint128 fRate) = interestRateCredit.getRates(id);
+
+        (uint128 dRate, uint128 fRate) = ILineOfCredit(line).getRates(id);
         uint256 deposit = credit.deposit;
         uint256 principal = credit.principal;
         uint256 interestAccrued = credit.interestAccrued;
