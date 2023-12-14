@@ -27,6 +27,8 @@ import {ISpigot} from "../interfaces/ISpigot.sol";
 import {IEscrow} from "../interfaces/IEscrow.sol";
 import {ISpigotedLine} from "../interfaces/ISpigotedLine.sol";
 import {ILineOfCredit} from "../interfaces/ILineOfCredit.sol";
+import {ILendingPositionToken} from "../interfaces/ILendingPositionToken.sol";
+import {LendingPositionToken} from "../modules/tokenized-positions/LendingPositionToken.sol";
 
 /**
  * @dev -   This file tests functionality relating to the removal of native Eth support
@@ -166,6 +168,11 @@ contract EthRevenue is Test {
           150 days,
           0
         );
+        
+        address LPTAddress = address(_deployLendingPositionToken());
+
+        line.initTokenizedPosition(LPTAddress);
+        
 
         beneficiaries = new address[](1);
         beneficiaries[0] = address(line);
@@ -216,6 +223,10 @@ contract EthRevenue is Test {
 
         _setupSimulation();
     }
+
+    function _deployLendingPositionToken() internal returns (LendingPositionToken) {
+        return new LendingPositionToken(address(line), "LPT", "LPT");
+    }   
 
     /*////////////////////////////////////////////////
     ////////////////    TESTS   //////////////////////
