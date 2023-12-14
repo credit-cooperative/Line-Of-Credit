@@ -332,7 +332,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         address lender
     ) external payable override nonReentrant whileActive mutualConsent(lender, borrower) returns (uint256) {
         
-        uint256 tokenId = tokenContract.mint(msg.sender);
+        uint256 tokenId = tokenContract.mint(msg.sender, address(this));
         bytes32 id = _createCredit(tokenId, token, amount);
 
         
@@ -641,6 +641,11 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     /// see ILineOfCredit.interestAccrued
     function interestAccrued(bytes32 id) external view returns (uint256) {
         return CreditLib.interestAccrued(credits[id], id, address(interestRate));
+    }
+
+    function getPositionFromTokenId(uint256 tokenId) external view returns (Credit memory, bytes32) {
+        bytes32 id = tokenToPosition[tokenId];
+        return (credits[id], id);
     }
 
     /// see ILineOfCredit.counts

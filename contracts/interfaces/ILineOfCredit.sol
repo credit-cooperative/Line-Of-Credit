@@ -277,6 +277,13 @@ interface ILineOfCredit {
     function interestAccrued(bytes32 id) external returns (uint256);
 
     /**
+     * @notice - getter for amount of active ids + total ids in list
+     * @return - (uint256, uint256) - active credit lines, total length
+     */
+
+     function getPositionFromTokenId(uint256 tokenId) external view returns (Credit memory, bytes32);
+
+    /**
      * @notice - info on the next lender position that must be repaid
      * @return - (bytes32, address, address, uint, uint) - id, lender, token, principal, interestAccrued
      */
