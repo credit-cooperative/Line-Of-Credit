@@ -8,24 +8,15 @@ import {ILineOfCredit} from "../../interfaces/ILineOfCredit.sol";
 import {ISpigotedLine} from "../../interfaces/ISpigotedLine.sol";
 import {IEscrowedLine} from "../../interfaces/IEscrowedLine.sol";
 import {IEscrow} from "../../interfaces/IEscrow.sol";
+import {ILendingPositionToken} from "../../interfaces/ILendingPositionToken.sol";
 
 // TODO: Add back IERC721Enumerable and functions or use https://docs.simplehash.com/reference/nfts-by-owners to get owner of token
 
-contract LendingPositionToken is ERC721 {
+contract LendingPositionToken is ERC721,  ILendingPositionToken {
     uint256 private _tokenIds;
     mapping(uint256 => address) private tokenToLine;
 
-    struct UnderlyingInfo {
-        address line;
-        bytes32 id;
-        uint256 deposit;
-        uint256 principal;
-        uint256 interestAccrued;
-        uint256 interestRepaid;
-        uint256 deadline;
-        uint256 split;
-        uint256 mincratio;
-    }
+    
 
 
     constructor() ERC721("LendingPositionToken", "LPT") {}
@@ -41,7 +32,7 @@ contract LendingPositionToken is ERC721 {
     function getUnderlyingInfo(uint256 tokenId)
         public
         view
-        returns (UnderlyingInfo memory)
+        returns (ILendingPositionToken.UnderlyingInfo memory)
     {
         uint256 value = 0;
         address line = tokenToLine[tokenId];
@@ -60,13 +51,15 @@ contract LendingPositionToken is ERC721 {
         uint256 mincratio = IEscrow(escrow).minimumCollateralRatio();
 
         return
-            UnderlyingInfo(
+            ILendingPositionToken.UnderlyingInfo(
                 line,
                 id,
                 deposit,
                 principal,
                 interestAccrued,
                 interestRepaid,
+                dRate,
+                fRate,
                 deadline,
                 split,
                 mincratio
