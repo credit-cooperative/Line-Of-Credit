@@ -68,6 +68,9 @@ contract LendingPositionToken is ERC721 {
             );
     }
 
+    // TODO: (current) need to have a sepearate function due to cratio changing state. 
+    //(future) May split out cratio to seperaate func and add other view details to above func
+
     function getUnderlyingLineInfo(uint256 tokenId)
         public
         returns (UnderlyingLineInfo memory)
