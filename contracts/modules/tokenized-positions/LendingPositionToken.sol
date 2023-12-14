@@ -3,7 +3,6 @@ pragma solidity ^0.8.17;
 
 import "openzeppelin/token/ERC721/ERC721.sol";
 import "openzeppelin/interfaces/IERC721Enumerable.sol";
-import "openzeppelin/contracts/token/ERC721/extensions/ERC721Pausable.sol";
 import "forge-std/console.sol";
 import {ILineOfCredit} from "../../interfaces/ILineOfCredit.sol";
 import {ISpigotedLine} from "../../interfaces/ISpigotedLine.sol";
@@ -13,12 +12,11 @@ import {ILendingPositionToken} from "../../interfaces/ILendingPositionToken.sol"
 
 // TODO: Add back IERC721Enumerable and functions or use https://docs.simplehash.com/reference/nfts-by-owners to get owner of token
 
-contract LendingPositionToken is ERC721Pausable, ILendingPositionToken {
+contract LendingPositionToken is ERC721, ILendingPositionToken {
     uint256 private _tokenIds;
     mapping(uint256 => address) private tokenToLine;
     mapping(uint256 => uint256) private tokenToOpenProposals;
 
-    
     constructor() ERC721("LendingPositionToken", "LPT") {}
 
     function mint(address to, address line) public returns (uint256) {
@@ -39,9 +37,15 @@ contract LendingPositionToken is ERC721Pausable, ILendingPositionToken {
         tokenToOpenProposals[tokenId]--;
     }
 
-    // _beforeTokenTransfer func goes here
     // checks count for a tokenId
     // if count != 0, do not transfer the token
+
+    function _update(address to, uint256 tokenId, address auth) internal override(ERC721) returns (address) {
+        if (tokenToOpenProposals[tokenId] > 0) {
+            revert OpenProposals();
+        }
+        return super._update(to, tokenId, auth);
+    }
 
 
     function getUnderlyingInfo(uint256 tokenId)

@@ -20,6 +20,8 @@ interface ILendingPositionToken {
         uint256 mincratio;
     }
 
+    error OpenProposals();
+
     function mint(address to, address line) external returns (uint256);
     function getUnderlyingInfo(uint256 tokenId) external view returns (UnderlyingInfo memory);
     function getCRatio(uint256 tokenId) external returns (uint256);
