@@ -16,6 +16,8 @@ interface ISpigot {
         address creditToken;
         uint256 debtOwed;
         mapping(address => uint256) bennyTokens;
+        address poolAddress;
+        bytes4 getDebtFunc;
     }
 
     // Spigot Events

@@ -390,12 +390,31 @@ library SpigotLib {
         uint256[] memory allocations = new uint256[](self.beneficiaries.length);
         address[] memory creditTokens = new address[](self.beneficiaries.length);
         uint256[] memory outstandingDebts = new uint256[](self.beneficiaries.length);
+        address[] memory poolAddresses = new address[](self.beneficiaries.length);
+        bytes4[] memory getDebtFunctions = new bytes4[](self.beneficiaries.length);
+
         for (uint256 i = 0; i < self.beneficiaries.length; i++) {
             allocations[i] = self.beneficiaryInfo[self.beneficiaries[i]].allocation;
             outstandingDebts[i] = self.beneficiaryInfo[self.beneficiaries[i]].debtOwed;
             creditTokens[i] = self.beneficiaryInfo[self.beneficiaries[i]].creditToken;
+            poolAddresses[i] = self.beneficiaryInfo[self.beneficiaries[i]].poolAddress;
+            getDebtFunctions[i] = self.settings[poolAddresses[i]].getDebtFunc;
         }
-        return (allocations, outstandingDebts, creditTokens);
+        return (allocations, outstandingDebts, creditTokens, poolAddresses, getDebtFunctions);
+    }
+
+    function updateDebtOwed(SpigotState storage self) public {
+        (,,, address[] memory poolAddresses, bytes4[] memory getDebtFunctions) = _getBennySettings(self);
+        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+            if (poolAddresses[i] != address(0)) {
+                (bool success, bytes memory data) = poolAddresses[i].call(getDebtFunctions[i]);
+                if (success) {
+                    uint256 debtOwed = abi.decode(data, (uint256));
+                    self.beneficiaryInfo[self.beneficiaries[i]].debtOwed = debtOwed;
+                }
+            }
+        }
+        
     }
 
     // TODO: remove console.logs
