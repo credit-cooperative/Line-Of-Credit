@@ -383,11 +383,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     }
 
     function revokeConsent(uint256 tokenId, bytes calldata _reconstrucedMsgData) override(MutualConsent) public onlyTokenHolderOrBorrower(tokenId) {
-        uint256 id = 0;
-        if (msg.sender != borrower) {
-            id = tokenId;
-        }
-        super.revokeConsent(id, _reconstrucedMsgData);
+        super.revokeConsent(tokenId, _reconstrucedMsgData);
         tokenContract.closeProposal(tokenId);
     }
 
