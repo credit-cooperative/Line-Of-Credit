@@ -26,6 +26,8 @@ import { MockLine } from "../mock/MockLine.sol";
 import { SimpleOracle } from "../mock/SimpleOracle.sol";
 import { RevenueToken } from "../mock/RevenueToken.sol";
 import { SimpleRevenueContract } from "../mock/SimpleRevenueContract.sol";
+import {ILendingPositionToken} from "../interfaces/ILendingPositionToken.sol";
+import {LendingPositionToken} from "../modules/tokenized-positions/LendingPositionToken.sol";
 
 contract SecuredLineTest is Test {
 
@@ -54,6 +56,9 @@ contract SecuredLineTest is Test {
     address lender;
     address externalLender;
     address _multisigAdmin;
+    uint256 tokenId;
+    uint256 tokenId2;
+
 
     address[] beneficiaries;
     uint256[] allocations;
@@ -95,6 +100,10 @@ contract SecuredLineTest is Test {
           0
         );
 
+        address LPTAddress = address(_deployLendingPositionToken());
+        line.initTokenizedPosition(LPTAddress);
+        
+
         allocations = new uint256[](2);
         allocations[0] = 50000;
         allocations[1] = 50000;
@@ -119,6 +128,10 @@ contract SecuredLineTest is Test {
         line.init();
 
         _mintAndApprove();
+    }
+
+    function _deployLendingPositionToken() internal returns (LendingPositionToken) {
+        return new LendingPositionToken();
     }
 
     function _mintAndApprove() internal {
@@ -151,14 +164,15 @@ contract SecuredLineTest is Test {
 
     }
 
-    function _addCredit(address token, uint256 amount) public {
+    function _addCredit(address token, uint256 amount) public returns (uint256){
         vm.startPrank(borrower);
         line.addCredit(dRate, fRate, amount, token, lender);
         vm.stopPrank();
         vm.startPrank(lender);
-        line.addCredit(dRate, fRate, amount, token, lender);
+        uint256 newTokenId = line.addCredit(dRate, fRate, amount, token, lender);
         vm.stopPrank();
-    }
+        return newTokenId;
+    }   
 
     // TODO: full lifecycle using tradeAndDistribute functionality
 
@@ -193,7 +207,7 @@ contract SecuredLineTest is Test {
         // 2. Fund Line of Credit and Borrow
         // Lender proposes credit position
         // Borrower accepts credit position
-        _addCredit(address(supportedToken1), 100 ether);
+        tokenId = _addCredit(address(supportedToken1), 100 ether);
 
         // Borrower borrows from line
         vm.startPrank(borrower);
@@ -258,7 +272,7 @@ contract SecuredLineTest is Test {
         // Lender withdraws position
         vm.startPrank(lender);
         uint256 lenderBalanceBefore = IERC20(supportedToken1).balanceOf(lender);
-        line.withdraw(creditPositionId, principal + interestAccrued);
+        line.withdraw(tokenId, principal + interestAccrued);
         uint256 lenderBalanceAfter = IERC20(supportedToken1).balanceOf(lender);
         // CC Lender balance increases by principal + interest
         assertEq(lenderBalanceAfter - lenderBalanceBefore, principal + interestAccrued);
@@ -311,7 +325,7 @@ contract SecuredLineTest is Test {
         // 2. Fund Line of Credit and Borrow
         // Lender proposes credit position
         // Borrower accepts credit position
-        _addCredit(address(supportedToken1), 100 ether);
+        tokenId2 = _addCredit(address(supportedToken1), 100 ether);
 
         // Borrower borrows from line
         // TODO: what happens if lender did not withdraw from line before borrower/arbiter called amendAndExtend? Can the lender still withdraw the full amount from the credit position? Can the lender leave funds in the line and by calling addCredit use the funds already there?
@@ -378,7 +392,7 @@ contract SecuredLineTest is Test {
         // Lender withdraws position
         vm.startPrank(lender);
         uint256 lenderBalanceBefore2 = IERC20(supportedToken1).balanceOf(lender);
-        line.withdraw(creditPositionId2, principal2 + interestAccrued2);
+        line.withdraw(tokenId2, principal2 + interestAccrued2);
         uint256 lenderBalanceAfter2 = IERC20(supportedToken1).balanceOf(lender);
         // CC Lender balance increases by principal + interest
         assertEq(lenderBalanceAfter2 - lenderBalanceBefore2, principal2 + interestAccrued2);
