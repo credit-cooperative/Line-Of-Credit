@@ -17,6 +17,7 @@ import {InterestRateCredit} from "../interest-rate/InterestRateCredit.sol";
 
 import {IOracle} from "../../interfaces/IOracle.sol";
 import {ILineOfCredit} from "../../interfaces/ILineOfCredit.sol";
+import {LendingPositionToken} from "../tokenized-positions/LendingPositionToken.sol";
 
 /**
  * @title  - Credit Cooperative Unsecured Line of Credit
@@ -38,6 +39,9 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
     /// @notice - the account that can drawdown and manage debt positions
     address public borrower;
+
+    LendingPositionToken public tokenContract;
+    mapping(uint256 => bytes32) public tokenToPosition;
 
     /// @notice - neutral 3rd party that mediates btw borrower and all lenders
     address public immutable arbiter;
@@ -79,7 +83,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         borrower = borrower_;
         deadline = block.timestamp + ttl_; //the deadline is the term/maturity/expiry date of the Line of Credit facility
         interestRate = new InterestRateCredit();
-
+        
         emit DeployLine(oracle_, arbiter_, borrower_);
     }
 
@@ -97,6 +101,11 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         //     revert CannotSetOriginationFee();   
         // }
         orginiationFee = fee;
+    }
+    
+    function initTokenizedPosition(address _tokenAddress) external onlyArbiter {
+        require (address(tokenContract) == address(0));
+        tokenContract = LendingPositionToken(_tokenAddress);
     }
 
     function _init() internal virtual {
@@ -143,13 +152,32 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         _;
     }
 
+    modifier onlyTokenHolder(uint256 tokenId) {
+        if (tokenContract.ownerOf(tokenId) != msg.sender) {
+            revert CallerAccessDenied();
+        }
+        _;
+    }
+
+    modifier onlyTokenHolderOrBorrower(uint256 tokenId) {
+        if (tokenContract.ownerOf(tokenId) != msg.sender && msg.sender != borrower) {
+            revert CallerAccessDenied();
+        }
+        _;
+    }
+
     /**
      * @notice - mutualConsent() but hardcodes borrower address and uses the position id to
                  get Lender address instead of passing it in directly
-     * @param id - position to pull lender address from for mutual consent agreement
+     * @param tokenId - the id of the token that owns the position
     */
-    modifier mutualConsentById(bytes32 id) {
-        if (_mutualConsent(borrower, credits[id].lender)) {
+    modifier mutualConsentById(uint256 tokenId) {
+        if (msg.sender != borrower) {
+            tokenContract.openProposal(tokenId);
+        }
+        
+        address lender = tokenContract.ownerOf(tokenId);
+        if (_mutualConsent(borrower, lender)) {
             // Run whatever code is needed for the 2/2 consent
             _;
         }
@@ -327,14 +355,18 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         uint256 amount,
         address token,
         address lender
-    ) external payable override nonReentrant whileActive mutualConsent(lender, borrower) returns (bytes32) {
-        bytes32 id = _createCredit(lender, token, amount);
+    ) external payable override nonReentrant whileActive mutualConsent(lender, borrower) returns (uint256) {
+        
+        uint256 tokenId = tokenContract.mint(msg.sender, address(this));
+        bytes32 id = _createCredit(tokenId, token, amount);
 
         uint256 fee = 0;
         if (orginiationFee > 0){
             fee = _calculateOriginationFee(amount);
         }
         
+        
+        tokenToPosition[tokenId] = id;
         _setRates(id, drate, frate);
 
         if (fee > 0) {
@@ -343,12 +375,14 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         LineLib.receiveTokenOrETH(token, lender, amount - fee); // send amount - fee from lender to line
 
-        return id;
+        return tokenId;
     }
 
     /// see ILineOfCredit.setRates
-    function setRates(bytes32 id, uint128 drate, uint128 frate) external override mutualConsentById(id) {
+    function setRates(uint256 tokenId, uint128 drate, uint128 frate) external override onlyTokenHolderOrBorrower(tokenId) mutualConsentById(tokenId) {
+        bytes32 id = tokenToPosition[tokenId];
         credits[id] = _accrue(credits[id], id);
+        tokenContract.closeProposal(tokenId); //TODO: where should this happen?
         _setRates(id, drate, frate);
     }
 
@@ -360,20 +394,29 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
     /// see ILineOfCredit.increaseCredit
     function increaseCredit(
-        bytes32 id,
+        uint256 tokenId,
         uint256 amount
-    ) external payable override nonReentrant whileActive mutualConsentById(id) {
+    ) external payable override nonReentrant whileActive onlyTokenHolderOrBorrower(tokenId) mutualConsentById(tokenId) {
+        address lender = getTokenHolder(tokenId);
+        tokenContract.closeProposal(tokenId); //TODO: where should this happen?
+        bytes32 id = tokenToPosition[tokenId];
         Credit memory credit = _accrue(credits[id], id);
 
         credit.deposit += amount;
 
         credits[id] = credit;
 
-        LineLib.receiveTokenOrETH(credit.token, credit.lender, amount);
+        LineLib.receiveTokenOrETH(credit.token, lender, amount);
 
         emit IncreaseCredit(id, amount);
 
     }
+
+    function revokeConsent(uint256 tokenId, bytes calldata _reconstrucedMsgData) override(MutualConsent) public onlyTokenHolderOrBorrower(tokenId) {
+        super.revokeConsent(tokenId, _reconstrucedMsgData);
+        tokenContract.closeProposal(tokenId);
+    }
+
 
     ///////////////
     // REPAYMENT //
@@ -463,9 +506,11 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     }
 
     /// see ILineOfCredit.withdraw
-    function withdraw(bytes32 id, uint256 amount) external override nonReentrant {
+    function withdraw(uint256 tokenId, uint256 amount) external override onlyTokenHolder(tokenId) nonReentrant {
         // accrues interest and transfer funds to Lender addres
-        credits[id] = CreditLib.withdraw(_accrue(credits[id], id), id, msg.sender, amount);
+        bytes32 id = tokenToPosition[tokenId];
+        
+        credits[id] = CreditLib.withdraw(_accrue(credits[id], id), id, tokenId, msg.sender, amount);
     }
 
     // for abort Scenario
@@ -508,19 +553,19 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
      * @notice - Generates position id and stores lender's position
      * @dev - positions have unique composite-index on [owner, lenderAddress, tokenAddress]
      * @dev - privileged internal function. MUST check params and logic flow before calling
-     * @param lender - address that will own and manage position
+     * @param tokenId - id of 721 that will own and manage position
      * @param token - ERC20 token that is being lent and borrower
      * @param amount - amount of tokens lender will initially deposit
      */
-    function _createCredit(address lender, address token, uint256 amount) internal returns (bytes32 id) {
-        id = CreditLib.computeId(address(this), lender, token);
-
+    function _createCredit(uint256 tokenId, address token, uint256 amount) internal returns (bytes32 id) {
+        id = CreditLib.computeId(address(this), tokenId, token);
+        address lender = getTokenHolder(tokenId);
         // MUST not double add the credit line. once lender is set it cant be deleted even if position is closed.
-        if (credits[id].lender != address(0) && credits[id].isOpen) {
+        if (lender != address(0) && credits[id].isOpen) {
             revert PositionExists();
         }
 
-        credits[id] = CreditLib.create(id, amount, lender, token, address(oracle));
+        credits[id] = CreditLib.create(id, amount, tokenId, token, address(oracle));
 
         ids.push(id); // add lender to end of repayment queue
 
@@ -640,9 +685,26 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         return CreditLib.interestAccrued(credits[id], id, address(interestRate));
     }
 
+    function getPositionFromTokenId(uint256 tokenId) external view returns (Credit memory, bytes32) {
+        bytes32 id = tokenToPosition[tokenId];
+        return (credits[id], id);
+    }
+
+    function getDeadline() external view returns (uint256) {
+        return deadline;
+    }
+
+    function getRates(bytes32 id) external view returns (uint128, uint128) {
+        return interestRate.getRates(id);
+    }
+
     /// see ILineOfCredit.counts
     function counts() external view returns (uint256, uint256) {
         return (count, ids.length);
+    }
+
+    function getTokenHolder(uint256 tokenId) public view returns (address) {
+        return tokenContract.ownerOf(tokenId);
     }
 
     /// see ILineOfCredit.available
@@ -650,14 +712,14 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         return (credits[id].deposit - credits[id].principal, credits[id].interestRepaid);
     }
 
-    function nextInQ() external view returns (bytes32, address, address, uint256, uint256, uint256, uint128, uint128) {
+    function nextInQ() external view returns (bytes32, uint256, address, uint256, uint256, uint256, uint128, uint128) {
         bytes32 next = ids[0];
         Credit memory credit = credits[next];
         // Add to docs that this view revertts if no queue
         (uint128 dRate, uint128 fRate) = CreditLib.getNextRateInQ(credit.principal, next, address(interestRate));
         return (
             next,
-            credit.lender,
+            credit.tokenId,
             credit.token,
             credit.principal,
             credit.deposit,
