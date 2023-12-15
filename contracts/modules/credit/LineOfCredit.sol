@@ -34,6 +34,8 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
     uint256 public deadlineExtension = 0;
 
+    uint256 constant ONE_YEAR = 365.25 days;
+
     /// @notice - the account that can drawdown and manage debt positions
     address public borrower;
 
@@ -309,6 +311,14 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     }
 
     /// see ILineOfCredit.addCredit
+
+
+    function calculateOriginationFee(uint256 amount) external view override returns (uint256) {
+        require(deadline > block.timestamp, "deadline has passed");
+        uint256 theNumber = (deadline - block.timestamp)/ONE_YEAR;
+        return (amount * (orginiationfee/theNumber)) / 10000;
+    }
+    
     function addCredit(
         uint128 drate,
         uint128 frate,
@@ -317,7 +327,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         address lender
     ) external payable override nonReentrant whileActive mutualConsent(lender, borrower) returns (bytes32) {
         bytes32 id = _createCredit(lender, token, amount);
-        uint256 fee = (amount * orginiationfee) / 100000;
+        uint256 fee = calculateOriginationFee(amount);
         
         _setRates(id, drate, frate);
         IERC20(token).safeTransferFrom(lender, treasury, fee); // send fee from lender to treasury
