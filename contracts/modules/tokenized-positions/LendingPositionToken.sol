@@ -48,10 +48,10 @@ contract LendingPositionToken is ERC721, ILendingPositionToken {
     }
 
 
-    function getUnderlyingInfo(uint256 tokenId)
+    function getPositionInfo(uint256 tokenId)
         public
         view
-        returns (ILendingPositionToken.UnderlyingInfo memory)
+        returns (ILendingPositionToken.PositionInfo memory)
     {
         uint256 value = 0;
         address line = tokenToLine[tokenId];
@@ -64,13 +64,13 @@ contract LendingPositionToken is ERC721, ILendingPositionToken {
         uint256 interestAccrued = credit.interestAccrued;
         uint256 interestRepaid = credit.interestRepaid;
         uint256 deadline = ILineOfCredit(line).getDeadline();
-        uint256 split = ISpigotedLine(line).getSplit();
+        uint256 split = ISpigotedLine(line).defaultRevenueSplit();
 
         address escrow = address(IEscrowedLine(line).escrow());
         uint256 mincratio = IEscrow(escrow).minimumCollateralRatio();
 
         return
-            ILendingPositionToken.UnderlyingInfo(
+            ILendingPositionToken.PositionInfo(
                 line,
                 id,
                 deposit,

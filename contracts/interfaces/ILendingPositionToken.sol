@@ -6,7 +6,7 @@ pragma solidity ^0.8.17;
 
 interface ILendingPositionToken {
 
-    struct UnderlyingInfo {
+    struct PositionInfo {
         address line;
         bytes32 id;
         uint256 deposit;
@@ -23,7 +23,7 @@ interface ILendingPositionToken {
     error OpenProposals();
 
     function mint(address to, address line) external returns (uint256);
-    function getUnderlyingInfo(uint256 tokenId) external view returns (UnderlyingInfo memory);
+    function getPositionInfo(uint256 tokenId) external view returns (PositionInfo memory);
     function getCRatio(uint256 tokenId) external returns (uint256);
     function openProposal(uint256 tokenId) external;
     function closeProposal(uint256 tokenId) external;

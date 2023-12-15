@@ -367,7 +367,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         uint256 tokenId,
         uint256 amount
     ) external payable override nonReentrant whileActive onlyTokenHolderOrBorrower(tokenId) mutualConsentById(tokenId) {
-        address lender = getLender(tokenId);
+        address lender = getTokenHolder(tokenId);
         tokenContract.closeProposal(tokenId); //TODO: where should this happen?
         bytes32 id = tokenToPosition[tokenId];
         Credit memory credit = _accrue(credits[id], id);
@@ -533,7 +533,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
      */
     function _createCredit(uint256 tokenId, address token, uint256 amount) internal returns (bytes32 id) {
         id = CreditLib.computeId(address(this), tokenId, token);
-        address lender = getLender(tokenId);
+        address lender = getTokenHolder(tokenId);
         // MUST not double add the credit line. once lender is set it cant be deleted even if position is closed.
         if (lender != address(0) && credits[id].isOpen) {
             revert PositionExists();
@@ -677,7 +677,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         return (count, ids.length);
     }
 
-    function getLender(uint256 tokenId) public view returns (address) {
+    function getTokenHolder(uint256 tokenId) public view returns (address) {
         return tokenContract.ownerOf(tokenId);
     }
 

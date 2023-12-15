@@ -151,7 +151,7 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
         bytes32 id = ids[0];
         Credit memory credit = credits[id];
         uint256 tokenId = credit.tokenId;
-        address lender = LineOfCredit.getLender(tokenId);
+        address lender = LineOfCredit.getTokenHolder(tokenId);
 
         if (msg.sender != borrower && msg.sender != lender) {
             revert CallerAccessDenied();
@@ -412,10 +412,6 @@ contract SpigotedLine is ISpigotedLine, LineOfCredit {
     /// see ILineOfCredit.unused
     function unused(address token) external view returns (uint256) {
         return unusedTokens[token];
-    }
-
-    function getSplit() external view returns (uint8) {
-        return defaultRevenueSplit;
     }
 
     // allow claiming/trading in ETH

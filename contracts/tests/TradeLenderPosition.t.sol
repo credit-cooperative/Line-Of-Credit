@@ -233,7 +233,7 @@ contract LenderPositionTest is Test, Events {
         uint256 mincratio = escrow.minimumCollateralRatio();
 
 
-        ILendingPositionToken.UnderlyingInfo memory info = ILendingPositionToken(LPTAddress).getUnderlyingInfo(tokenId);
+        ILendingPositionToken.PositionInfo memory info = ILendingPositionToken(LPTAddress).getPositionInfo(tokenId);
 
         assertEq(info.line, address(line));
         assertEq(info.id, id);
