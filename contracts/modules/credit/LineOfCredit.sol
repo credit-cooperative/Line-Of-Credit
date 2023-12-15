@@ -56,7 +56,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     bytes32[] public ids;
 
     // NOTE: ITS IS 0 FOR TESTING PURPOSES. Otherwise all other tests break
-    uint128 public orginiationfee = 0; // in BPS 4 decimals  fee = 5000 loan amount = 1000000 * (5000/100)
+    uint128 public orginiationFee = 0; // in BPS 4 decimals  fee = 5000 loan amount = 1000000 * (5000/100)
 
     /// @notice id -> position data
     mapping(bytes32 => Credit) public credits;
@@ -91,11 +91,12 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         _updateStatus(LineLib.STATUS.ACTIVE);
     }
 
-    function setOriginationFee(uint256 fee) external onlyArbiter mutualConsent(arbiter, borrower) {
-        if (count == 0) {
-            orginiationfee = fee;
-        }
-        revert CannotSetOriginationFee();  
+    function setOriginationFee(uint128 fee) external onlyBorrowerOrArbiter mutualConsent(arbiter, borrower) {
+        //TODO: do we need this logic? Doesnt effectt lenders at all. If borrower and servicer agree, who cares?
+        // if (count > 0) {
+        //     revert CannotSetOriginationFee();   
+        // }
+        orginiationFee = fee;
     }
 
     function _init() internal virtual {
@@ -314,10 +315,10 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     /// see ILineOfCredit.addCredit
 
 
-    function calculateOriginationFee(uint256 amount) external view override returns (uint256) {
+    function _calculateOriginationFee(uint256 amount) internal returns (uint256) {
         require(deadline > block.timestamp, "deadline has passed");
         uint256 theNumber = (deadline - block.timestamp)/ONE_YEAR;
-        return (amount * (orginiationfee/theNumber)) / 10000;
+        return (amount * (orginiationFee/theNumber)) / 10000;
     }
     
     function addCredit(
@@ -330,14 +331,14 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         bytes32 id = _createCredit(lender, token, amount);
 
         uint256 fee = 0;
-        if (orginiationfee > 0){
-            fee = calculateOriginationFee(amount);
+        if (orginiationFee > 0){
+            fee = _calculateOriginationFee(amount);
         }
         
         _setRates(id, drate, frate);
 
         if (fee > 0) {
-            IERC20(token).safeTransferFrom(lender, treasury, fee); // send fee from lender to treasury
+            IERC20(token).safeTransferFrom(lender, arbiter, fee); // NOTE: send fee from lender to treasury (arbiter for now)
         }
 
         LineLib.receiveTokenOrETH(token, lender, amount - fee); // send amount - fee from lender to line

@@ -77,6 +77,7 @@ interface ILineOfCredit {
     error NotActive();
     error NotBorrowing();
     error CallerAccessDenied();
+    error CannotSetOriginationFee();
 
     // Tokens
     error TokenTransferFailed();
