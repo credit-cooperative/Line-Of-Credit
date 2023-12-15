@@ -66,7 +66,7 @@ contract LenderPositionTest is Test, Events {
     SimpleRevenueContract revenueContract;
     SimpleOracle oracle;
     SecuredLine line;
-    uint mintAmount = 100 ether;
+    uint mintAmount = 1000 ether;
     uint MAX_INT = 115792089237316195423570985008687907853269984665640564039457584007913129639935;
     uint32 minCollateralRatio = 0; // 100%
     uint128 dRate = 1500; // 15%
@@ -247,4 +247,75 @@ contract LenderPositionTest is Test, Events {
         assertEq(info.split, split);
         assertEq(info.mincratio, mincratio);
     }
+
+    function test_cannot_trade_if_open_proposal() public {
+        _addCredit(address(supportedToken1), 100 ether);
+
+        vm.startPrank(borrower);
+        line.borrow(id, 100 ether, address(this));
+        vm.stopPrank();
+
+        vm.startPrank(lender);
+        line.increaseCredit(tokenId, 100 ether);
+        vm.stopPrank();
+
+        vm.startPrank(lender);
+        IERC721(LPTAddress).approve(lender2, tokenId);
+        vm.stopPrank();
+
+        vm.startPrank(lender2);
+        vm.expectRevert(ILendingPositionToken.OpenProposals.selector);
+        IERC721(LPTAddress).transferFrom(lender, lender2, tokenId);
+        vm.stopPrank();
+    }
+
+    function test_can_trade_if_borrower_makes_proposal() public {
+        _addCredit(address(supportedToken1), 100 ether);
+
+        vm.startPrank(borrower);
+        line.borrow(id, 100 ether, address(this));
+        vm.stopPrank();
+
+        vm.startPrank(borrower);
+        line.increaseCredit(tokenId, 100 ether);
+        vm.stopPrank();
+
+        vm.startPrank(lender);
+        IERC721(LPTAddress).approve(lender2, tokenId);
+        vm.stopPrank();
+
+        vm.startPrank(lender2);
+        IERC721(LPTAddress).transferFrom(lender, lender2, tokenId);
+        vm.stopPrank();
+
+        assertEq(IERC721(LPTAddress).ownerOf(tokenId), lender2);
+    }
+
+    function test_can_trade_if_proposal_is_made_and_concluded() public {
+        _addCredit(address(supportedToken1), 100 ether);
+
+        vm.startPrank(borrower);
+        line.borrow(id, 100 ether, address(this));
+        vm.stopPrank();
+
+        vm.startPrank(lender);
+        line.increaseCredit(tokenId, 10 ether);
+        vm.stopPrank();
+
+        vm.startPrank(borrower);
+        console.log(supportedToken1.balanceOf(lender));
+        line.increaseCredit(tokenId, 10 ether);
+        vm.stopPrank();
+
+        vm.startPrank(lender);
+        IERC721(LPTAddress).approve(lender2, tokenId);
+        vm.stopPrank();
+
+        vm.startPrank(lender2);
+        IERC721(LPTAddress).transferFrom(lender, lender2, tokenId);
+        vm.stopPrank();
+
+        assertEq(IERC721(LPTAddress).ownerOf(tokenId), lender2);
+    }
+
 }

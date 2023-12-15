@@ -152,6 +152,8 @@ interface ILineOfCredit {
      */
     function increaseCredit(uint256 tokenId, uint256 amount) external payable;
 
+    function removeProposal(bytes32 id, bytes calldata _reconstrucedMsgData) external;
+
     // Borrower functions
 
     /**
