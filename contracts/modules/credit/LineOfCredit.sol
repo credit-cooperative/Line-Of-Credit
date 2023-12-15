@@ -328,10 +328,18 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         address lender
     ) external payable override nonReentrant whileActive mutualConsent(lender, borrower) returns (bytes32) {
         bytes32 id = _createCredit(lender, token, amount);
-        uint256 fee = calculateOriginationFee(amount);
+
+        uint256 fee = 0;
+        if (orginiationfee > 0){
+            fee = calculateOriginationFee(amount);
+        }
         
         _setRates(id, drate, frate);
-        IERC20(token).safeTransferFrom(lender, treasury, fee); // send fee from lender to treasury
+
+        if (fee > 0) {
+            IERC20(token).safeTransferFrom(lender, treasury, fee); // send fee from lender to treasury
+        }
+
         LineLib.receiveTokenOrETH(token, lender, amount - fee); // send amount - fee from lender to line
 
         return id;
