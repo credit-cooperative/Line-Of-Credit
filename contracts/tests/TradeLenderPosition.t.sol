@@ -318,4 +318,54 @@ contract LenderPositionTest is Test, Events {
         assertEq(IERC721(LPTAddress).ownerOf(tokenId), lender2);
     }
 
+    function test_can_trade_if_proposal_is_made_and_revoked() public {
+        _addCredit(address(supportedToken1), 100 ether);
+
+        vm.startPrank(borrower);
+        line.borrow(id, 100 ether, address(this));
+        vm.stopPrank();
+
+        vm.startPrank(lender);
+        line.increaseCredit(tokenId, 10 ether);
+        vm.stopPrank();
+
+        vm.startPrank(lender);
+        bytes memory msgData = _generateIncreaseCreditMutualConsentMessageData(
+            ILineOfCredit.increaseCredit.selector,
+            tokenId,
+            10 ether
+        );
+        line.revokeConsent(tokenId, msgData);
+        vm.stopPrank();
+
+        vm.startPrank(lender);
+        IERC721(LPTAddress).approve(lender2, tokenId);
+        vm.stopPrank();
+
+        vm.startPrank(lender2);
+        IERC721(LPTAddress).transferFrom(lender, lender2, tokenId);
+        vm.stopPrank();
+
+        assertEq(IERC721(LPTAddress).ownerOf(tokenId), lender2);
+    }
+
+    function _generateSetRatesMutualConsentMessageData(
+        bytes4 fnSelector,
+        uint256 tokenId,
+        uint128 drate,
+        uint128 frate
+    ) internal returns (bytes memory msgData) {
+        bytes memory reconstructedArgs = abi.encode(id, drate, frate);
+        msgData = abi.encodePacked(fnSelector, reconstructedArgs);
+    }
+
+    function _generateIncreaseCreditMutualConsentMessageData(
+        bytes4 fnSelector,
+        uint256 tokenId,
+        uint256 theAmount
+    ) internal returns (bytes memory msgData) {
+        bytes memory reconstructedArgs = abi.encode(tokenId, theAmount);
+        msgData = abi.encodePacked(fnSelector, reconstructedArgs);
+    }
+
 }

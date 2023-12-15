@@ -67,7 +67,7 @@ abstract contract MutualConsent {
      *          function arguments.
      *
      */
-    function revokeConsent(bytes calldata _reconstrucedMsgData) public {
+    function revokeConsent(uint256 tokenId, bytes calldata _reconstrucedMsgData) public virtual {
         if (
             _reconstrucedMsgData.length > MAX_DATA_LENGTH_BYTES || _reconstrucedMsgData.length < MIN_DATA_LENGTH_BYTES
         ) {
@@ -77,7 +77,8 @@ abstract contract MutualConsent {
         bytes32 proposalIdToDelete = keccak256(abi.encodePacked(_reconstrucedMsgData, msg.sender));
 
         address consentor = mutualConsentProposals[proposalIdToDelete];
-
+        console.log("consentor: %s", consentor);
+        console.log("msg.sender: %s", msg.sender);
         if (consentor == address(0)) {
             revert InvalidConsent();
         }
@@ -105,6 +106,7 @@ abstract contract MutualConsent {
         bytes32 expectedProposalId = keccak256(abi.encodePacked(msg.data, nonCaller));
 
         if (mutualConsentProposals[expectedProposalId] == address(0)) {
+            console.log(msg.sender);
             bytes32 newProposalId = keccak256(abi.encodePacked(msg.data, msg.sender));
             mutualConsentProposalIds.push(newProposalId); // add proposal id to array
             proposalCount++;
