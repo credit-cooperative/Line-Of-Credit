@@ -97,12 +97,13 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
     function setOriginationFee(uint128 fee) external onlyBorrowerOrArbiter mutualConsent(arbiter, borrower) {
         //TODO: do we need this logic? Doesnt effectt lenders at all. If borrower and servicer agree, who cares?
+        
         // if (count > 0) {
         //     revert CannotSetOriginationFee();   
         // }
         orginiationFee = fee;
     }
-    
+
     function initTokenizedPosition(address _tokenAddress) external onlyArbiter {
         require (address(tokenContract) == address(0));
         tokenContract = LendingPositionToken(_tokenAddress);
