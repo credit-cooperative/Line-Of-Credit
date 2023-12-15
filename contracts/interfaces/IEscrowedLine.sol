@@ -20,5 +20,5 @@ interface IEscrowedLine {
     function liquidate(uint256 amount, address targetToken) external returns (uint256);
 
     /// @notice the escrow contract backing this Line
-    function escrow() external returns (IEscrow);
+    function escrow() external view returns (IEscrow);
 }

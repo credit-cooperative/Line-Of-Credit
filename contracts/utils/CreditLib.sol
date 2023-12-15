@@ -15,7 +15,7 @@ import {LineLib} from "./LineLib.sol";
  */
 
 library CreditLib {
-    event AddCredit(address indexed lender, address indexed token, uint256 indexed deposit, bytes32 id);
+    event AddCredit(uint256 indexed tokenId, address indexed token, uint256 indexed deposit, bytes32 id);
 
     /// @notice Emitted when Lender withdraws from their initial deposit
     event WithdrawDeposit(bytes32 indexed id, uint256 indexed amount);
@@ -60,12 +60,12 @@ library CreditLib {
     /**
      * @dev          - Creates a deterministic hash id for a credit line provided by a single Lender for a given token on a Line of Credit facility
      * @param line   - The Line of Credit facility concerned
-     * @param lender - The address managing the credit line concerned
+     * @param tokenId - The token managing the credit line concerned
      * @param token  - The token being lent out on the credit line concerned
      * @return id
      */
-    function computeId(address line, address lender, address token) external pure returns (bytes32) {
-        return keccak256(abi.encode(line, lender, token));
+    function computeId(address line, uint256 tokenId, address token) external pure returns (bytes32) {
+        return keccak256(abi.encode(line, tokenId, token));
     }
 
     // getOutstandingDebt() is called by updateOutstandingDebt()
@@ -106,7 +106,7 @@ library CreditLib {
     function create(
         bytes32 id,
         uint256 amount,
-        address lender,
+        uint256 tokenId,
         address token,
         address oracle
     ) external returns (ILineOfCredit.Credit memory credit) {
@@ -124,7 +124,7 @@ library CreditLib {
         uint8 decimals = abi.decode(result, (uint8));
 
         credit = ILineOfCredit.Credit({
-            lender: lender,
+            tokenId: tokenId,
             token: token,
             decimals: decimals,
             deposit: amount,
@@ -134,7 +134,7 @@ library CreditLib {
             isOpen: true
         });
 
-        emit AddCredit(lender, token, amount, id);
+        emit AddCredit(tokenId, token, amount, id);
 
         return credit;
     }
@@ -195,10 +195,11 @@ library CreditLib {
     function withdraw(
         ILineOfCredit.Credit memory credit,
         bytes32 id,
+        uint256 tokenId,
         address caller,
         uint256 amount
     ) external returns (ILineOfCredit.Credit memory) {
-        if (caller != credit.lender) {
+        if (tokenId != credit.tokenId) {
             revert CallerAccessDenied();
         }
 
@@ -222,7 +223,7 @@ library CreditLib {
             }
         }
 
-        LineLib.sendOutTokenOrETH(credit.token, credit.lender, amount);
+        LineLib.sendOutTokenOrETH(credit.token, caller, amount);
 
         return credit;
     }

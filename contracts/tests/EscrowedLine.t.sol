@@ -15,6 +15,8 @@ import { MockEscrowedLine } from '../mock/MockEscrowedLine.sol';
 import { Denominations } from "chainlink/Denominations.sol";
 import { ZeroEx } from "../mock/ZeroEx.sol";
 import { MockLine } from "../mock/MockLine.sol";
+import {ILendingPositionToken} from "../interfaces/ILendingPositionToken.sol";
+import {LendingPositionToken} from "../modules/tokenized-positions/LendingPositionToken.sol";
 
 
 contract EscrowedLineTest is Test {
@@ -62,6 +64,10 @@ contract EscrowedLineTest is Test {
             ttl
         );
 
+        address LPTAddress = address(_deployLendingPositionToken());
+
+        line.initTokenizedPosition(LPTAddress);
+
         escrow.updateLine(address(line));
         line.init();
         // assertEq(uint(line.init()), uint(LineLib.STATUS.ACTIVE));
@@ -73,6 +79,10 @@ contract EscrowedLineTest is Test {
         vm.startPrank(borrower);
         escrow.addCollateral(1 ether, address(supportedToken2));
         vm.stopPrank();
+    }
+
+    function _deployLendingPositionToken() internal returns (LendingPositionToken) {
+        return new LendingPositionToken();
     }
 
 
@@ -122,7 +132,8 @@ contract EscrowedLineTest is Test {
         line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
         vm.stopPrank();
         vm.startPrank(lender);
-        bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        uint256 tokenId = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        bytes32 id = line.tokenToPosition(tokenId);
         vm.stopPrank();
         vm.startPrank(borrower);
         line.borrow(id, 1 ether, borrower);

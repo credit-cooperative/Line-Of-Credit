@@ -18,6 +18,8 @@ import {IOracle} from "../interfaces/IOracle.sol";
 import {ILineOfCredit} from "../interfaces/ILineOfCredit.sol";
 import {RevenueToken} from "../mock/RevenueToken.sol";
 import {SimpleOracle} from "../mock/SimpleOracle.sol";
+import {ILendingPositionToken} from "../interfaces/ILendingPositionToken.sol";
+import {LendingPositionToken} from "../modules/tokenized-positions/LendingPositionToken.sol";
 
 interface Events {
     event Borrow(bytes32 indexed id, uint256 indexed amount, address indexed to);
@@ -69,9 +71,17 @@ contract QueueTest is Test, Events {
         );
 
         line = new LineOfCredit(address(oracle), arbiter, borrower, ttl);
+
+        address LPTAddress = address(_deployLendingPositionToken());
+        line.initTokenizedPosition(LPTAddress);
+
         line.init();
         // assertEq(uint256(line.init()), uint256(LineLib.STATUS.ACTIVE));
         _mintAndApprove();
+    }
+
+    function _deployLendingPositionToken() internal returns (LendingPositionToken) {
+        return new LendingPositionToken();
     }
 
     function test_stepQ_works_with_all_positions_drawn_down_on() public {
@@ -201,28 +211,28 @@ contract QueueTest is Test, Events {
         vm.stopPrank();
 
         vm.startPrank(lender);
-        bytes32 id = line.addCredit(
+        uint256 tokenId = line.addCredit(
             dRate,
             fRate,
             1 ether,
             address(supportedToken1),
             lender
         );
-        bytes32 id2 = line.addCredit(
+        uint256 tokenId2 = line.addCredit(
             dRate,
             fRate,
             1 ether,
             address(supportedToken2),
             lender
         );
-        bytes32 id3 = line.addCredit(
+        uint256 tokenId3 = line.addCredit(
             dRate,
             fRate,
             1 ether,
             address(token3),
             lender
         );
-        bytes32 id4 = line.addCredit(
+        uint256 tokenId4 = line.addCredit(
             dRate,
             fRate,
             1 ether,
@@ -232,6 +242,11 @@ contract QueueTest is Test, Events {
         vm.stopPrank();
 
         _assignQueueLabels();
+
+        bytes32 id = line.tokenToPosition(tokenId);
+        bytes32 id2 = line.tokenToPosition(tokenId2);
+        bytes32 id3 = line.tokenToPosition(tokenId3);
+        bytes32 id4 = line.tokenToPosition(tokenId4);
 
         assertEq(line.ids(0), id);
         assertEq(line.ids(1), id2);
@@ -276,28 +291,28 @@ contract QueueTest is Test, Events {
         vm.stopPrank();
 
         vm.startPrank(lender);
-        bytes32 id = line.addCredit(
+        uint256 tokenId = line.addCredit(
             dRate,
             fRate,
             1 ether,
             address(supportedToken1),
             lender
         );
-        bytes32 id2 = line.addCredit(
+        uint256 tokenId2 = line.addCredit(
             dRate,
             fRate,
             1 ether,
             address(supportedToken2),
             lender
         );
-        bytes32 id3 = line.addCredit(
+        uint256 tokenId3 = line.addCredit(
             dRate,
             fRate,
             1 ether,
             address(token3),
             lender
         );
-        bytes32 id4 = line.addCredit(
+        uint256 tokenId4 = line.addCredit(
             dRate,
             fRate,
             1 ether,
@@ -305,6 +320,11 @@ contract QueueTest is Test, Events {
             lender
         );
         vm.stopPrank();
+
+        bytes32 id = line.tokenToPosition(tokenId);
+        bytes32 id2 = line.tokenToPosition(tokenId2);
+        bytes32 id3 = line.tokenToPosition(tokenId3);
+        bytes32 id4 = line.tokenToPosition(tokenId4);
 
         assertEq(line.ids(0), id);
         assertEq(line.ids(1), id2);
@@ -344,7 +364,7 @@ contract QueueTest is Test, Events {
         vm.prank(borrower);
         line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
         vm.prank(lender);
-        bytes32 id = line.addCredit(
+        uint256 tokenId = line.addCredit(
             dRate,
             fRate,
             1 ether,
@@ -354,7 +374,7 @@ contract QueueTest is Test, Events {
         vm.prank(borrower);
         line.addCredit(dRate, fRate, 1 ether, address(supportedToken2), lender);
         vm.prank(lender);
-        bytes32 id2 = line.addCredit(
+        uint256 tokenId2 = line.addCredit(
             dRate,
             fRate,
             1 ether,
@@ -369,7 +389,7 @@ contract QueueTest is Test, Events {
         vm.prank(borrower);
         line.addCredit(dRate, fRate, 1 ether, address(token3), lender);
         vm.prank(lender);
-        bytes32 id3 = line.addCredit(
+        uint256 tokenId3 = line.addCredit(
             dRate,
             fRate,
             1 ether,
@@ -380,14 +400,17 @@ contract QueueTest is Test, Events {
         vm.prank(borrower);
         line.addCredit(dRate, fRate, 1 ether, address(token4), lender);
         vm.prank(lender);
-        bytes32 id4 = line.addCredit(
+        uint256 tokenId4 = line.addCredit(
             dRate,
             fRate,
             1 ether,
             address(token4),
             lender
         );
-
+        bytes32 id = line.tokenToPosition(tokenId);
+        bytes32 id2 = line.tokenToPosition(tokenId2);
+        bytes32 id3 = line.tokenToPosition(tokenId3);
+        bytes32 id4 = line.tokenToPosition(tokenId4);
         assertEq(line.ids(0), id);
         assertEq(line.ids(1), id2);
         assertEq(line.ids(2), id3);
@@ -485,11 +508,11 @@ contract QueueTest is Test, Events {
         vm.startPrank(borrower);
         line.borrow(line.ids(0),  1 ether, borrower);
         vm.stopPrank();
-        (, address nextLender,,uint256 nextPrincipal, uint256 nextDeposit,,,) = line.nextInQ();
+        (, uint256 nextTokenId,,uint256 nextPrincipal, uint256 nextDeposit,,,) = line.nextInQ();
 
-        (uint256 deposit, uint256 principal,,,,,address lender,) = line.credits(line.ids(0));
+        (uint256 deposit, uint256 principal,,,,,uint256 tokenId,) = line.credits(line.ids(0));
 
-        assertEq(nextLender, lender);
+        assertEq(nextTokenId, tokenId);
         assertEq(nextPrincipal, principal);
         assertEq(nextPrincipal, 1 ether);
         assertEq(nextDeposit, deposit);
@@ -533,7 +556,7 @@ contract QueueTest is Test, Events {
         _createCreditLines(3);
         vm.expectRevert();
         (bytes32 next,
-        address lender,
+        uint256 tokenId,
         address token,
         uint256 principal,
         uint256 deposit,
@@ -631,7 +654,7 @@ contract QueueTest is Test, Events {
 
             vm.startPrank(randomLender);
             supportedToken1.approve(address(line), type(uint256).max);
-            bytes32 id = line.addCredit(
+            line.addCredit(
                 dRate,
                 fRate,
                 amount,
