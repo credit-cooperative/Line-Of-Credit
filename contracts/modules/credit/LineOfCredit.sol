@@ -53,6 +53,8 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     /// @dev    - may contain null elements
     bytes32[] public ids;
 
+    uint128 public orginiationfee; // in BPS 4 decimals  fee = 5000 loan amount = 1000000 * (5000/100)
+
     /// @notice id -> position data
     mapping(bytes32 => Credit) public credits;
 
@@ -84,6 +86,13 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         }
         _init();
         _updateStatus(LineLib.STATUS.ACTIVE);
+    }
+
+    function setOriginationFee(uint256 fee) external onlyArbiter mutualConsent(arbiter, borrower) {
+        if (count == 0) {
+            orginiationfee = fee;
+        }
+        revert CannotSetOriginationFee();  
     }
 
     function _init() internal virtual {
@@ -308,10 +317,11 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         address lender
     ) external payable override nonReentrant whileActive mutualConsent(lender, borrower) returns (bytes32) {
         bytes32 id = _createCredit(lender, token, amount);
-
+        uint256 fee = (amount * orginiationfee) / 100000;
+        
         _setRates(id, drate, frate);
-
-        LineLib.receiveTokenOrETH(token, lender, amount);
+        IERC20(token).safeTransferFrom(lender, treasury, fee); // send fee from lender to treasury
+        LineLib.receiveTokenOrETH(token, lender, amount - fee); // send amount - fee from lender to line
 
         return id;
     }
