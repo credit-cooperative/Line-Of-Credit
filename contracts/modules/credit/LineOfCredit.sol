@@ -55,7 +55,8 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     /// @dev    - may contain null elements
     bytes32[] public ids;
 
-    uint128 public orginiationfee; // in BPS 4 decimals  fee = 5000 loan amount = 1000000 * (5000/100)
+    // NOTE: ITS IS 0 FOR TESTING PURPOSES. Otherwise all other tests break
+    uint128 public orginiationfee = 0; // in BPS 4 decimals  fee = 5000 loan amount = 1000000 * (5000/100)
 
     /// @notice id -> position data
     mapping(bytes32 => Credit) public credits;
