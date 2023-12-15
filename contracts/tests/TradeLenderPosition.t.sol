@@ -87,6 +87,8 @@ contract LenderPositionTest is Test, Events {
     uint256[] debtOwed;
     address[] creditTokens;
 
+    address boogeyman;
+
     function setUp() public {
         borrower = address(20);
 
@@ -94,6 +96,7 @@ contract LenderPositionTest is Test, Events {
         lender2 = address(11);
         externalLender = address(30);
         arbiter = address(this);
+        boogeyman = address(40);
 
         supportedToken1 = new RevenueToken();
         supportedToken2 = new RevenueToken();
@@ -347,6 +350,22 @@ contract LenderPositionTest is Test, Events {
         vm.stopPrank();
 
         assertEq(IERC721(LPTAddress).ownerOf(tokenId), lender2);
+    }
+
+    function test_non_line_cannot_call_closeProposal() public {
+        _addCredit(address(supportedToken1), 100 ether);
+
+        vm.startPrank(boogeyman);
+        vm.expectRevert(ILendingPositionToken.CallerIsNotLine.selector);
+        ILendingPositionToken(LPTAddress).closeProposal(tokenId);
+    }
+
+    function test_non_line_cannot_call_openProposal() public {
+        _addCredit(address(supportedToken1), 100 ether);
+
+        vm.startPrank(boogeyman);
+        vm.expectRevert(ILendingPositionToken.CallerIsNotLine.selector);
+        ILendingPositionToken(LPTAddress).openProposal(tokenId);
     }
 
     function _generateSetRatesMutualConsentMessageData(

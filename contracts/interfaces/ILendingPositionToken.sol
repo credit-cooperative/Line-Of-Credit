@@ -22,6 +22,8 @@ interface ILendingPositionToken {
 
     error OpenProposals();
 
+    error CallerIsNotLine();
+
     function mint(address to, address line) external returns (uint256);
     function getPositionInfo(uint256 tokenId) external view returns (PositionInfo memory);
     function getCRatio(uint256 tokenId) external returns (uint256);

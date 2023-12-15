@@ -28,12 +28,16 @@ contract LendingPositionToken is ERC721, ILendingPositionToken {
     }
 
     function openProposal(uint256 tokenId) public {
-        require(msg.sender == tokenToLine[tokenId], "Only line can open proposal");
+        if (msg.sender != tokenToLine[tokenId]){
+            revert CallerIsNotLine();
+        }
         tokenToOpenProposals[tokenId]++;
     }
 
     function closeProposal(uint256 tokenId) public {
-        require(msg.sender == tokenToLine[tokenId], "Only line can close proposal");
+        if (msg.sender != tokenToLine[tokenId]){
+            revert CallerIsNotLine();
+        }
         tokenToOpenProposals[tokenId]--;
     }
 
