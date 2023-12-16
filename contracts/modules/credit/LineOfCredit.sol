@@ -346,7 +346,9 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
     function _calculateOriginationFee(uint256 amount) internal returns (uint256) {
         require(deadline > block.timestamp, "deadline has passed");
+        console.log("here?");
         uint256 theNumber = (deadline - block.timestamp)/ONE_YEAR;
+        console.log("theNumber", ONE_YEAR);
         return (amount * (orginiationFee/theNumber)) / 10000;
     }
     
@@ -357,12 +359,14 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         address token,
         address lender
     ) external payable override nonReentrant whileActive mutualConsent(lender, borrower) returns (uint256) {
-        
         uint256 tokenId = tokenContract.mint(msg.sender, address(this));
+        
         bytes32 id = _createCredit(tokenId, token, amount);
 
         uint256 fee = 0;
+        
         if (orginiationFee > 0){
+            
             fee = _calculateOriginationFee(amount);
         }
         

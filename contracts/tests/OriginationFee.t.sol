@@ -21,6 +21,8 @@ import {IOracle} from "../interfaces/IOracle.sol";
 import {ILineOfCredit} from "../interfaces/ILineOfCredit.sol";
 import {RevenueToken} from "../mock/RevenueToken.sol";
 import {SimpleOracle} from "../mock/SimpleOracle.sol";
+import {ILendingPositionToken} from "../interfaces/ILendingPositionToken.sol";
+import {LendingPositionToken} from "../modules/tokenized-positions/LendingPositionToken.sol";
 
 interface Events {
     event Borrow(bytes32 indexed id, uint256 indexed amount, address indexed to);
@@ -42,6 +44,8 @@ contract OriginationFeeTest is Test, Events {
     address arbiter;
     address lender;
     address lender2;
+     address LPTAddress;
+
     uint256 ttl = 150 days;
     RevenueToken supportedToken1;
     RevenueToken supportedToken2;
@@ -72,11 +76,19 @@ contract OriginationFeeTest is Test, Events {
         );
 
         line = new LineOfCredit(address(oracle), arbiter, borrower, ttl);
+
+        LPTAddress = address(_deployLendingPositionToken());
+        line.initTokenizedPosition(LPTAddress);
+
         line.init();
 
         
         // assertEq(uint256(line.init()), uint256(LineLib.STATUS.ACTIVE));
         _mintAndApprove(address(line));
+    }
+
+    function _deployLendingPositionToken() internal returns (LendingPositionToken) {
+        return new LendingPositionToken();
     }
 
     function _mintAndApprove(address loc) internal {
@@ -136,6 +148,9 @@ contract OriginationFeeTest is Test, Events {
         vm.startPrank(arbiter);
         line.setOriginationFee(5000);
         vm.stopPrank();
+
+        vm.startPrank(lender);
+        IERC20(address(supportedToken1)).approve(arbiter, MAX_INT);
 
         _addCredit(address(supportedToken1), 100 ether);
 
