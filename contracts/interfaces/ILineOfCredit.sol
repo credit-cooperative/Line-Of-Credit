@@ -42,6 +42,8 @@ interface ILineOfCredit {
 
     event IncreaseCredit(bytes32 indexed id, uint256 indexed deposit);
 
+    event Fee(uint256 indexed fee);
+
     // Lender Events
 
     // Emits data re Lender removes funds (principal) - there is no corresponding function, just withdraw()

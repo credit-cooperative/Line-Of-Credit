@@ -388,10 +388,12 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         if (fee > 0) {
             IERC20(token).safeTransferFrom(lender, arbiter, fee); // NOTE: send fee from lender to treasury (arbiter for now)
+            emit Fee(fee);
         }
 
         LineLib.receiveTokenOrETH(token, lender, amount - fee); // send amount - fee from lender to line
 
+        
         return tokenId;
     }
 

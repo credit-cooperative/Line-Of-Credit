@@ -125,6 +125,17 @@ contract OriginationFeeTest is Test, Events {
         vm.stopPrank();
     }
 
+    function _addCredit2(address token, uint256 amount) public {
+        vm.startPrank(borrower);
+        line2.addCredit(dRate, fRate, amount, token, lender);
+        vm.stopPrank();
+        vm.startPrank(lender);
+        vm.expectEmit(false, true, true, false);
+        emit Events.SetRates(bytes32(0), dRate, fRate);
+        line2.addCredit(dRate, fRate, amount, token, lender);
+        vm.stopPrank();
+    }
+
     function test_arbiter_and_borrower_set_fee() public {
         assertEq(line.orginiationFee(), 0);
         assertEq(line.count(), 0);
@@ -192,7 +203,10 @@ contract OriginationFeeTest is Test, Events {
 
         _addCredit(address(supportedToken1), 100 ether);
 
+        uint256 fee1 = supportedToken1.balanceOf(arbiter);
+
         line2 = new LineOfCredit(address(oracle), arbiter, borrower, 200 days);
+        line2.initTokenizedPosition(LPTAddress);
         line2.init();
 
         _mintAndApprove(address(line2));
@@ -205,9 +219,10 @@ contract OriginationFeeTest is Test, Events {
         line2.setFees(50);
         vm.stopPrank();
 
-        _addCredit(address(supportedToken1), 100 ether);
-        
+        _addCredit2(address(supportedToken1), 100 ether);
 
+        uint256 fee2 = supportedToken1.balanceOf(arbiter) - fee1;
 
+        assertGt(fee2, fee1);
     }
 }
