@@ -234,6 +234,7 @@ contract OriginationFeeTest is Test, Events {
     // bigger the deadline, bigger the fee? Is this what we want? 
 
     // what about bob's point? We cant take a fee if lender deposits and withdraws before time is elapsed.
+        // what if we penalize the lender if they withdraw before the deadline passes? 
 
     // Do we need something smoother for giving approvals? Would suck to ask for 2 approvals on a frontend (one for line, one for treasury)
 }

@@ -529,6 +529,9 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     function withdraw(uint256 tokenId, uint256 amount) external override onlyTokenHolder(tokenId) nonReentrant {
         // accrues interest and transfer funds to Lender addres
         bytes32 id = tokenToPosition[tokenId];
+
+        // check status, if active, penalize the lender by taking a % of withdrawn amount and sending to borrower. 
+        // can use the same OG fee equation
         
         credits[id] = CreditLib.withdraw(_accrue(credits[id], id), id, tokenId, msg.sender, amount);
     }
