@@ -173,6 +173,7 @@ contract OriginationFeeTest is Test, Events {
 
         assertEq(supportedToken1.balanceOf(arbiter), 0);
 
+        // vm.expectEmit
         _addCredit(address(supportedToken1), 100 ether);
 
         assertTrue(supportedToken1.balanceOf(arbiter) > 0);
@@ -201,6 +202,7 @@ contract OriginationFeeTest is Test, Events {
         line.setFees(50);
         vm.stopPrank();
 
+        // vm.expectEmit
         _addCredit(address(supportedToken1), 100 ether);
 
         uint256 fee1 = supportedToken1.balanceOf(arbiter);
@@ -219,6 +221,7 @@ contract OriginationFeeTest is Test, Events {
         line2.setFees(50);
         vm.stopPrank();
 
+        // vm.expectEmit
         _addCredit2(address(supportedToken1), 100 ether);
 
         uint256 fee2 = supportedToken1.balanceOf(arbiter) - fee1;
