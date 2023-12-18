@@ -449,10 +449,6 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         // Borrower clears the debt then closes the credit line
 
-        uint256 feeAmount = _calculateServicingFee(totalOwed);
-
-        IERC20(credit.token).safeTransferFrom(msg.sender, arbiter, feeAmount); // NOTE: send fee from borrower to treasury (arbiter for now)
-
         credits[id] = _close(_repay(credit, id, totalOwed, borrower), id); // NOTE: the fee is in addition to the totalOwed bc we need to close the line
     }
 
@@ -462,12 +458,8 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         uint256 facilityFee = credit.interestAccrued;
 
-        uint256 feeAmount = _calculateServicingFee(facilityFee); 
-
-        IERC20(credit.token).safeTransferFrom(msg.sender, arbiter, feeAmount); // NOTE: send fee from borrower to treasury (arbiter for now)
-
         // clear facility fees and close position
-        credits[id] = _close(_repay(credit, id, facilityFee - feeAmount, borrower), id);
+        credits[id] = _close(_repay(credit, id, facilityFee, borrower), id);
     }
 
     /// see ILineOfCredit.closeLine
@@ -488,10 +480,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
             revert RepayAmountExceedsDebt(credit.principal + credit.interestAccrued);
         }
 
-        uint256 feeAmount = _calculateServicingFee(amount);
-
-        IERC20(credit.token).safeTransferFrom(msg.sender, arbiter, feeAmount); // NOTE: send fee from borrower to treasury (arbiter for now)
-        credits[id] = _repay(credit, id, amount - feeAmount, msg.sender);
+        credits[id] = _repay(credit, id, amount, msg.sender);
     }
 
     function getExtension() external view returns (uint256) {
