@@ -231,7 +231,7 @@ contract LenderPositionTest is Test, Events {
 
         (uint256 d, uint256 p, uint256 ia, uint256 ir,,,,) = line.credits(id);
         (uint128 dr, uint128 fr) = line.getRates(id);
-        uint256 deadline = line.getDeadline();
+        uint256 deadline = line.deadline();
         uint256 split = line.defaultRevenueSplit();
         uint256 mincratio = escrow.minimumCollateralRatio();
 

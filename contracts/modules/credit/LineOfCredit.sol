@@ -101,13 +101,13 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         _updateStatus(LineLib.STATUS.ACTIVE);
     }
 
-    function setFees(uint128 originationFee) external onlyBorrowerOrArbiter mutualConsent(arbiter, borrower) {
+    function setFees(uint128 _originationFee) external onlyBorrowerOrArbiter mutualConsent(arbiter, borrower) {
         //TODO: do we need this logic? Doesnt effectt lenders at all. If borrower and servicer agree, who cares?
         
         // if (count > 0) {
         //     revert CannotSetOriginationFee();   
         // }
-        orginiationFee = fee;
+        orginiationFee = _originationFee;
 
         // servicingFee = fee;
         // swapFee = fee;
@@ -706,10 +706,6 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     function getPositionFromTokenId(uint256 tokenId) external view returns (Credit memory, bytes32) {
         bytes32 id = tokenToPosition[tokenId];
         return (credits[id], id);
-    }
-
-    function getDeadline() external view returns (uint256) {
-        return deadline;
     }
 
     function getRates(bytes32 id) external view returns (uint128, uint128) {

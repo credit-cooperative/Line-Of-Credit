@@ -130,29 +130,48 @@ contract OriginationFeeTest is Test, Events {
         assertEq(line.count(), 0);
 
         vm.startPrank(borrower);
-        line.setFees(5000);
+        line.setFees(50);
         vm.stopPrank();
 
         vm.startPrank(arbiter);
-        line.setFees(5000);
+        line.setFees(50);
         vm.stopPrank();
 
-        assertEq(line.orginiationFee(), 5000);
+        assertEq(line.orginiationFee(), 50);
+    }
+
+    function test_math() public {
+        console.log(100 ether);
+        console.log(line.deadline() - block.timestamp);
+        console.log(10000 * 365.25 days);
+
+        // (100000000000000000000 * 50 * 12960000) / 315576000000 = 205338809034908000
     }
 
     function test_arbiter_gets_fee() public {
         vm.startPrank(borrower);
-        line.setFees(5000);
+        line.setFees(50);
         vm.stopPrank();
 
         vm.startPrank(arbiter);
-        line.setFees(5000);
+        line.setFees(50);
         vm.stopPrank();
 
         vm.startPrank(lender);
         IERC20(address(supportedToken1)).approve(arbiter, MAX_INT);
 
+        assertEq(supportedToken1.balanceOf(arbiter), 0);
+
         _addCredit(address(supportedToken1), 100 ether);
+
+        assertTrue(supportedToken1.balanceOf(arbiter) > 0);
+
+        console.log(supportedToken1.balanceOf(arbiter));
+        assertEq(supportedToken1.balanceOf(arbiter), 205338809034908000);
+
+        // need to figure out the last few decimals cuz my calc doesnt go that far
+
+
 
         // check all the math :'(
 
@@ -164,11 +183,11 @@ contract OriginationFeeTest is Test, Events {
 
     function test_fee_adjusts_based_on_deadline() public {
         vm.startPrank(borrower);
-        line.setFees(5000);
+        line.setFees(50);
         vm.stopPrank();
 
         vm.startPrank(arbiter);
-        line.setFees(5000);
+        line.setFees(50);
         vm.stopPrank();
 
         _addCredit(address(supportedToken1), 100 ether);
@@ -179,11 +198,11 @@ contract OriginationFeeTest is Test, Events {
         _mintAndApprove(address(line2));
 
         vm.startPrank(borrower);
-        line2.setFees(5000);
+        line2.setFees(50);
         vm.stopPrank();
 
         vm.startPrank(arbiter);
-        line2.setFees(5000);
+        line2.setFees(50);
         vm.stopPrank();
 
         _addCredit(address(supportedToken1), 100 ether);

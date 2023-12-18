@@ -287,7 +287,7 @@ interface ILineOfCredit {
 
      function getRates(bytes32 id) external view returns (uint128, uint128);
 
-     function getDeadline() external view returns (uint256);
+     function deadline() external view returns (uint256);
 
     /**
      * @notice - info on the next lender position that must be repaid
