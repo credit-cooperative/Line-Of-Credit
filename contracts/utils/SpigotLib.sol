@@ -524,6 +524,7 @@ library SpigotLib {
             // if beneficiary is not owner, and credit token is same as revenue token, send tokens to beneficiary address
             if (i != 0 && creditTokens[i] == revToken) {
                 LineLib.sendOutTokenOrETH(revToken, self.beneficiaries[i],  distributions[i]);
+                // NOTE: Here is the problem. WE cannot push to lenders (assuming everyone is like Huma. We just add tokens to readyToDistribute?)
             }
             // otherwise, store funds in bennyTokens struct
             else {
