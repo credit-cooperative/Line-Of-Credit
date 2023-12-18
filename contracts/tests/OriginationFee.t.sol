@@ -189,7 +189,7 @@ contract OriginationFeeTest is Test, Events {
         // check balance of line is 100 ether - fee
         // check balance of arbiter is fee amount
 
-        //NOTE: How do i know what the fee is supposed to be?
+        // NOTE: How do i know what the fee is supposed to be?
     }
 
     function test_fee_adjusts_based_on_deadline() public {
