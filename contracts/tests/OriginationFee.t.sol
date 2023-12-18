@@ -228,4 +228,12 @@ contract OriginationFeeTest is Test, Events {
 
         assertGt(fee2, fee1);
     }
+
+    // probably need to test more math and more scenarios
+
+    // bigger the deadline, bigger the fee? Is this what we want? 
+
+    // what about bob's point? We cant take a fee if lender deposits and withdraws before time is elapsed.
+
+    // Do we need something smoother for giving approvals? Would suck to ask for 2 approvals on a frontend (one for line, one for treasury)
 }
