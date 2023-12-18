@@ -536,6 +536,8 @@ library SpigotLib {
         return distributions;
     }
 
+    // function _makePayment (or something) where we pass in a benny address and calldata (or this is derived from state?)
+ 
     function _resetAllocations(uint256[] memory allocations, uint256[] memory outstandingDebts, uint256 allocationToSpread) internal view returns (uint256[] memory newAllocations) {
 
         // allocations must sum to 100000

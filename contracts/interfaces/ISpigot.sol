@@ -18,7 +18,7 @@ interface ISpigot {
         uint256 debtOwed;
         mapping(address => uint256) bennyTokens;
         address poolAddress; // will this ALWAYS be the same as the benny address?
-        bytes4 getDebtFunc; // could do without this and just update via amend and extend
+        bytes4 getDebtFunc; // could do without this and just update via amend and extend (for huma at least)
         bytes4 repaymentFunc; // we NEED this
     }
 
