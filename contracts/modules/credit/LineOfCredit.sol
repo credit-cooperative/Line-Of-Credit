@@ -36,6 +36,10 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     uint256 public deadlineExtension = 0;
 
     uint256 constant ONE_YEAR = 365.25 days;
+    // Must divide by 100 too offset bps in numerator and divide by another 100 to offset % and get actual token amount
+    uint256 constant BASE_DENOMINATOR = 10000;
+    // = 31557600 * 10000 = 315576000000;
+    uint256 constant INTEREST_DENOMINATOR = ONE_YEAR * BASE_DENOMINATOR;
 
     /// @notice - the account that can drawdown and manage debt positions
     address public borrower;
@@ -60,9 +64,9 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     bytes32[] public ids;
 
     // NOTE: ITS IS 0 FOR TESTING PURPOSES. Otherwise all other tests break
-    uint128 public orginiationFee = 0; // in BPS 4 decimals  fee = 5000 loan amount = 1000000 * (5000/100)
-    uint128 public servicingFee = 0; // in BPS 4 decimals  fee = 5000 loan amount = 1000000 * (5000/100)
-    uint128 public swapFee = 0; // in BPS 4 decimals  fee = 5000 loan amount = 1000000 * (5000/100)
+    uint128 public orginiationFee = 0; // in BPS 4 decimals  fee = 50 loan amount = 10000 * (5000/100)
+    uint128 public servicingFee = 0; // in BPS 4 decimals  fee = 50 loan amount = 10000 * (5000/100)
+    uint128 public swapFee = 0; // in BPS 4 decimals  fee = 50 loan amount = 10000 * (5000/100)
 
     /// @notice id -> position data
     mapping(bytes32 => Credit) public credits;
@@ -97,15 +101,16 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         _updateStatus(LineLib.STATUS.ACTIVE);
     }
 
-    function setFees(uint128 originationFee, uint128 servicingFee, uint128 swapFee) external onlyBorrowerOrArbiter mutualConsent(arbiter, borrower) {
+    function setFees(uint128 originationFee) external onlyBorrowerOrArbiter mutualConsent(arbiter, borrower) {
         //TODO: do we need this logic? Doesnt effectt lenders at all. If borrower and servicer agree, who cares?
         
         // if (count > 0) {
         //     revert CannotSetOriginationFee();   
         // }
         orginiationFee = fee;
-        servicingFee = fee;
-        swapFee = fee;
+
+        // servicingFee = fee;
+        // swapFee = fee;
     }
 
     function initTokenizedPosition(address _tokenAddress) external onlyArbiter {
@@ -350,13 +355,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
     function _calculateOriginationFee(uint256 amount) internal returns (uint256) {
         require(deadline > block.timestamp, "deadline has passed");
-        console.log("here?");
-        uint256 theNumber = (deadline - block.timestamp)/ONE_YEAR;
-        console.log("deadline", deadline);
-        console.log("timestamp", block.timestamp);
-        console.log("ONE_YEAR", ONE_YEAR);
-        console.log("theNumber", theNumber);
-        return (amount * orginiationFee * (deadline - block.timestamp)) / (10000 * ONE_YEAR);
+        return (amount * orginiationFee * (deadline - block.timestamp)) / INTEREST_DENOMINATOR;
     }
 
     function _calculateServicingFee(uint256 amount) internal returns (uint256) {
