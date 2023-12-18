@@ -130,11 +130,11 @@ contract OriginationFeeTest is Test, Events {
         assertEq(line.count(), 0);
 
         vm.startPrank(borrower);
-        line.setOriginationFee(5000);
+        line.setFees(5000);
         vm.stopPrank();
 
         vm.startPrank(arbiter);
-        line.setOriginationFee(5000);
+        line.setFees(5000);
         vm.stopPrank();
 
         assertEq(line.orginiationFee(), 5000);
@@ -142,11 +142,11 @@ contract OriginationFeeTest is Test, Events {
 
     function test_arbiter_gets_fee() public {
         vm.startPrank(borrower);
-        line.setOriginationFee(5000);
+        line.setFees(5000);
         vm.stopPrank();
 
         vm.startPrank(arbiter);
-        line.setOriginationFee(5000);
+        line.setFees(5000);
         vm.stopPrank();
 
         vm.startPrank(lender);
@@ -164,11 +164,11 @@ contract OriginationFeeTest is Test, Events {
 
     function test_fee_adjusts_based_on_deadline() public {
         vm.startPrank(borrower);
-        line.setOriginationFee(5000);
+        line.setFees(5000);
         vm.stopPrank();
 
         vm.startPrank(arbiter);
-        line.setOriginationFee(5000);
+        line.setFees(5000);
         vm.stopPrank();
 
         _addCredit(address(supportedToken1), 100 ether);
@@ -179,11 +179,11 @@ contract OriginationFeeTest is Test, Events {
         _mintAndApprove(address(line2));
 
         vm.startPrank(borrower);
-        line2.setOriginationFee(5000);
+        line2.setFees(5000);
         vm.stopPrank();
 
         vm.startPrank(arbiter);
-        line2.setOriginationFee(5000);
+        line2.setFees(5000);
         vm.stopPrank();
 
         _addCredit(address(supportedToken1), 100 ether);

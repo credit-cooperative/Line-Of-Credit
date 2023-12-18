@@ -61,6 +61,8 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
     // NOTE: ITS IS 0 FOR TESTING PURPOSES. Otherwise all other tests break
     uint128 public orginiationFee = 0; // in BPS 4 decimals  fee = 5000 loan amount = 1000000 * (5000/100)
+    uint128 public servicingFee = 0; // in BPS 4 decimals  fee = 5000 loan amount = 1000000 * (5000/100)
+    uint128 public swapFee = 0; // in BPS 4 decimals  fee = 5000 loan amount = 1000000 * (5000/100)
 
     /// @notice id -> position data
     mapping(bytes32 => Credit) public credits;
@@ -95,13 +97,15 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         _updateStatus(LineLib.STATUS.ACTIVE);
     }
 
-    function setOriginationFee(uint128 fee) external onlyBorrowerOrArbiter mutualConsent(arbiter, borrower) {
+    function setFees(uint128 originationFee, uint128 servicingFee, uint128 swapFee) external onlyBorrowerOrArbiter mutualConsent(arbiter, borrower) {
         //TODO: do we need this logic? Doesnt effectt lenders at all. If borrower and servicer agree, who cares?
         
         // if (count > 0) {
         //     revert CannotSetOriginationFee();   
         // }
         orginiationFee = fee;
+        servicingFee = fee;
+        swapFee = fee;
     }
 
     function initTokenizedPosition(address _tokenAddress) external onlyArbiter {
@@ -348,8 +352,16 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         require(deadline > block.timestamp, "deadline has passed");
         console.log("here?");
         uint256 theNumber = (deadline - block.timestamp)/ONE_YEAR;
-        console.log("theNumber", ONE_YEAR);
-        return (amount * (orginiationFee/theNumber)) / 10000;
+        console.log("deadline", deadline);
+        console.log("timestamp", block.timestamp);
+        console.log("ONE_YEAR", ONE_YEAR);
+        console.log("theNumber", theNumber);
+        return (amount * orginiationFee * (deadline - block.timestamp)) / (10000 * ONE_YEAR);
+    }
+
+    function _calculateServicingFee(uint256 amount) internal returns (uint256) {
+       // TODO: do we need a require of any kind?
+        return (amount * servicingFee)/10000;
     }
     
     function addCredit(
@@ -368,6 +380,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         if (orginiationFee > 0){
             
             fee = _calculateOriginationFee(amount);
+            console.log("fee", fee);
         }
         
         
@@ -436,7 +449,12 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         uint256 totalOwed = credit.principal + credit.interestAccrued;
 
         // Borrower clears the debt then closes the credit line
-        credits[id] = _close(_repay(credit, id, totalOwed, borrower), id);
+
+        uint256 feeAmount = _calculateServicingFee(totalOwed);
+
+        IERC20(credit.token).safeTransferFrom(msg.sender, arbiter, feeAmount); // NOTE: send fee from borrower to treasury (arbiter for now)
+
+        credits[id] = _close(_repay(credit, id, totalOwed, borrower), id); // NOTE: the fee is in addition to the totalOwed bc we need to close the line
     }
 
     /// see ILineOfCredit.close
@@ -445,8 +463,12 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         uint256 facilityFee = credit.interestAccrued;
 
+        uint256 feeAmount = _calculateServicingFee(facilityFee); 
+
+        IERC20(credit.token).safeTransferFrom(msg.sender, arbiter, feeAmount); // NOTE: send fee from borrower to treasury (arbiter for now)
+
         // clear facility fees and close position
-        credits[id] = _close(_repay(credit, id, facilityFee, borrower), id);
+        credits[id] = _close(_repay(credit, id, facilityFee - feeAmount, borrower), id);
     }
 
     /// see ILineOfCredit.closeLine
@@ -467,7 +489,10 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
             revert RepayAmountExceedsDebt(credit.principal + credit.interestAccrued);
         }
 
-        credits[id] = _repay(credit, id, amount, msg.sender);
+        uint256 feeAmount = _calculateServicingFee(amount);
+
+        IERC20(credit.token).safeTransferFrom(msg.sender, arbiter, feeAmount); // NOTE: send fee from borrower to treasury (arbiter for now)
+        credits[id] = _repay(credit, id, amount - feeAmount, msg.sender);
     }
 
     function getExtension() external view returns (uint256) {
