@@ -156,7 +156,9 @@ contract OriginationFeeTest is Test, Events {
         console.log(line.deadline() - block.timestamp);
         console.log(10000 * 365.25 days);
 
-        // (100000000000000000000 * 50 * 12960000) / 315576000000 = 205338809034908000
+        // (100000000000000000000 * 50 * 12960000) / 315576000000 = 
+        // 205338809034908000
+        // 205338809034907597
     }
 
     function test_arbiter_gets_fee() public {
@@ -179,7 +181,7 @@ contract OriginationFeeTest is Test, Events {
         assertTrue(supportedToken1.balanceOf(arbiter) > 0);
 
         console.log(supportedToken1.balanceOf(arbiter));
-        assertEq(supportedToken1.balanceOf(arbiter), 205338809034908000);
+        assertEq(supportedToken1.balanceOf(arbiter), 205338809034907597);
 
         // need to figure out the last few decimals cuz my calc doesnt go that far
 
