@@ -233,8 +233,6 @@ contract OriginationFeeTest is Test, Events {
 
     // probably need to test more math and more scenarios
 
-    // bigger the deadline, bigger the fee? Is this what we want? 
-
     // what about bob's point? We cant take a fee if lender deposits and withdraws before time is elapsed.
         // what if we penalize the lender if they withdraw before the deadline passes? 
 

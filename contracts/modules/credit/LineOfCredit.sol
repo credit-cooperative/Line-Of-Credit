@@ -64,9 +64,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     bytes32[] public ids;
 
     // NOTE: ITS IS 0 FOR TESTING PURPOSES. Otherwise all other tests break
-    uint128 public orginiationFee = 0; // in BPS 4 decimals  fee = 50 loan amount = 10000 * (5000/100)
-    uint128 public servicingFee = 0; // in BPS 4 decimals  fee = 50 loan amount = 10000 * (5000/100)
-    uint128 public swapFee = 0; // in BPS 4 decimals  fee = 50 loan amount = 10000 * (5000/100)
+    uint128 public orginiationFee = 0; // in BPS 4 decimals  fee = 50 loan amount = 10000 * (50/100)
 
     /// @notice id -> position data
     mapping(bytes32 => Credit) public credits;
@@ -108,6 +106,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         //     revert CannotSetOriginationFee();   
         // }
         orginiationFee = _originationFee;
+
 
         // servicingFee = fee;
         // swapFee = fee;
@@ -357,11 +356,6 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         require(deadline > block.timestamp, "deadline has passed");
         return (amount * orginiationFee * (deadline - block.timestamp)) / INTEREST_DENOMINATOR;
     }
-
-    function _calculateServicingFee(uint256 amount) internal returns (uint256) {
-       // TODO: do we need a require of any kind?
-        return (amount * servicingFee)/10000;
-    }
     
     function addCredit(
         uint128 drate,
@@ -529,9 +523,6 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     function withdraw(uint256 tokenId, uint256 amount) external override onlyTokenHolder(tokenId) nonReentrant {
         // accrues interest and transfer funds to Lender addres
         bytes32 id = tokenToPosition[tokenId];
-
-        // check status, if active, penalize the lender by taking a % of withdrawn amount and sending to borrower. 
-        // can use the same OG fee equation
         
         credits[id] = CreditLib.withdraw(_accrue(credits[id], id), id, tokenId, msg.sender, amount);
     }
