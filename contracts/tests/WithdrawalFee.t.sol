@@ -203,7 +203,7 @@ contract WithdrawalFeeTest is Test, Events {
 
     }
 
-    // (100000000000000000000 * 50) / (10000 * 315576000000) = 
+    // (100000000000000000000 * 50) / (10000 * 315576000000) = 15844043907
 
     function test_math() public {
         _addCredit(address(supportedToken1), 100 ether);
@@ -220,9 +220,12 @@ contract WithdrawalFeeTest is Test, Events {
         uint256 borrowerBalanceAfter = supportedToken1.balanceOf(borrower);
 
         uint256 fee = borrowerBalanceAfter - borrowerBalanceBefore;
-        console.log(365.25 days);
-        console.log(100 ether);
-        //assertEq(fee, 158489319246);
+
+        console.log("days in a year in seconds",365.25 days);
+        console.log("ether with decimals",100 ether);
+        console.log("fee calculated from balances",fee);
+
+        assertEq(fee, 15844043907);
     }
 
 }
