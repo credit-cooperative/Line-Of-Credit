@@ -203,7 +203,7 @@ contract WithdrawalFeeTest is Test, Events {
 
     }
 
-    // (100000000000000000000 * 50) / (10000 * 315576000000) = 158489319246
+    // (100000000000000000000 * 50) / (10000 * 315576000000) = 
 
     function test_math() public {
         _addCredit(address(supportedToken1), 100 ether);
