@@ -146,9 +146,20 @@ contract WithdrawalFeeTest is Test, Events {
 
         vm.warp(10 days);
 
-        vm.startPrank(lender);
+        uint256 lenderBalanceBefore = supportedToken1.balanceOf(lender);
+        uint256 borrowerBalanceBefore = supportedToken1.balanceOf(borrower);
 
+        vm.startPrank(lender);
         line.withdraw(1, 100 ether);
+        vm.stopPrank();
+
+        uint256 lenderBalanceAfter = supportedToken1.balanceOf(lender);
+        uint256 borrowerBalanceAfter = supportedToken1.balanceOf(borrower);
+
+        assertLt(borrowerBalanceBefore, borrowerBalanceAfter);
+        assertLt(lenderBalanceAfter, lenderBalanceBefore + 100 ether);
+
+        
     }
 
     function test_withdrawal_fee_if_exactly_deadline() public {
@@ -156,9 +167,18 @@ contract WithdrawalFeeTest is Test, Events {
 
         vm.warp(150 days);
 
-        vm.startPrank(lender);
+        uint256 lenderBalanceBefore = supportedToken1.balanceOf(lender);
+        uint256 borrowerBalanceBefore = supportedToken1.balanceOf(borrower);
 
+        vm.startPrank(lender);
         line.withdraw(1, 100 ether);
+        vm.stopPrank();
+
+        uint256 lenderBalanceAfter = supportedToken1.balanceOf(lender);
+        uint256 borrowerBalanceAfter = supportedToken1.balanceOf(borrower);
+
+        assertLt(borrowerBalanceBefore, borrowerBalanceAfter);
+        assertLt(lenderBalanceAfter, lenderBalanceBefore + 100 ether);
 
     }
 
@@ -167,10 +187,42 @@ contract WithdrawalFeeTest is Test, Events {
 
         vm.warp(151 days);
 
+        uint256 lenderBalanceBefore = supportedToken1.balanceOf(lender);
+        uint256 borrowerBalanceBefore = supportedToken1.balanceOf(borrower);
+
         vm.startPrank(lender);
 
         line.withdraw(1, 100 ether);
+        vm.stopPrank();
 
+        uint256 lenderBalanceAfter = supportedToken1.balanceOf(lender);
+        uint256 borrowerBalanceAfter = supportedToken1.balanceOf(borrower);
+
+        assertEq(borrowerBalanceBefore, borrowerBalanceAfter);
+        assertEq(lenderBalanceBefore + 100 ether, lenderBalanceAfter);
+
+    }
+
+    // (100000000000000000000 * 50) / (10000 * 315576000000) = 158489319246
+
+    function test_math() public {
+        _addCredit(address(supportedToken1), 100 ether);
+
+        vm.warp(149 days);
+
+        uint256 borrowerBalanceBefore = supportedToken1.balanceOf(borrower);
+
+        vm.startPrank(lender);
+
+        line.withdraw(1, 100 ether);
+        vm.stopPrank();
+
+        uint256 borrowerBalanceAfter = supportedToken1.balanceOf(borrower);
+
+        uint256 fee = borrowerBalanceAfter - borrowerBalanceBefore;
+        console.log(365.25 days);
+        console.log(100 ether);
+        //assertEq(fee, 158489319246);
     }
 
 }

@@ -535,13 +535,17 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         // TODO: if they withdraw on EXACTLY the deadline, what happens?
         if (block.timestamp <= deadline) {
             fee = _calculateWithdrawalFee(credits[id].withdrawalFee, amount);
-            IERC20(credits[id].token).safeTransferFrom(address(this), borrower, fee); // NOTE: send fee from line to borrower (arbiter for now)
+            
         }
 
         // check status, if active, penalize the lender by taking a % of withdrawn amount and sending to borrower. 
         // can use the same OG fee equation
         
         credits[id] = CreditLib.withdraw(_accrue(credits[id], id), id, tokenId, msg.sender, amount - fee);
+
+        if (fee > 0) {
+            IERC20(credits[id].token).safeTransfer(borrower, fee); // NOTE: send fee from line to borrower
+        }
     }
 
     // for abort Scenario
