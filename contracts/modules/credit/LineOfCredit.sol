@@ -372,7 +372,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     ) external payable override nonReentrant whileActive mutualConsent(lender, borrower) returns (uint256) {
         uint256 tokenId = tokenContract.mint(msg.sender, address(this));
         
-        bytes32 id = _createCredit(tokenId, token, amount);
+        bytes32 id = _createCredit(tokenId, token, amount, withdrawalFee);
 
         uint256 fee = 0;
         
@@ -534,7 +534,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         if (block.timestamp <= deadline) {
             fee = _calculateWithdrawalFee(credits[id].withdrawalFee, amount);
-            IERC20(token).safeTransferFrom(address(this), borrower, fee); // NOTE: send fee from lender to treasury (arbiter for now)
+            IERC20(credits[id].token).safeTransferFrom(address(this), borrower, fee); // NOTE: send fee from lender to treasury (arbiter for now)
         }
 
         // check status, if active, penalize the lender by taking a % of withdrawn amount and sending to borrower. 

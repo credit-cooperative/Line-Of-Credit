@@ -132,7 +132,8 @@ interface ILineOfCredit {
         uint128 frate,
         uint256 amount,
         address token,
-        address lender
+        address lender,
+        uint128 withdrawalFee
     ) external payable returns (uint256);
 
     /**
