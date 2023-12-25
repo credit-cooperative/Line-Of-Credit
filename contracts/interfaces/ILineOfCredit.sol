@@ -17,6 +17,7 @@ interface ILineOfCredit {
         uint8 decimals; // Decimals of Credit Token for calcs
         address token; // The token being lent out (Credit Token)
         uint256 tokenId; // The person to repay
+        uint128 withdrawalFee;
         bool isOpen; // Status of position
     }
 

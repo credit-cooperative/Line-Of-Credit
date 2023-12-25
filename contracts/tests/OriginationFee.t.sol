@@ -141,11 +141,11 @@ contract OriginationFeeTest is Test, Events {
         assertEq(line.count(), 0);
 
         vm.startPrank(borrower);
-        line.setFees(50);
+        line.setOriginationFee(50);
         vm.stopPrank();
 
         vm.startPrank(arbiter);
-        line.setFees(50);
+        line.setOriginationFee(50);
         vm.stopPrank();
 
         assertEq(line.orginiationFee(), 50);
@@ -163,11 +163,11 @@ contract OriginationFeeTest is Test, Events {
 
     function test_arbiter_gets_fee() public {
         vm.startPrank(borrower);
-        line.setFees(50);
+        line.setOriginationFee(50);
         vm.stopPrank();
 
         vm.startPrank(arbiter);
-        line.setFees(50);
+        line.setOriginationFee(50);
         vm.stopPrank();
 
         vm.startPrank(lender);
@@ -197,11 +197,11 @@ contract OriginationFeeTest is Test, Events {
 
     function test_fee_adjusts_based_on_deadline() public {
         vm.startPrank(borrower);
-        line.setFees(50);
+        line.setOriginationFee(50);
         vm.stopPrank();
 
         vm.startPrank(arbiter);
-        line.setFees(50);
+        line.setOriginationFee(50);
         vm.stopPrank();
 
         // vm.expectEmit
@@ -216,11 +216,11 @@ contract OriginationFeeTest is Test, Events {
         _mintAndApprove(address(line2));
 
         vm.startPrank(borrower);
-        line2.setFees(50);
+        line2.setOriginationFee(50);
         vm.stopPrank();
 
         vm.startPrank(arbiter);
-        line2.setFees(50);
+        line2.setOriginationFee(50);
         vm.stopPrank();
 
         // vm.expectEmit
