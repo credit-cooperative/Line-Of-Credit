@@ -109,20 +109,36 @@ contract WithdrawalFeeTest is Test, Events {
 
         vm.startPrank(lender);
         supportedToken1.approve(loc, MAX_INT);
+        supportedToken1.approve(borrower, MAX_INT);
         supportedToken2.approve(loc, MAX_INT);
         unsupportedToken.approve(loc, MAX_INT);
+        vm.stopPrank();
+
+        vm.startPrank(loc);
+        supportedToken1.approve(borrower, MAX_INT);
+        supportedToken1.approve(lender, MAX_INT);
         vm.stopPrank();
     }
 
     function _addCredit(address token, uint256 amount) public {
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, amount, token, lender, 5000);
+        line.addCredit(dRate, fRate, amount, token, lender, 50);
         vm.stopPrank();
         vm.startPrank(lender);
         vm.expectEmit(false, true, true, false);
         emit Events.SetRates(bytes32(0), dRate, fRate);
-        line.addCredit(dRate, fRate, amount, token, lender, 5000);
+        line.addCredit(dRate, fRate, amount, token, lender, 50);
         vm.stopPrank();
+    }
+
+    function test_fee_set_correctly() public {
+        _addCredit(address(supportedToken1), 100 ether);
+
+        (,bytes32 id) = line.getPositionFromTokenId(1);
+        (,,,,,,,uint128 withdrawalRate,) = line.credits(id);
+        console.log(withdrawalRate);
+
+        assertEq(withdrawalRate, 50);
     }
 
     function test_withdrawal_fee_if_now_is_less_than_deadline() public {

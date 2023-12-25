@@ -535,7 +535,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         // TODO: if they withdraw on EXACTLY the deadline, what happens?
         if (block.timestamp <= deadline) {
             fee = _calculateWithdrawalFee(credits[id].withdrawalFee, amount);
-            IERC20(credits[id].token).safeTransferFrom(address(this), borrower, fee); // NOTE: send fee from lender to treasury (arbiter for now)
+            IERC20(credits[id].token).safeTransferFrom(address(this), borrower, fee); // NOTE: send fee from line to borrower (arbiter for now)
         }
 
         // check status, if active, penalize the lender by taking a % of withdrawn amount and sending to borrower. 
@@ -591,7 +591,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     function _createCredit(uint256 tokenId, address token, uint256 amount, uint128 withdrawalFee) internal returns (bytes32 id) {
         
         id = CreditLib.computeId(address(this), tokenId, token);
-        console.log("here?");
+
         address lender = getTokenHolder(tokenId);
         // MUST not double add the credit line. once lender is set it cant be deleted even if position is closed.
         if (lender != address(0) && credits[id].isOpen) {
