@@ -228,4 +228,69 @@ contract WithdrawalFeeTest is Test, Events {
         assertEq(fee, 15844043907);
     }
 
+    function test_lender_can_withdraw_interest_before_deadline_without_incurring_fee() public {
+        _addCredit(address(supportedToken1), 100 ether);
+
+        (,bytes32 id) = line.getPositionFromTokenId(1);
+
+        vm.startPrank(borrower);
+        line.borrow(id, 100 ether, borrower);
+        vm.stopPrank();
+
+        vm.warp(149 days);
+
+        vm.startPrank(borrower);
+        line.depositAndRepay(99 ether);
+        vm.stopPrank();
+
+        (,,,uint256 interestRepaid,,,,,) = line.credits(id);
+
+
+        uint256 lenderBalanceBefore = supportedToken1.balanceOf(lender);
+        uint256 borrowerBalanceBefore = supportedToken1.balanceOf(borrower);
+
+        vm.startPrank(lender);
+        line.withdraw(1, interestRepaid);
+        vm.stopPrank();
+
+        uint256 lenderBalanceAfter = supportedToken1.balanceOf(lender);
+        uint256 borrowerBalanceAfter = supportedToken1.balanceOf(borrower);
+
+        assertEq(borrowerBalanceBefore, borrowerBalanceAfter);
+
+        assertEq(lenderBalanceAfter, lenderBalanceBefore + interestRepaid);
+
+        console.log("interest repaid",interestRepaid);
+
+    }
+
+    function test_lender_can_withdraw_without_fee_if_line_repaid_before_deadline() public {
+        _addCredit(address(supportedToken1), 100 ether);
+
+        (,bytes32 id) = line.getPositionFromTokenId(1);
+
+        vm.startPrank(borrower);
+        line.borrow(id, 100 ether, borrower);
+        vm.stopPrank();
+
+        vm.warp(148 days);
+
+        vm.startPrank(borrower);
+        line.depositAndClose();
+        vm.stopPrank();
+
+        uint256 borrowerBalanceBefore = supportedToken1.balanceOf(borrower);
+        uint256 lenderBalanceBefore = supportedToken1.balanceOf(lender);
+
+        vm.startPrank(lender);
+        line.withdraw(1, 100 ether);
+        vm.stopPrank();
+
+        uint256 borrowerBalanceAfter = supportedToken1.balanceOf(borrower);
+        uint256 lenderBalanceAfter = supportedToken1.balanceOf(lender);
+
+        assertEq(borrowerBalanceBefore, borrowerBalanceAfter);
+        assertEq(lenderBalanceBefore + 100 ether, lenderBalanceAfter);
+    }
+
 }

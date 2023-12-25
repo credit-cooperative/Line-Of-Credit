@@ -533,10 +533,13 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         uint256 fee = 0;
 
         // TODO: if they withdraw on EXACTLY the deadline, what happens?
-        if (block.timestamp <= deadline) {
-            fee = _calculateWithdrawalFee(credits[id].withdrawalFee, amount);
-            
+        // dont penalize if they are only withdrawing interest that has been repaid
+        if (status == LineLib.STATUS.ACTIVE){
+            if (block.timestamp <= deadline && amount > credits[id].interestRepaid) {
+                fee = _calculateWithdrawalFee(credits[id].withdrawalFee, amount);
+            }
         }
+        
 
         // check status, if active, penalize the lender by taking a % of withdrawn amount and sending to borrower. 
         // can use the same OG fee equation
