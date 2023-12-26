@@ -17,9 +17,12 @@ interface ISpigot {
        // uint256 readyForRepayment; Maybe we store tokens here and have a different function for repaying, might need to be automation.
         uint256 debtOwed;
         mapping(address => uint256) bennyTokens;
+        mapping(address => uint256) tokensToDistribute;
         address poolAddress; // will this ALWAYS be the same as the benny address?
-        bytes4 getDebtFunc; // could do without this and just update via amend and extend (for huma at least)
         bytes4 repaymentFunc; // we NEED this
+        // bytes4 getDebtFunc; // could do without this and just update via amend and extend (for huma at least)
+        
+        
     }
 
     // Spigot Events

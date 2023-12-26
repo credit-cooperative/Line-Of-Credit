@@ -36,6 +36,12 @@ struct SpigotState {
  * @dev see Spigot docs
  */
 library SpigotLib {
+
+    enum ARGS {
+        UINT,
+        ADDRESS,
+        BYTES
+    }
     using SafeERC20 for IERC20;
     // Maximum numerator for Setting.ownerSplit param to ensure that the Owner can't claim more than 100% of revenue
     uint8 constant MAX_SPLIT = 100;
@@ -107,6 +113,23 @@ library SpigotLib {
         emit ClaimRevenue(token, claimed, allocationTokens, revenueContract);
 
         return claimed;
+    }
+
+    function repayLender(SpigotState storage self, address lender, bytes memory args) external returns (bool) {
+
+        ISpigot.Beneficiary memory beneficiary = self.beneficiaryInfo[lender];
+
+        // assumes that all the tokens will be distributed.
+        self.beneficiaryInfo[lender].tokensToDistribute[beneficiary.creditToken] = 0;
+
+        //assumes that we will deduct all the above tokens from the debtOwed
+        self.beneficiaryInfo[lender].debtOwed -= beneficiary.debtOwed;
+    
+        (bool success, ) = beneficiary.poolAddress.call(abi.encodePacked(beneficiary.repaymentFunc, args));
+        require(success, "Call failed");
+
+    return success;
+
     }
 
     /** see Spigot.claimOwnerTokens */
@@ -181,6 +204,8 @@ library SpigotLib {
 
         return true;
     }
+
+
 
     /** see Spigot.addSpigot */
     function addSpigot(
@@ -359,18 +384,22 @@ library SpigotLib {
 
         uint256 boughtTokens = IERC20(beneficiaryCreditToken).balanceOf(address(this)) - oldTokens;
         if (boughtTokens <= self.beneficiaryInfo[lender].debtOwed){
-            self.beneficiaryInfo[lender].debtOwed -= boughtTokens;
-            IERC20(beneficiaryCreditToken).safeTransfer(lender, boughtTokens);
+            // self.beneficiaryInfo[lender].debtOwed -= boughtTokens;
+            self.beneficiaryInfo[lender].tokensToDistribute[beneficiaryCreditToken] += boughtTokens;
         } else if (boughtTokens > self.beneficiaryInfo[lender].debtOwed) {
             uint256 excessTokens = boughtTokens - self.beneficiaryInfo[lender].debtOwed;
 
             // set the lender's debt owed and allocation to zero
             uint256 allocationToSpread = self.beneficiaryInfo[lender].allocation;
-            self.beneficiaryInfo[lender].debtOwed = 0;
+            // self.beneficiaryInfo[lender].debtOwed = 0;
             self.beneficiaryInfo[lender].allocation = 0;
 
             // transfer the debtOwed amount to the lender
-            IERC20(beneficiaryCreditToken).safeTransfer(lender, self.beneficiaryInfo[lender].debtOwed);
+
+            // NOTE
+            // IERC20(beneficiaryCreditToken).safeTransfer(lender, self.beneficiaryInfo[lender].debtOwed);
+            self.beneficiaryInfo[lender].tokensToDistribute[beneficiaryCreditToken] += self.beneficiaryInfo[lender].debtOwed;
+            // TODO: Do we subtract from debt owed now or when we initiate wire payment?
 
             // Spread the lender's allocation across the beneficiaries with outstanding debt
             (uint256[] memory allocations, uint256[] memory outstandingDebts, ) = _getBennySettings(self);
@@ -506,7 +535,7 @@ library SpigotLib {
         // Set allocations and debtOwed in state
         for (uint256 i = 0; i < self.beneficiaries.length; i++) {
             self.beneficiaryInfo[self.beneficiaries[i]].allocation = allocations[i];
-            self.beneficiaryInfo[self.beneficiaries[i]].debtOwed = outstandingDebts[i];
+            // self.beneficiaryInfo[self.beneficiaries[i]].debtOwed = outstandingDebts[i];
         }
 
         // distribute excess tokens to the first beneficiary (the owner of the Spigot)
@@ -523,8 +552,10 @@ library SpigotLib {
 
             // if beneficiary is not owner, and credit token is same as revenue token, send tokens to beneficiary address
             if (i != 0 && creditTokens[i] == revToken) {
-                LineLib.sendOutTokenOrETH(revToken, self.beneficiaries[i],  distributions[i]);
+
+                // LineLib.sendOutTokenOrETH(revToken, self.beneficiaries[i],  distributions[i]);
                 // NOTE: Here is the problem. WE cannot push to lenders (assuming everyone is like Huma. We just add tokens to readyToDistribute?)
+                self.beneficiaryInfo[lender].tokensToDistribute[beneficiaryCreditToken] += distributions[i];
             }
             // otherwise, store funds in bennyTokens struct
             else {
