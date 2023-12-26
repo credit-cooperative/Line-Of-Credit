@@ -23,6 +23,9 @@ import { MutualConsent } from "../utils/MutualConsent.sol";
 import { MockLine } from "../mock/MockLine.sol";
 import { SimpleOracle } from "../mock/SimpleOracle.sol";
 import { RevenueToken } from "../mock/RevenueToken.sol";
+import {ILendingPositionToken} from "../interfaces/ILendingPositionToken.sol";
+import {LendingPositionToken} from "../modules/tokenized-positions/LendingPositionToken.sol";
+
 
 contract SecuredLineTest is Test {
 
@@ -107,6 +110,9 @@ contract SecuredLineTest is Test {
           0
         );
 
+        address LPTAddress = address(_deployLendingPositionToken());
+        line.initTokenizedPosition(LPTAddress);
+
         beneficiaries = new address[](3);
         beneficiaries[0] = address(line);
         beneficiaries[1] = lender;
@@ -125,6 +131,10 @@ contract SecuredLineTest is Test {
         vm.startPrank(borrower);
         escrow.addCollateral(1 ether, address(supportedToken2));
         vm.stopPrank();
+    }
+
+    function _deployLendingPositionToken() internal returns (LendingPositionToken) {
+        return new LendingPositionToken();
     }
 
     function _mintAndApprove() internal {
@@ -346,7 +356,8 @@ contract SecuredLineTest is Test {
         line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
         vm.stopPrank();
         vm.startPrank(lender);
-        bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        uint256 tokenId = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        bytes32 id = line.tokenToPosition(tokenId);
         vm.stopPrank();
         vm.startPrank(borrower);
         line.borrow(id, 1 ether, borrower);
@@ -361,7 +372,8 @@ contract SecuredLineTest is Test {
         line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
         vm.stopPrank();
         vm.startPrank(lender);
-        bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        uint256 tokenId = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        bytes32 id = line.tokenToPosition(tokenId);
         vm.stopPrank();
         vm.warp(ttl + 1);
         line.liquidate(1 ether, address(supportedToken2));
@@ -410,7 +422,8 @@ contract SecuredLineTest is Test {
         line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
         vm.stopPrank();
         vm.startPrank(lender);
-        bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        uint256 tokenId = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        bytes32 id = line.tokenToPosition(tokenId);
         vm.stopPrank();
         vm.startPrank(borrower);
         line.borrow(id, 1 ether, borrower);
@@ -456,7 +469,8 @@ contract SecuredLineTest is Test {
         vm.stopPrank();
 
         vm.startPrank(lender);
-        bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        uint256 tokenId = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        bytes32 id = line.tokenToPosition(tokenId);
         vm.stopPrank();
 
         vm.startPrank(borrower);

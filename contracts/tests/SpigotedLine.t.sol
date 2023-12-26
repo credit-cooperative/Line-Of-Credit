@@ -24,6 +24,8 @@ import { SpigotedLineLib } from '../utils/SpigotedLineLib.sol';
 import { ISpigot } from '../interfaces/ISpigot.sol';
 import { ISpigotedLine } from '../interfaces/ISpigotedLine.sol';
 import { ILineOfCredit } from '../interfaces/ILineOfCredit.sol';
+import {ILendingPositionToken} from "../interfaces/ILendingPositionToken.sol";
+import {LendingPositionToken} from "../modules/tokenized-positions/LendingPositionToken.sol";
 
 interface Events {
       event ReservesChanged (
@@ -124,6 +126,9 @@ contract SpigotedLineTest is Test, Events {
           ownerSplit
         );
 
+        address LPTAddress = address(_deployLendingPositionToken());
+        line.initTokenizedPosition(LPTAddress);
+
         beneficiaries = new address[](2);
         beneficiaries[0] = address(line);
         beneficiaries[1] = externalLender;
@@ -137,6 +142,10 @@ contract SpigotedLineTest is Test, Events {
         _createCredit(address(revenueToken), address(creditToken), revenueContract);
         spigot.claimRevenue(address(revenueContract), address(revenueToken), "");
 
+    }
+
+    function _deployLendingPositionToken() internal returns (LendingPositionToken) {
+        return new LendingPositionToken();
     }
 
     function _generateRevenueAndClaim(uint256 revenue) internal {
@@ -164,7 +173,8 @@ contract SpigotedLineTest is Test, Events {
       vm.startPrank(lender);
       deal(creditT, lender, MAX_REVENUE);
       RevenueToken(creditT).approve(address(line), MAX_INT);
-      id = line.addCredit(dRate, fRate, lentAmount, creditT, lender);
+      uint256 tokenId = line.addCredit(dRate, fRate, lentAmount, creditT, lender);
+      id = line.tokenToPosition(tokenId);
       vm.stopPrank();
 
       // as arbiter
