@@ -117,7 +117,7 @@ library SpigotLib {
 
     function repayLender(SpigotState storage self, address lender, bytes memory args) external returns (bool) {
 
-        ISpigot.Beneficiary memory beneficiary = self.beneficiaryInfo[lender];
+        ISpigot.Beneficiary storage beneficiary = self.beneficiaryInfo[lender];
         
         uint256 beforeRepayment = IERC20(beneficiary.creditToken).balanceOf(address(this));
     
@@ -405,7 +405,7 @@ library SpigotLib {
             // TODO: Do we subtract from debt owed now or when we initiate wire payment?
 
             // Spread the lender's allocation across the beneficiaries with outstanding debt
-            (uint256[] memory allocations, uint256[] memory outstandingDebts, ) = _getBennySettings(self);
+            (uint256[] memory allocations, uint256[] memory outstandingDebts,,, ) = _getBennySettings(self);
             _resetAllocations(allocations, outstandingDebts, allocationToSpread);
 
             // Transfer the excess repayment tokens to the Spigot
@@ -418,36 +418,41 @@ library SpigotLib {
         return true;
     }
 
-   function _getBennySettings(SpigotState storage self) internal view returns (uint256[] memory allocations, uint256[] memory outstandingDebts, address[] memory creditTokens) {
-        uint256[] memory allocations = new uint256[](self.beneficiaries.length);
-        address[] memory creditTokens = new address[](self.beneficiaries.length);
-        uint256[] memory outstandingDebts = new uint256[](self.beneficiaries.length);
-        address[] memory poolAddresses = new address[](self.beneficiaries.length);
-        bytes4[] memory getDebtFunctions = new bytes4[](self.beneficiaries.length);
+   function _getBennySettings(SpigotState storage self) internal view returns (
+        uint256[] memory allocations, 
+        uint256[] memory outstandingDebts, 
+        address[] memory creditTokens, 
+        address[] memory poolAddresses, 
+        bytes4[] memory getDebtFunctions) {
+            uint256[] memory allocations = new uint256[](self.beneficiaries.length);
+            address[] memory creditTokens = new address[](self.beneficiaries.length);
+            uint256[] memory outstandingDebts = new uint256[](self.beneficiaries.length);
+            address[] memory poolAddresses = new address[](self.beneficiaries.length);
+            bytes4[] memory getDebtFunctions = new bytes4[](self.beneficiaries.length);
 
-        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
-            allocations[i] = self.beneficiaryInfo[self.beneficiaries[i]].allocation;
-            outstandingDebts[i] = self.beneficiaryInfo[self.beneficiaries[i]].debtOwed;
-            creditTokens[i] = self.beneficiaryInfo[self.beneficiaries[i]].creditToken;
-            poolAddresses[i] = self.beneficiaryInfo[self.beneficiaries[i]].poolAddress;
-            getDebtFunctions[i] = self.settings[poolAddresses[i]].getDebtFunc;
-        }
-        return (allocations, outstandingDebts, creditTokens, poolAddresses, getDebtFunctions);
-    }
-
-    function updateDebtOwed(SpigotState storage self) public {
-        (,,, address[] memory poolAddresses, bytes4[] memory getDebtFunctions) = _getBennySettings(self);
-        for (uint256 i = 0; i < self.beneficiaries.length; i++) {
-            if (poolAddresses[i] != address(0)) {
-                (bool success, bytes memory data) = poolAddresses[i].call(getDebtFunctions[i]);
-                if (success) {
-                    uint256 debtOwed = abi.decode(data, (uint256));
-                    self.beneficiaryInfo[self.beneficiaries[i]].debtOwed = debtOwed;
-                }
+            for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+                allocations[i] = self.beneficiaryInfo[self.beneficiaries[i]].allocation;
+                outstandingDebts[i] = self.beneficiaryInfo[self.beneficiaries[i]].debtOwed;
+                creditTokens[i] = self.beneficiaryInfo[self.beneficiaries[i]].creditToken;
+                poolAddresses[i] = self.beneficiaryInfo[self.beneficiaries[i]].poolAddress;
+                getDebtFunctions[i] = self.beneficiaryInfo[self.beneficiaries[i]].getDebtFunc;
             }
-        }
-        
+            return (allocations, outstandingDebts, creditTokens, poolAddresses, getDebtFunctions);
     }
+
+    // function updateDebtOwed(SpigotState storage self) public {
+    //     (,,, address[] memory poolAddresses, bytes4[] memory getDebtFunctions) = _getBennySettings(self);
+    //     for (uint256 i = 0; i < self.beneficiaries.length; i++) {
+    //         if (poolAddresses[i] != address(0)) {
+    //             (bool success, bytes memory data) = poolAddresses[i].call(getDebtFunctions[i]);
+    //             if (success) {
+    //                 uint256 debtOwed = abi.decode(data, (uint256));
+    //                 self.beneficiaryInfo[self.beneficiaries[i]].debtOwed = debtOwed;
+    //             }
+    //         }
+    //     }
+        
+    // }
 
     // TODO: remove console.logs
     function _distributeFunds(SpigotState storage self, address revToken) internal returns (uint256[] memory distributions) {
@@ -466,7 +471,7 @@ library SpigotLib {
 
         // get current beneficiary settings for all beneficiaries
         // TODO: this should be a helper function
-      (uint256[] memory allocations, uint256[] memory outstandingDebts, address[] memory creditTokens) = _getBennySettings(self);
+      (uint256[] memory allocations, uint256[] memory outstandingDebts, address[] memory creditTokens,,) = _getBennySettings(self);
 
         // TODO: remove logic for numBeneficiaries and numRepaidBeneficiaries
         // uint256 numBeneficiaries = self.beneficiaries.length;
@@ -558,7 +563,7 @@ library SpigotLib {
 
                 // LineLib.sendOutTokenOrETH(revToken, self.beneficiaries[i],  distributions[i]);
                 // NOTE: Here is the problem. WE cannot push to lenders (assuming everyone is like Huma. We just add tokens to readyToDistribute?)
-                self.beneficiaryInfo[lender].tokensToDistribute[beneficiaryCreditToken] += distributions[i];
+                self.beneficiaryInfo[self.beneficiaries[i]].tokensToDistribute[revToken] += distributions[i];
             }
             // otherwise, store funds in bennyTokens struct
             else {
