@@ -24,8 +24,10 @@ interface ILendingPositionToken {
 
     error CallerIsNotLine();
 
+    error TokenIsRestricted();
+
     function mint(address to, address line, bool iRestricted) external returns (uint256);
-    function approveTokenTransfer(uint256 tokenId, address to) public;
+    function approveTokenTransfer(uint256 tokenId, address to) external;
     function getPositionInfo(uint256 tokenId) external view returns (PositionInfo memory);
     function getCRatio(uint256 tokenId) external returns (uint256);
     function openProposal(uint256 tokenId) external;

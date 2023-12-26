@@ -18,7 +18,7 @@ contract LendingPositionToken is ERC721, ILendingPositionToken {
     mapping(uint256 => uint256) private tokenToOpenProposals;
 
     // Token Restiction
-    mapping(address => bool) private _isTokenRestricted;
+    mapping(uint256 => bool) private _isTokenRestricted;
     mapping(uint256 => mapping(address => bool)) private _transferApproval;
 
     constructor() ERC721("LendingPositionToken", "LPT") {}

@@ -101,7 +101,7 @@ contract SecuredLineTest is Test {
         );
 
         address LPTAddress = address(_deployLendingPositionToken());
-        line.initTokenizedPosition(LPTAddress);
+        line.initTokenizedPosition(LPTAddress, false);
         
 
         allocations = new uint256[](2);

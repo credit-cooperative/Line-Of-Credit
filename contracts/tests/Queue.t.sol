@@ -73,7 +73,7 @@ contract QueueTest is Test, Events {
         line = new LineOfCredit(address(oracle), arbiter, borrower, ttl);
 
         address LPTAddress = address(_deployLendingPositionToken());
-        line.initTokenizedPosition(LPTAddress);
+        line.initTokenizedPosition(LPTAddress, false);
 
         line.init();
         // assertEq(uint256(line.init()), uint256(LineLib.STATUS.ACTIVE));

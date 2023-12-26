@@ -72,7 +72,7 @@ contract LineTest is Test, Events {
         line.init();
 
         address LPTAddress = address(_deployLendingPositionToken());
-        line.initTokenizedPosition(LPTAddress);
+        line.initTokenizedPosition(LPTAddress, false);
         // assertEq(uint256(line.init()), uint256(LineLib.STATUS.ACTIVE));
         _mintAndApprove();
     }

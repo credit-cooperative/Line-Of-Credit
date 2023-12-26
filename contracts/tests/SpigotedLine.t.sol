@@ -116,7 +116,7 @@ contract SpigotedLineTest is Test, Events {
         );
 
         address LPTAddress = address(_deployLendingPositionToken());
-        line.initTokenizedPosition(LPTAddress);
+        line.initTokenizedPosition(LPTAddress, false);
 
         beneficiaries = new address[](2);
         beneficiaries[0] = address(line);
