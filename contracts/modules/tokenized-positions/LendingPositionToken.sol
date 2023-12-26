@@ -17,12 +17,19 @@ contract LendingPositionToken is ERC721, ILendingPositionToken {
     mapping(uint256 => address) private tokenToLine;
     mapping(uint256 => uint256) private tokenToOpenProposals;
 
+    // Token Restiction
+    mapping(address => bool) private _isTokenRestricted;
+    mapping(uint256 => mapping(address => bool)) private _transferApproval;
+
     constructor() ERC721("LendingPositionToken", "LPT") {}
 
-    function mint(address to, address line) public returns (uint256) {
+    function mint(address to, address line, bool iRestricted) public returns (uint256) {
         _tokenIds++;
         uint256 newItemId = _tokenIds;
         tokenToLine[newItemId] = line;
+        if (iRestricted) {
+            _isTokenRestricted[newItemId] = true;
+        }
         _mint(to, newItemId);
         return newItemId;
     }
@@ -41,12 +48,25 @@ contract LendingPositionToken is ERC721, ILendingPositionToken {
         tokenToOpenProposals[tokenId]--;
     }
 
+    function approveTokenTransfer(uint256 tokenId, address to) public {
+        if (msg.sender != tokenToLine[tokenId]){
+            revert CallerIsNotLine();
+        }
+        _transferApproval[tokenId][to] = true;
+    }
+
     // checks count for a tokenId
     // if count != 0, do not transfer the token
 
     function _update(address to, uint256 tokenId, address auth) internal override(ERC721) returns (address) {
         if (tokenToOpenProposals[tokenId] > 0) {
             revert OpenProposals();
+        }
+
+        if (_isTokenRestricted[tokenId]) {
+            if (_transferApproval[tokenId][to] == false) {
+                revert TokenIsRestricted();
+            }
         }
         return super._update(to, tokenId, auth);
     }

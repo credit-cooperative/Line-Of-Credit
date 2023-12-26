@@ -40,6 +40,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
     LendingPositionToken public tokenContract;
     mapping(uint256 => bytes32) public tokenToPosition;
+    bool public isRestricted = false;
 
     /// @notice - neutral 3rd party that mediates btw borrower and all lenders
     address public immutable arbiter;
@@ -90,9 +91,18 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         _updateStatus(LineLib.STATUS.ACTIVE);
     }
 
-    function initTokenizedPosition(address _tokenAddress) external onlyArbiter {
+    function initTokenizedPosition(address _tokenAddress, bool _isRestricted) external onlyArbiter {
         require (address(tokenContract) == address(0));
+        isRestricted = _isRestricted;
         tokenContract = LendingPositionToken(_tokenAddress);
+    }
+
+    function flipRestriction() external onlyBorrower() {
+        isRestricted = !isRestricted;
+    }
+
+    function approveNewLender(uint256 tokenId, address lender) external onlyBorrower {
+        tokenContract.approveTokenTransfer(tokenId, lender);
     }
 
     function _init() internal virtual {
@@ -336,7 +346,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         address lender
     ) external payable override nonReentrant whileActive mutualConsent(lender, borrower) returns (uint256) {
         
-        uint256 tokenId = tokenContract.mint(msg.sender, address(this));
+        uint256 tokenId = tokenContract.mint(msg.sender, address(this), isRestricted);
         bytes32 id = _createCredit(tokenId, token, amount);
 
         
