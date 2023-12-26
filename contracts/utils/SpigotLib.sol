@@ -118,15 +118,18 @@ library SpigotLib {
     function repayLender(SpigotState storage self, address lender, bytes memory args) external returns (bool) {
 
         ISpigot.Beneficiary memory beneficiary = self.beneficiaryInfo[lender];
-
-        // assumes that all the tokens will be distributed.
-        self.beneficiaryInfo[lender].tokensToDistribute[beneficiary.creditToken] = 0;
-
-        //assumes that we will deduct all the above tokens from the debtOwed
-        self.beneficiaryInfo[lender].debtOwed -= beneficiary.debtOwed;
+        
+        uint256 beforeRepayment = IERC20(beneficiary.creditToken).balanceOf(address(this));
     
         (bool success, ) = beneficiary.poolAddress.call(abi.encodePacked(beneficiary.repaymentFunc, args));
         require(success, "Call failed");
+        uint256 afterRepayment = IERC20(beneficiary.creditToken).balanceOf(address(this));
+
+        uint256 repaymentAmount = afterRepayment - beforeRepayment;
+
+        self.beneficiaryInfo[lender].tokensToDistribute[beneficiary.creditToken] -= repaymentAmount;
+
+        self.beneficiaryInfo[lender].debtOwed -= repaymentAmount;
 
     return success;
 

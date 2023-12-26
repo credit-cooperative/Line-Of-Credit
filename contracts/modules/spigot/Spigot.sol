@@ -143,6 +143,10 @@ contract Spigot is ISpigot, ReentrancyGuard {
         return state.claimRevenue(revenueContract, token, data);
     }
 
+    function repayLender(address lender, bytes memory args) external isInitialized onlyArbiter returns (bool) {
+        return state.repayLender(lender, args);
+    }
+
     /**
      * @notice  - Allows Spigot Owner to claim escrowed revenue tokens
      * @dev     - callable by `owner`

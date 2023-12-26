@@ -79,6 +79,8 @@ interface ISpigot {
         bytes calldata data
     ) external returns (uint256 claimed);
 
+    function repayLender(address lender, bytes memory args) external returns (bool);
+
     function operate(address revenueContract, bytes calldata data) external returns (bool);
 
     // owner funcs
