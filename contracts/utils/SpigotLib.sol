@@ -701,6 +701,15 @@ library SpigotLib {
         delete self.beneficiaries;
     }
 
+    function updateRepaymentFunc(SpigotState storage self, address beneficiary, address poolAddress, bytes4 repaymentFunc) external {
+        require(beneficiary != address(0), "Invalid beneficiary");
+        require(poolAddress != address(0), "Invalid pool address");
+        require(repaymentFunc != bytes4(0), "Invalid repayment function");
+
+        self.beneficiaryInfo[beneficiary].poolAddress = poolAddress;
+        self.beneficiaryInfo[beneficiary].repaymentFunc = repaymentFunc;
+    }
+
 
     // TODO: add docuementation
     function addBeneficiaryAddress(SpigotState storage self, address _newBeneficiary) external {

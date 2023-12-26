@@ -54,6 +54,8 @@ contract SpigotTest is Test {
     uint256[] allocations;
     uint256[] debtOwed;
     address[] creditTokens;
+    address[] poolAddresses;
+    bytes4[] repaymentFuncs;
 
 
     function setUp() public {
@@ -88,6 +90,19 @@ contract SpigotTest is Test {
         creditTokens[1] = address(token);
         creditTokens[2] = address(token);
 
+        // make an array of length 3 and type address where each member is set to supportedToken1
+        poolAddresses = new address[](3);
+        poolAddresses[0] = address(0xdead);
+        poolAddresses[1] = address(0xbeef);
+        poolAddresses[2] = address(0xdeadbeef);
+
+        // make an array of length 3 and type bytes4 where each member is set to supportedToken1
+
+        repaymentFuncs = new bytes4[](3);
+        repaymentFuncs[0] = bytes4(0xdeadbeef);
+        repaymentFuncs[1] = bytes4(0xdeadbeef);
+        repaymentFuncs[2] = bytes4(0xdeadbeef);
+
         _initSpigot(
             address(token),
             100,
@@ -116,7 +131,7 @@ contract SpigotTest is Test {
 
         spigot = new Spigot(address(this), borrower);
 
-        spigot.initialize(beneficiaries, allocations, debtOwed, creditTokens, _multisigAdmin);
+        spigot.initialize(beneficiaries, allocations, debtOwed, creditTokens, poolAddresses, repaymentFuncs, _multisigAdmin);
 
         // add spigot for revenue contract
         require(
@@ -1090,7 +1105,7 @@ contract SpigotTest is Test {
         settings = ISpigot.Setting(10, bytes4(""), bytes4("1234"));
 
         spigot = new Spigot(address(this), borrower);
-        spigot.initialize(beneficiaries, allocations, debtOwed, creditTokens, _multisigAdmin);
+        spigot.initialize(beneficiaries, allocations, debtOwed, creditTokens, poolAddresses, repaymentFuncs, _multisigAdmin);
 
         vm.expectRevert(SpigotLib.InvalidRevenueContract.selector);
         spigot.addSpigot(address(spigot), settings);
@@ -1102,7 +1117,7 @@ contract SpigotTest is Test {
         settings = ISpigot.Setting(10, bytes4(""), bytes4("1234"));
 
         spigot = new Spigot(address(this), borrower);
-        spigot.initialize(beneficiaries, allocations, debtOwed, creditTokens, _multisigAdmin);
+        spigot.initialize(beneficiaries, allocations, debtOwed, creditTokens, poolAddresses, repaymentFuncs, _multisigAdmin);
 
         spigot.addSpigot(address(revenueContract), settings);
 

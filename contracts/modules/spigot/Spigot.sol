@@ -40,6 +40,8 @@ contract Spigot is ISpigot, ReentrancyGuard {
         uint256[] memory _startingAllocations,
         uint256[] memory _debtOwed,
         address[] memory _creditToken,
+        address[] memory poolAddresses,
+        bytes4[] memory _repaymentFunc,
         address _arbiter
     ) external onlyOwner returns (bool) {
         require(!init, "Already isInitializedialized");
@@ -66,6 +68,8 @@ contract Spigot is ISpigot, ReentrancyGuard {
             state.beneficiaryInfo[_startingBeneficiaries[i]].allocation = _startingAllocations[i];
             state.beneficiaryInfo[_startingBeneficiaries[i]].debtOwed = _debtOwed[i];
             state.beneficiaryInfo[_startingBeneficiaries[i]].creditToken = _creditToken[i];
+            state.beneficiaryInfo[_startingBeneficiaries[i]].poolAddress = poolAddresses[i];
+            state.beneficiaryInfo[_startingBeneficiaries[i]].repaymentFunc = _repaymentFunc[i];
         }
 
         state.arbiter = _arbiter;
@@ -100,6 +104,16 @@ contract Spigot is ISpigot, ReentrancyGuard {
             revert CallerAccessDenied();
         }
         _;
+    }
+
+    modifier onlyBenficiary() {
+        for (uint256 i = 0; i < state.beneficiaries.length; i++) {
+            if (msg.sender == state.beneficiaries[i]) {
+                _;
+            }
+        }
+
+        revert CallerAccessDenied();
     }
 
     function beneficiaries() external view returns (address[] memory) {
@@ -216,6 +230,10 @@ contract Spigot is ISpigot, ReentrancyGuard {
     // TODO: add limits to when/who can call this function
     function deleteBeneficiaries() external isInitialized onlyOwner {
         state.deleteBeneficiaries();
+    }
+
+    function updateRepaymentFunc(address poolAddress, bytes4 _repaymentFunc) external isInitialized onlyArbiter {
+        state.updateRepaymentFunc(msg.sender, poolAddress, _repaymentFunc);
     }
 
 

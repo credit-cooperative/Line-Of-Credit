@@ -59,6 +59,8 @@ contract SecuredLineTest is Test {
     uint256[] allocations;
     uint256[] debtOwed;
     address[] creditTokens;
+    address[] poolAddresses;
+    bytes4[] repaymentFuncs;
 
     function setUp() public {
         borrower = address(20);
@@ -108,13 +110,21 @@ contract SecuredLineTest is Test {
         creditTokens[0] = address(0);
         creditTokens[1] = address(supportedToken1);
 
+        poolAddresses = new address[](2);
+        poolAddresses[0] = address(0x098);
+        poolAddresses[1] = address(0x099);
+
+        repaymentFuncs = new bytes4[](2);
+        repaymentFuncs[0] = bytes4(0);
+        repaymentFuncs[1] = SimpleRevenueContract.sendPushPayment.selector;
+
         beneficiaries = new address[](2);
         beneficiaries[0] = address(line);
         beneficiaries[1] = externalLender;
 
         // Transfer ownership of spigot and escrow to the line
         escrow.updateLine(address(line));
-        spigot.initialize(beneficiaries, allocations, debtOwed, creditTokens, arbiter);
+        spigot.initialize(beneficiaries, allocations, debtOwed, creditTokens, poolAddresses, repaymentFuncs, arbiter);
 
         line.init();
 

@@ -68,6 +68,8 @@ contract SpigotedLineTest is Test, Events {
     uint256[] allocations;
     uint256[] debtOwed;
     address[] creditTokens;
+    address[] poolAddresses;
+    bytes4[] repaymentFuncs;
 
     address private testaddr = makeAddr("test");
     SimpleOracle private oracle;
@@ -100,6 +102,15 @@ contract SpigotedLineTest is Test, Events {
         creditTokens[1] = address(revenueToken);
         // creditTokens[2] = address(revenueToken);
 
+        poolAddresses = new address[](2);
+        poolAddresses[0] = address(0xdead);
+        poolAddresses[1] = address(0xbeef);
+        // poolAddresses[2] = address(0xdeadbeef);
+
+        repaymentFuncs = new bytes4[](2);
+        repaymentFuncs[0] = bytes4(0);
+        repaymentFuncs[1] = bytes4(0);
+
         oracle = new SimpleOracle(address(revenueToken), address(creditToken));
         spigot = new Spigot(address(this), borrower);
 
@@ -117,7 +128,7 @@ contract SpigotedLineTest is Test, Events {
         beneficiaries[0] = address(line);
         beneficiaries[1] = externalLender;
 
-        spigot.initialize(beneficiaries, allocations, debtOwed, creditTokens, arbiter);
+        spigot.initialize(beneficiaries, allocations, debtOwed, creditTokens, poolAddresses, repaymentFuncs, arbiter);
 
         line.init();
 

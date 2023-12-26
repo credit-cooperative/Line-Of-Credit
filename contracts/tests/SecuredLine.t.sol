@@ -52,6 +52,8 @@ contract SecuredLineTest is Test {
     uint256[] allocations;
     uint256[] debtOwed;
     address[] creditTokens;
+    address[] poolAddresses;
+    bytes4[] repaymentFuncs;
 
     function setUp() public {
         borrower = address(20);
@@ -79,6 +81,16 @@ contract SecuredLineTest is Test {
         creditTokens[1] = address(supportedToken1);
         creditTokens[2] = address(supportedToken1);
 
+        poolAddresses = new address[](3);
+        poolAddresses[0] = address(0xdead);
+        poolAddresses[1] = address(0xbeef);
+        poolAddresses[2] = address(0xdeadbeef);
+
+        repaymentFuncs = new bytes4[](3);
+        repaymentFuncs[0] = bytes4(0);
+        repaymentFuncs[1] = bytes4(0);
+        repaymentFuncs[2] = bytes4(0);
+
         spigot = new Spigot(address(this), borrower);
         oracle = new SimpleOracle(address(supportedToken1), address(supportedToken2));
 
@@ -101,7 +113,7 @@ contract SecuredLineTest is Test {
         beneficiaries[2] = externalLender;
 
         escrow.updateLine(address(line));
-        spigot.initialize(beneficiaries, allocations, debtOwed, creditTokens, arbiter);
+        spigot.initialize(beneficiaries, allocations, debtOwed, creditTokens, poolAddresses, repaymentFuncs, arbiter);
 
         line.init();
         // assertEq(uint(line.init()), uint(LineLib.STATUS.ACTIVE));
@@ -224,7 +236,7 @@ contract SecuredLineTest is Test {
 
 
         // configure other modules
-        s.initialize(beneficiaries, allocations, debtOwed, creditTokens, arbiter);
+        s.initialize(beneficiaries, allocations, debtOwed, creditTokens, poolAddresses, repaymentFuncs, arbiter);
 
         // assertEq(uint(l.init()), uint(LineLib.STATUS.UNINITIALIZED));
         vm.expectRevert(abi.encodeWithSelector(ILineOfCredit.BadModule.selector, address(e)));
@@ -1264,7 +1276,7 @@ contract SecuredLineTest is Test {
 
       beneficiaries[0] = address(l);
       e.updateLine(address(l));
-      s.initialize(beneficiaries, allocations, debtOwed, creditTokens, _multisigAdmin);
+      s.initialize(beneficiaries, allocations, debtOwed, creditTokens, poolAddresses, repaymentFuncs, _multisigAdmin);
       l.init();
 
       // giving our modules should fail because taken already

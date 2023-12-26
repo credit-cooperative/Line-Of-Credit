@@ -54,6 +54,8 @@ contract AbortTest is Test {
     uint256[] allocations;
     uint256[] debtOwed;
     address[] creditTokens;
+    address[] poolAddresses;
+    bytes4[] repaymentFuncs;
 
     function setUp() public {
         borrower = address(20);
@@ -83,6 +85,16 @@ contract AbortTest is Test {
         creditTokens[1] = address(supportedToken1);
         creditTokens[2] = address(supportedToken1);
 
+        poolAddresses = new address[](3);
+        poolAddresses[0] = address(0xdead);
+        poolAddresses[1] = address(0xbeef);
+        poolAddresses[2] = address(0xdeadbeef);
+
+        repaymentFuncs = new bytes4[](3);
+        repaymentFuncs[0] = bytes4(keccak256("repay(uint256,address)"));
+        repaymentFuncs[1] = bytes4(keccak256("repay(uint256,address)"));
+        repaymentFuncs[2] = bytes4(keccak256("repay(uint256,address)"));
+
         spigot = new Spigot(address(this), borrower);
         oracle = new ComplexOracle(address(supportedToken1), address(supportedToken2), address(supportedToken3), address(supportedToken4));
 
@@ -105,7 +117,7 @@ contract AbortTest is Test {
         beneficiaries[2] = externalLender;
 
         escrow.updateLine(address(line));
-        spigot.initialize(beneficiaries, allocations, debtOwed, creditTokens, arbiter);
+        spigot.initialize(beneficiaries, allocations, debtOwed, creditTokens, poolAddresses, repaymentFuncs, arbiter);
 
         line.init();
         // assertEq(uint(line.init()), uint(LineLib.STATUS.ACTIVE));
