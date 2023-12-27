@@ -18,6 +18,7 @@ interface ILineOfCredit {
         address token; // The token being lent out (Credit Token)
         uint256 tokenId; // The person to repay
         bool isOpen; // Status of position
+        uint256 deadline; // The timestamp at which the position will be liquidatable
     }
 
     // General Events

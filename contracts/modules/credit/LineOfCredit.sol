@@ -254,10 +254,19 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         }
 
         // Liquidate if all credit lines aren't closed by deadline
-        if (block.timestamp >= deadline && count != 0) {
-            emit Default(ids[0]); // can query all defaulted positions offchain once event picked up
-            return LineLib.STATUS.LIQUIDATABLE;
+        // go through all open positions, if any are past deadline then liquidate
+
+        for (uint256 i; i < ids.length; ++i) {
+            bytes32 id = ids[i];
+            Credit memory credit = credits[id];
+            
+            if (block.timestamp >= credit.deadline && count != 0) {
+                emit Default(ids[0]); // can query all defaulted positions offchain once event picked up
+                return LineLib.STATUS.LIQUIDATABLE;
+            }
         }
+
+        
 
         // if nothing wrong, return to healthy ACTIVE state
         return LineLib.STATUS.ACTIVE;
