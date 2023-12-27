@@ -259,7 +259,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         for (uint256 i; i < ids.length; ++i) {
             bytes32 id = ids[i];
             Credit memory credit = credits[id];
-            
+
             if (block.timestamp >= credit.deadline && count != 0) {
                 emit Default(ids[0]); // can query all defaulted positions offchain once event picked up
                 return LineLib.STATUS.LIQUIDATABLE;
@@ -267,7 +267,6 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         }
 
         
-
         // if nothing wrong, return to healthy ACTIVE state
         return LineLib.STATUS.ACTIVE;
     }
