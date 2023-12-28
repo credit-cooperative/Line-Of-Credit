@@ -20,7 +20,7 @@ contract DeployTokenScript is Script {
 
     function run() external {
 
-        uint256 deployerPrivateKey= vm.envUint("GOERLI_PRIVATE_KEY");
+        uint256 deployerPrivateKey= vm.envUint("LOCAL_PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
         //  Pass in name and symbol for new tokens
