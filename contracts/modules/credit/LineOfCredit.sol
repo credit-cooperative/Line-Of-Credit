@@ -64,7 +64,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     bytes32[] public ids;
 
     // NOTE: ITS IS 0 FOR TESTING PURPOSES. Otherwise all other tests break
-    uint128 public orginiationFee = 0; // in BPS 4 decimals  fee = 50 loan amount = 10000 * (50/100)
+    uint128 public originationFee = 0; // in BPS 4 decimals  fee = 50 loan amount = 10000 * (50/100)
 
     /// @notice id -> position data
     mapping(bytes32 => Credit) public credits;
@@ -100,13 +100,8 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     }
 
     function setFees(uint128 _originationFee) external onlyBorrowerOrArbiter mutualConsent(arbiter, borrower) {
-        //TODO: do we need this logic? Doesnt effectt lenders at all. If borrower and servicer agree, who cares?
-        
-        // if (count > 0) {
-        //     revert CannotSetOriginationFee();   
-        // }
-        orginiationFee = _originationFee;
 
+        originationFee = _originationFee;
 
         // servicingFee = fee;
         // swapFee = fee;
@@ -353,8 +348,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
 
     function _calculateOriginationFee(uint256 amount) internal returns (uint256) {
-        require(deadline > block.timestamp, "deadline has passed");
-        return (amount * orginiationFee * (deadline - block.timestamp)) / INTEREST_DENOMINATOR;
+        return (amount * originationFee * (deadline - block.timestamp)) / INTEREST_DENOMINATOR;
     }
     
     function addCredit(
@@ -370,10 +364,8 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         uint256 fee = 0;
         
-        if (orginiationFee > 0){
-            
+        if (originationFee > 0){
             fee = _calculateOriginationFee(amount);
-            console.log("fee", fee);
         }
         
         
@@ -382,7 +374,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         if (fee > 0) {
             IERC20(token).safeTransferFrom(lender, arbiter, fee); // NOTE: send fee from lender to treasury (arbiter for now)
-            emit Fee(fee);
+            emit TransferOriginationFee(fee, arbiter);
         }
 
         LineLib.receiveTokenOrETH(token, lender, amount - fee); // send amount - fee from lender to line
@@ -445,7 +437,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         // Borrower clears the debt then closes the credit line
 
-        credits[id] = _close(_repay(credit, id, totalOwed, borrower), id); // NOTE: the fee is in addition to the totalOwed bc we need to close the line
+        credits[id] = _close(_repay(credit, id, totalOwed, borrower), id);
     }
 
     /// see ILineOfCredit.close

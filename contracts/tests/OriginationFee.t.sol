@@ -137,7 +137,7 @@ contract OriginationFeeTest is Test, Events {
     }
 
     function test_arbiter_and_borrower_set_fee() public {
-        assertEq(line.orginiationFee(), 0);
+        assertEq(line.originationFee(), 0);
         assertEq(line.count(), 0);
 
         vm.startPrank(borrower);
@@ -148,7 +148,7 @@ contract OriginationFeeTest is Test, Events {
         line.setFees(50);
         vm.stopPrank();
 
-        assertEq(line.orginiationFee(), 50);
+        assertEq(line.originationFee(), 50);
     }
 
     function test_math() public {
@@ -231,10 +231,4 @@ contract OriginationFeeTest is Test, Events {
         assertGt(fee2, fee1);
     }
 
-    // probably need to test more math and more scenarios
-
-    // what about bob's point? We cant take a fee if lender deposits and withdraws before time is elapsed.
-        // what if we penalize the lender if they withdraw before the deadline passes? 
-
-    // Do we need something smoother for giving approvals? Would suck to ask for 2 approvals on a frontend (one for line, one for treasury)
 }

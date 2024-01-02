@@ -42,7 +42,7 @@ interface ILineOfCredit {
 
     event IncreaseCredit(bytes32 indexed id, uint256 indexed deposit);
 
-    event Fee(uint256 indexed fee);
+    event TransferOriginationFee(uint256 indexed fee, address indexed to);
 
     // Lender Events
 
