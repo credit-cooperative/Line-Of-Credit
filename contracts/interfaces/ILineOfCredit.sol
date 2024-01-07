@@ -98,6 +98,7 @@ interface ILineOfCredit {
     error BorrowFailed();
     error CannotExtendLine();
     error InvalidBorrower();
+    error TLPNotInitialized();
 
     // Fully public functions
 

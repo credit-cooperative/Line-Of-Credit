@@ -90,9 +90,8 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         _updateStatus(LineLib.STATUS.ACTIVE);
     }
 
-    function initTokenizedPosition(address _tokenAddress, bool _isRestricted) external onlyArbiter {
+    function initTokenizedPosition(address _tokenAddress) external onlyArbiter {
         require (address(tokenContract) == address(0));
-        isRestricted = _isRestricted;
         tokenContract = LendingPositionToken(_tokenAddress);
     }
 
@@ -342,14 +341,15 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         address lender,
         bool isRestricted
     ) external payable override nonReentrant whileActive mutualConsent(lender, borrower) returns (uint256) {
-        bytes32 id;
+
         if (address(tokenContract) == address(0)){
-            id = _createCredit(lender, token, amount);
-        } else {
-            uint256 tokenId = tokenContract.mint(msg.sender, address(this), isRestricted);
-            id = _createCredit(tokenId, token, amount);
-            tokenToPosition[tokenId] = id;
-        }
+            revert TLPNotInitialized();
+        } 
+
+        uint256 tokenId = tokenContract.mint(lender, address(this), isRestricted);
+        bytes32 id = _createCredit(tokenId, token, amount, isRestricted);
+        
+        tokenToPosition[tokenId] = id;
         
         _setRates(id, drate, frate);
 
@@ -537,7 +537,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
      * @param token - ERC20 token that is being lent and borrower
      * @param amount - amount of tokens lender will initially deposit
      */
-    function _createCredit(uint256 tokenId, address token, uint256 amount) internal returns (bytes32 id) {
+    function _createCredit(uint256 tokenId, address token, uint256 amount, bool isRestricted) internal returns (bytes32 id) {
         id = CreditLib.computeId(address(this), tokenId, token);
         address lender = getTokenHolder(tokenId);
         // MUST not double add the credit line. once lender is set it cant be deleted even if position is closed.
@@ -545,7 +545,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
             revert PositionExists();
         }
 
-        credits[id] = CreditLib.create(id, amount, tokenId, token, address(oracle));
+        credits[id] = CreditLib.create(id, amount, tokenId, token, address(oracle), isRestricted);
 
         ids.push(id); // add lender to end of repayment queue
 

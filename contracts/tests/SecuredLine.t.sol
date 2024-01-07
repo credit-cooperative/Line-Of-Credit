@@ -99,7 +99,7 @@ contract SecuredLineTest is Test {
         );
 
         address LPTAddress = address(_deployLendingPositionToken());
-        line.initTokenizedPosition(LPTAddress, false);
+        line.initTokenizedPosition(LPTAddress);
 
         beneficiaries = new address[](3);
         beneficiaries[0] = address(line);

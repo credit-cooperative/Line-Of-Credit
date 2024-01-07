@@ -121,7 +121,7 @@ contract LenderPositionTest is Test, Events {
         );
 
         LPTAddress = address(_deployLendingPositionToken());
-        line.initTokenizedPosition(LPTAddress, false);
+        line.initTokenizedPosition(LPTAddress);
         
 
         allocations = new uint256[](2);
@@ -229,7 +229,7 @@ contract LenderPositionTest is Test, Events {
     function test_token_info_is_same_as_position_info() public {
         _addCredit(address(supportedToken1), 100 ether);
 
-        (uint256 d, uint256 p, uint256 ia, uint256 ir,,,,) = line.credits(id);
+        (uint256 d, uint256 p, uint256 ia, uint256 ir,,,,,) = line.credits(id);
         (uint128 dr, uint128 fr) = line.getRates(id);
         uint256 deadline = line.getDeadline();
         uint256 split = line.defaultRevenueSplit();

@@ -171,7 +171,7 @@ contract EthRevenue is Test {
         
         address LPTAddress = address(_deployLendingPositionToken());
 
-        line.initTokenizedPosition(LPTAddress, false);
+        line.initTokenizedPosition(LPTAddress);
 
 
         beneficiaries = new address[](1);
@@ -278,7 +278,7 @@ contract EthRevenue is Test {
         assertEq(ownerTokens, 0);
         assertEq(line.unused(DAI), tokensBought);
 
-        (, uint256 principalTokens, uint256 interestAccruedTokens, , , , , ) = line.credits(line.ids(0));
+        (, uint256 principalTokens, uint256 interestAccruedTokens, , , , , ,) = line.credits(line.ids(0));
 
         numTokensToRepayDebt = principalTokens + interestAccruedTokens;
         emit log_named_uint("numTokensToRepayDebt", numTokensToRepayDebt);
@@ -311,7 +311,7 @@ contract EthRevenue is Test {
         assertEq(claimedEth, (REVENUE_EARNED / 100) * 90);
 
         // withdraw the lender's funds + profit using the original position ID (line.ids(0) is now empty)
-        (deposit, , , interestRepaid, , , , ) = line.credits(id);
+        (deposit, , , interestRepaid, , , , ,) = line.credits(id);
         vm.startPrank(lender);
         line.withdraw(tokenId, deposit + interestRepaid);
         vm.stopPrank();
@@ -361,7 +361,7 @@ contract EthRevenue is Test {
         assertEq(ownerTokens, 0);
         assertEq(line.unused(DAI), tokensBought);
 
-        (, uint256 principalTokens, uint256 interestAccruedTokens, , , , , ) = line.credits(line.ids(0));
+        (, uint256 principalTokens, uint256 interestAccruedTokens, , , , , ,) = line.credits(line.ids(0));
 
         numTokensToRepayDebt = principalTokens + interestAccruedTokens;
         unusedTradedTokens = tokensBought - numTokensToRepayDebt;
@@ -380,7 +380,7 @@ contract EthRevenue is Test {
         assertEq(interest, 0);
 
         // lender withdraws their deposit + interest earned
-        (deposit, , , interestRepaid, , , , ) = line.credits(line.ids(0));
+        (deposit, , , interestRepaid, , , , ,) = line.credits(line.ids(0));
         vm.startPrank(lender);
         line.withdraw(tokenId, deposit + interestRepaid); //10000.27
         vm.stopPrank();
@@ -388,7 +388,7 @@ contract EthRevenue is Test {
         vm.startPrank(borrower);
         line.close(line.ids(0));
         vm.stopPrank();
-        (, , , , , , , isOpen) = line.credits(line.ids(0));
+        (, , , , , , , isOpen,) = line.credits(line.ids(0));
         assertFalse(isOpen);
 
         unusedDai = line.unused(DAI);
@@ -400,7 +400,7 @@ contract EthRevenue is Test {
         // assertEq(unusedEth, address(line).balance, "unused ETH should match the ETH balance");
 
         // line should be closed anad interest should be 0
-        (, , uint256 interestAccruedTokensAfter, , , , , bool lineIsOpen) = line.credits(line.ids(0));
+        (, , uint256 interestAccruedTokensAfter, , , , , bool lineIsOpen,) = line.credits(line.ids(0));
         assertFalse(lineIsOpen);
         assertEq(interestAccruedTokensAfter, 0);
 

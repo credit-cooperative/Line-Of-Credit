@@ -116,7 +116,7 @@ contract SpigotedLineTest is Test, Events {
         );
 
         address LPTAddress = address(_deployLendingPositionToken());
-        line.initTokenizedPosition(LPTAddress, false);
+        line.initTokenizedPosition(LPTAddress);
 
         beneficiaries = new address[](2);
         beneficiaries[0] = address(line);
@@ -351,7 +351,7 @@ contract SpigotedLineTest is Test, Events {
       vm.startPrank(arbiter);
       vm.expectRevert(SpigotedLineLib.TradeFailed.selector);
       line.claimAndTrade(address(revenueToken), tradeData);
-      (,uint p,,,,,,) = line.credits(line.ids(0));
+      (,uint p,,,,,,,) = line.credits(line.ids(0));
 
       assertEq(p, lentAmount); // nothing repaid
       vm.stopPrank();
@@ -510,7 +510,7 @@ contract SpigotedLineTest is Test, Events {
       );
 
       line.claimAndRepay(address(revenueToken), repayData);
-      (,uint p,,,,,,) = line.credits(line.ids(0));
+      (,uint p,,,,,,,) = line.credits(line.ids(0));
       vm.stopPrank();
 
       assertEq(p, 0);
@@ -712,7 +712,7 @@ contract SpigotedLineTest is Test, Events {
       vm.warp(block.timestamp + timespan);
       line.accrueInterest();
 
-      (,, uint interestAccrued,,,,,) = line.credits(line.ids(0));
+      (,, uint interestAccrued,,,,,,) = line.credits(line.ids(0));
       console.log("interestAccrued", interestAccrued);
 
       console.log("unused credit tokens before: ", line.unused(address(creditToken)));
@@ -748,7 +748,7 @@ contract SpigotedLineTest is Test, Events {
       uint256 tokensBought = line.claimAndRepay(address(revenueToken), tradeData);
 
       // principal, interest, repaid
-      (,uint p, uint i, uint r,,,,) = line.credits(line.ids(0));
+      (,uint p, uint i, uint r,,,,,) = line.credits(line.ids(0));
 
       if(interestAccrued > buyAmount) {
         // only interest paid
@@ -871,7 +871,7 @@ contract SpigotedLineTest is Test, Events {
       // repaid = newTokens (bought from claimAndTrade) + unusedTokens[credit]
       // we want repaid > newTokens, ie existing balance of unused, which we have
       uint256 repaid = creditTokensPurchased + line.unused(address(creditToken));
-      ( ,uint256 principal,uint256 interestAccrued , , , , , ) = line.credits(line.ids(0));
+      ( ,uint256 principal,uint256 interestAccrued , , , , , ,) = line.credits(line.ids(0));
       uint256 debt = principal + interestAccrued;
       if (repaid > debt) repaid = debt;
 
@@ -921,7 +921,7 @@ contract SpigotedLineTest is Test, Events {
       // repaid = newTokens (bought from claimAndTrade) + unusedTokens[credit]
       // we want repaid > newTokens, ie existing balance of unused, which we have
       uint256 repaid = creditTokensPurchased + line.unused(address(creditToken));
-      ( ,uint256 principal,uint256 interestAccrued , , , , , ) = line.credits(line.ids(0));
+      ( ,uint256 principal,uint256 interestAccrued , , , , , ,) = line.credits(line.ids(0));
       uint256 debt = principal + interestAccrued;
       if (repaid > debt) repaid = debt;
       emit log_named_uint("repaid", repaid);
@@ -967,7 +967,7 @@ contract SpigotedLineTest is Test, Events {
 
       _simulateInitialClaimAndTradeForReserveChanges(creditTokensPurchased,claimableRevenue,revenue);
 
-      ( ,uint256 principal,uint256 interestAccrued , , , , , ) = line.credits(line.ids(0));
+      ( ,uint256 principal,uint256 interestAccrued , , , , , ,) = line.credits(line.ids(0));
       uint256 debt = principal + interestAccrued;
 
       vm.startPrank(borrower);
@@ -1725,10 +1725,10 @@ contract SpigotedLineTest is Test, Events {
       line.claimAndTrade(address(revenueToken), tradeData);
 
 
-      (, uint256 principal,uint256 interest,,,,,) = line.credits(line.ids(0));
+      (, uint256 principal,uint256 interest,,,,,,) = line.credits(line.ids(0));
       vm.prank(lender); // prank lender
       line.useAndRepay(principal + interest);
-      (, principal,,,,,,) = line.credits(line.ids(0));
+      (, principal,,,,,,,) = line.credits(line.ids(0));
       assertEq(principal, 0, "principal should be zero");
     }
 
@@ -1799,7 +1799,7 @@ contract SpigotedLineTest is Test, Events {
       hoax(arbiter);
       line.claimAndTrade(address(revenueToken), tradeData);
 
-      (, uint256 principalBeforeRepaying,,,,,,) = line.credits(line.ids(0));
+      (, uint256 principalBeforeRepaying,,,,,,,) = line.credits(line.ids(0));
       assertEq(principalBeforeRepaying, lentAmount);
 
       // 3. Use and repay debt with previously claimed and traded revenue (largeRevenueAmount = 2 ether)

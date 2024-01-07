@@ -66,7 +66,7 @@ contract EscrowedLineTest is Test {
 
         address LPTAddress = address(_deployLendingPositionToken());
 
-        line.initTokenizedPosition(LPTAddress, false);
+        line.initTokenizedPosition(LPTAddress);
 
         escrow.updateLine(address(line));
         line.init();

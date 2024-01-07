@@ -101,7 +101,7 @@ contract LineLendsTest is Test {
 
         vm.warp(30 days);
 
-        (,,uint256 interestAccrued,,,,,) = line.credits(id);
+        (,,uint256 interestAccrued,,,,,,) = line.credits(id);
 
         assertEq(interestAccrued, 0);
 
@@ -122,7 +122,7 @@ contract LineLendsTest is Test {
         vm.warp(30 days);
 
         line.accrueInterest();
-        (,,uint256 interestAccrued,,,,,) = line.credits(id);
+        (,,uint256 interestAccrued,,,,,,) = line.credits(id);
 
         assertGt(interestAccrued, 0);
 
@@ -137,7 +137,7 @@ contract LineLendsTest is Test {
         bytes32 id = line.ids(0);
 
         line.accrueInterest();
-        (,,uint256 interestAccrued,,,,,) = line.credits(id);
+        (,,uint256 interestAccrued,,,,,,) = line.credits(id);
 
         uint256 getInterest = line.interestAccrued(id);
 
@@ -154,11 +154,11 @@ contract LineLendsTest is Test {
 
         line.accrueInterest();
 
-         (,,uint256 oldInterest,,,,,) = line.credits(id);
+         (,,uint256 oldInterest,,,,,,) = line.credits(id);
 
         vm.warp(30 days);
 
-         (,,uint256 interestAccrued,,,,,) = line.credits(id);
+         (,,uint256 interestAccrued,,,,,,) = line.credits(id);
 
         assertEq(oldInterest,  interestAccrued);
 
