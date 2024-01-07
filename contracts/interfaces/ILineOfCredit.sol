@@ -18,6 +18,7 @@ interface ILineOfCredit {
         address token; // The token being lent out (Credit Token)
         uint256 tokenId; // The person to repay
         bool isOpen; // Status of position
+        bool isRestricted; // Whether the position can be traded
     }
 
     // General Events
@@ -128,7 +129,8 @@ interface ILineOfCredit {
         uint128 frate,
         uint256 amount,
         address token,
-        address lender
+        address lender,
+        bool isRestricted
     ) external payable returns (uint256);
 
     /**

@@ -40,7 +40,6 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
     LendingPositionToken public tokenContract;
     mapping(uint256 => bytes32) public tokenToPosition;
-    bool public isRestricted = false;
 
     /// @notice - neutral 3rd party that mediates btw borrower and all lenders
     address public immutable arbiter;
@@ -97,9 +96,6 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         tokenContract = LendingPositionToken(_tokenAddress);
     }
 
-    function flipRestriction() external onlyBorrower() {
-        isRestricted = !isRestricted;
-    }
 
     function approveNewLender(uint256 tokenId, address lender) external onlyBorrower {
         tokenContract.approveTokenTransfer(tokenId, lender);
@@ -343,7 +339,8 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         uint128 frate,
         uint256 amount,
         address token,
-        address lender
+        address lender,
+        bool isRestricted
     ) external payable override nonReentrant whileActive mutualConsent(lender, borrower) returns (uint256) {
         
         uint256 tokenId = tokenContract.mint(msg.sender, address(this), isRestricted);
