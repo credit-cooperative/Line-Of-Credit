@@ -368,11 +368,11 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         uint256 amount,
         address token,
         address lender,
-        uint128 withdrawalFee
+        uint128 earlyWithdrawalFee
     ) external payable override nonReentrant whileActive mutualConsent(lender, borrower) returns (uint256) {
         uint256 tokenId = tokenContract.mint(msg.sender, address(this));
         
-        bytes32 id = _createCredit(tokenId, token, amount, withdrawalFee);
+        bytes32 id = _createCredit(tokenId, token, amount, earlyWithdrawalFee);
 
         uint256 fee = 0;
         
@@ -532,10 +532,10 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         uint256 fee = 0;
 
-        // TODO: if they withdraw on EXACTLY the deadline, what happens?
+        
         // dont penalize if they are only withdrawing interest that has been repaid
         if (status == LineLib.STATUS.ACTIVE){
-            if (block.timestamp <= deadline && amount > credits[id].interestRepaid) {
+            if (block.timestamp < deadline && amount > credits[id].interestRepaid) {
                 fee = _calculateWithdrawalFee(credits[id].withdrawalFee, amount);
             }
         }
@@ -548,6 +548,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         if (fee > 0) {
             IERC20(credits[id].token).safeTransfer(borrower, fee); // NOTE: send fee from line to borrower
+            emit EarlyWithdrawalFee(fee, borrower);
         }
     }
 
