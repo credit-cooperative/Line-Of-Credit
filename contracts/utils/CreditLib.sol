@@ -111,7 +111,7 @@ library CreditLib {
         uint256 tokenId,
         address token,
         address oracle,
-        uint128 withdrawalFee
+        uint128 earlyWithdrawalFee
     ) external returns (ILineOfCredit.Credit memory credit) {
         int price = IOracle(oracle).getLatestAnswer(token);
         if (price <= 0) {
@@ -134,7 +134,7 @@ library CreditLib {
             principal: 0,
             interestAccrued: 0,
             interestRepaid: 0,
-            withdrawalFee: withdrawalFee,
+            earlyWithdrawalFee: earlyWithdrawalFee,
             isOpen: true
         });
 

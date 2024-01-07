@@ -388,7 +388,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         if (fee > 0) {
             IERC20(token).safeTransferFrom(lender, arbiter, fee); // NOTE: send fee from lender to treasury (arbiter for now)
-            emit Fee(fee);
+            emit TransferOriginationFee(fee, arbiter);
         }
 
         LineLib.receiveTokenOrETH(token, lender, amount - fee); // send amount - fee from lender to line
@@ -536,7 +536,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         // dont penalize if they are only withdrawing interest that has been repaid
         if (status == LineLib.STATUS.ACTIVE){
             if (block.timestamp < deadline && amount > credits[id].interestRepaid) {
-                fee = _calculateWithdrawalFee(credits[id].withdrawalFee, amount);
+                fee = _calculateWithdrawalFee(credits[id].earlyWithdrawalFee, amount);
             }
         }
         

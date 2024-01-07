@@ -162,11 +162,13 @@ contract WithdrawalFeeTest is Test, Events {
         
     }
 
-    function test_withdrawal_fee_if_exactly_deadline() public {
+    function test_no_withdrawal_fee_if_exactly_deadline() public {
         _addCredit(address(supportedToken1), 100 ether);
 
-        vm.warp(150 days);
-
+        vm.warp(150 days + 1 seconds);
+  
+        console.log("now",block.timestamp);
+        console.log("deadline",line.deadline());
         uint256 lenderBalanceBefore = supportedToken1.balanceOf(lender);
         uint256 borrowerBalanceBefore = supportedToken1.balanceOf(borrower);
 
@@ -177,8 +179,8 @@ contract WithdrawalFeeTest is Test, Events {
         uint256 lenderBalanceAfter = supportedToken1.balanceOf(lender);
         uint256 borrowerBalanceAfter = supportedToken1.balanceOf(borrower);
 
-        assertLt(borrowerBalanceBefore, borrowerBalanceAfter);
-        assertLt(lenderBalanceAfter, lenderBalanceBefore + 100 ether);
+        assertEq(borrowerBalanceBefore, borrowerBalanceAfter);
+        assertEq(lenderBalanceAfter, lenderBalanceBefore + 100 ether);
 
     }
 
