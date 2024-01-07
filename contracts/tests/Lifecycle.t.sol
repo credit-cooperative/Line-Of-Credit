@@ -166,10 +166,10 @@ contract SecuredLineTest is Test {
 
     function _addCredit(address token, uint256 amount) public returns (uint256){
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, amount, token, lender);
+        line.addCredit(dRate, fRate, amount, token, lender, false);
         vm.stopPrank();
         vm.startPrank(lender);
-        uint256 newTokenId = line.addCredit(dRate, fRate, amount, token, lender);
+        uint256 newTokenId = line.addCredit(dRate, fRate, amount, token, lender, false);
         vm.stopPrank();
         return newTokenId;
     }   

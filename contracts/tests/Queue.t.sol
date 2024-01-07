@@ -204,10 +204,10 @@ contract QueueTest is Test, Events {
         address token4 = tokens[1];
 
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken2), lender);
-        line.addCredit(dRate, fRate, 1 ether, address(token3), lender);
-        line.addCredit(dRate, fRate, 1 ether, address(token4), lender);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken2), lender, false);
+        line.addCredit(dRate, fRate, 1 ether, address(token3), lender, false);
+        line.addCredit(dRate, fRate, 1 ether, address(token4), lender, false);
         vm.stopPrank();
 
         vm.startPrank(lender);
@@ -216,28 +216,32 @@ contract QueueTest is Test, Events {
             fRate,
             1 ether,
             address(supportedToken1),
-            lender
+            lender, 
+            false
         );
         uint256 tokenId2 = line.addCredit(
             dRate,
             fRate,
             1 ether,
             address(supportedToken2),
-            lender
+            lender, 
+            false
         );
         uint256 tokenId3 = line.addCredit(
             dRate,
             fRate,
             1 ether,
             address(token3),
-            lender
+            lender, 
+            false
         );
         uint256 tokenId4 = line.addCredit(
             dRate,
             fRate,
             1 ether,
             address(token4),
-            lender
+            lender, 
+            false
         );
         vm.stopPrank();
 
@@ -284,10 +288,10 @@ contract QueueTest is Test, Events {
         address token4 = tokens[1];
 
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken2), lender);
-        line.addCredit(dRate, fRate, 1 ether, address(token3), lender);
-        line.addCredit(dRate, fRate, 1 ether, address(token4), lender);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken2), lender, false);
+        line.addCredit(dRate, fRate, 1 ether, address(token3), lender, false);
+        line.addCredit(dRate, fRate, 1 ether, address(token4), lender, false);
         vm.stopPrank();
 
         vm.startPrank(lender);
@@ -296,28 +300,32 @@ contract QueueTest is Test, Events {
             fRate,
             1 ether,
             address(supportedToken1),
-            lender
+            lender, 
+            false
         );
         uint256 tokenId2 = line.addCredit(
             dRate,
             fRate,
             1 ether,
             address(supportedToken2),
-            lender
+            lender, 
+            false
         );
         uint256 tokenId3 = line.addCredit(
             dRate,
             fRate,
             1 ether,
             address(token3),
-            lender
+            lender, 
+            false
         );
         uint256 tokenId4 = line.addCredit(
             dRate,
             fRate,
             1 ether,
             address(token4),
-            lender
+            lender, 
+            false
         );
         vm.stopPrank();
 
@@ -362,24 +370,26 @@ contract QueueTest is Test, Events {
     // testing for bug in code where _i is initialized at 0 and never gets updated causing position to go to first position in repayment queue
     function test_positions_move_in_queue_of_4_only_last() public {
         vm.prank(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
         vm.prank(lender);
         uint256 tokenId = line.addCredit(
             dRate,
             fRate,
             1 ether,
             address(supportedToken1),
-            lender
+            lender, 
+            false
         );
         vm.prank(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken2), lender);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken2), lender, false);
         vm.prank(lender);
         uint256 tokenId2 = line.addCredit(
             dRate,
             fRate,
             1 ether,
             address(supportedToken2),
-            lender
+            lender, 
+            false
         );
 
         address[] memory tokens = setupQueueTest(2);
@@ -387,25 +397,27 @@ contract QueueTest is Test, Events {
         address token4 = tokens[1];
 
         vm.prank(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(token3), lender);
+        line.addCredit(dRate, fRate, 1 ether, address(token3), lender, false);
         vm.prank(lender);
         uint256 tokenId3 = line.addCredit(
             dRate,
             fRate,
             1 ether,
             address(token3),
-            lender
+            lender, 
+            false
         );
 
         vm.prank(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(token4), lender);
+        line.addCredit(dRate, fRate, 1 ether, address(token4), lender, false);
         vm.prank(lender);
         uint256 tokenId4 = line.addCredit(
             dRate,
             fRate,
             1 ether,
             address(token4),
-            lender
+            lender, 
+            false
         );
         bytes32 id = line.tokenToPosition(tokenId);
         bytes32 id2 = line.tokenToPosition(tokenId2);
@@ -597,12 +609,12 @@ contract QueueTest is Test, Events {
 
     function _addCredit(address token, uint256 amount) public {
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, amount, token, lender);
+        line.addCredit(dRate, fRate, amount, token, lender, false);
         vm.stopPrank();
         vm.startPrank(lender);
         vm.expectEmit(false, true, true, false);
         emit Events.SetRates(bytes32(0), dRate, fRate);
-        line.addCredit(dRate, fRate, amount, token, lender);
+        line.addCredit(dRate, fRate, amount, token, lender, false);
         vm.stopPrank();
     }
 
@@ -647,7 +659,8 @@ contract QueueTest is Test, Events {
                 fRate,
                 amount,
                 address(supportedToken1),
-                randomLender
+                randomLender, 
+                false
             );
 
             vm.stopPrank();
@@ -659,7 +672,8 @@ contract QueueTest is Test, Events {
                 fRate,
                 amount,
                 address(supportedToken1),
-                randomLender
+                randomLender, 
+                false
             );
             vm.stopPrank();
         }

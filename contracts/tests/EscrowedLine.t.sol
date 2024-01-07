@@ -118,10 +118,10 @@ contract EscrowedLineTest is Test {
 
     function _addCredit(address token, uint256 amount) public {
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, amount, token, lender);
+        line.addCredit(dRate, fRate, amount, token, lender, false);
         vm.stopPrank();
         vm.startPrank(lender);
-        line.addCredit(dRate, fRate, amount, token, lender);
+        line.addCredit(dRate, fRate, amount, token, lender, false);
         vm.stopPrank();
     }
 
@@ -129,10 +129,10 @@ contract EscrowedLineTest is Test {
 
    function test_cannot_liquidate_escrow_if_cratio_above_min() public {
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
         vm.stopPrank();
         vm.startPrank(lender);
-        uint256 tokenId = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        uint256 tokenId = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
         bytes32 id = line.tokenToPosition(tokenId);
         vm.stopPrank();
         vm.startPrank(borrower);

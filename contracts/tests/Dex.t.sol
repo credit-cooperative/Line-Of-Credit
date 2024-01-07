@@ -498,12 +498,12 @@ contract EthRevenue is Test {
 
         // Create the position
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, BORROW_AMOUNT_DAI, DAI, lender);
+        line.addCredit(dRate, fRate, BORROW_AMOUNT_DAI, DAI, lender, false);
         vm.stopPrank();
 
         startHoax(lender);
         IERC20(DAI).approve(address(line), BORROW_AMOUNT_DAI);
-        tokenId = line.addCredit(dRate, fRate, BORROW_AMOUNT_DAI, DAI, lender);
+        tokenId = line.addCredit(dRate, fRate, BORROW_AMOUNT_DAI, DAI, lender, false);
         id = line.tokenToPosition(tokenId);
         emit log_named_bytes32("position id", id);
         vm.stopPrank();

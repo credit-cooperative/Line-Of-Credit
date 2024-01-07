@@ -183,12 +183,12 @@ contract LenderPositionTest is Test, Events {
 
     function _addCredit(address token, uint256 amount) public {
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, amount, token, lender);
+        line.addCredit(dRate, fRate, amount, token, lender, false);
         vm.stopPrank();
         vm.startPrank(lender);
         vm.expectEmit(false, true, true, false);
         emit Events.SetRates(bytes32(0), dRate, fRate);
-        tokenId = line.addCredit(dRate, fRate, amount, token, lender);
+        tokenId = line.addCredit(dRate, fRate, amount, token, lender, false);
         id = line.tokenToPosition(tokenId);
         vm.stopPrank();
     }

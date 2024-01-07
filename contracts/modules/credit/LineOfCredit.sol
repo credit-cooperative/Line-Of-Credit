@@ -342,12 +342,15 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         address lender,
         bool isRestricted
     ) external payable override nonReentrant whileActive mutualConsent(lender, borrower) returns (uint256) {
+        bytes32 id;
+        if (address(tokenContract) == address(0)){
+            id = _createCredit(lender, token, amount);
+        } else {
+            uint256 tokenId = tokenContract.mint(msg.sender, address(this), isRestricted);
+            id = _createCredit(tokenId, token, amount);
+            tokenToPosition[tokenId] = id;
+        }
         
-        uint256 tokenId = tokenContract.mint(msg.sender, address(this), isRestricted);
-        bytes32 id = _createCredit(tokenId, token, amount);
-
-        
-        tokenToPosition[tokenId] = id;
         _setRates(id, drate, frate);
 
         LineLib.receiveTokenOrETH(token, lender, amount);
