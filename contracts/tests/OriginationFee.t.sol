@@ -161,7 +161,7 @@ contract OriginationFeeTest is Test, Events {
         // 205338809034907597
     }
 
-    function test_arbiter_gets_fee() public {
+    function test_arbiter_gets_fee() public { // deadline == 150 days
         vm.startPrank(borrower);
         line.setFees(50);
         vm.stopPrank();
@@ -183,19 +183,12 @@ contract OriginationFeeTest is Test, Events {
         console.log(supportedToken1.balanceOf(arbiter));
         assertEq(supportedToken1.balanceOf(arbiter), 205338809034907597);
 
-        // need to figure out the last few decimals cuz my calc doesnt go that far
-
-
-
-        // check all the math :'(
-
-        // check balance of line is 100 ether - fee
-        // check balance of arbiter is fee amount
-
-        // NOTE: How do i know what the fee is supposed to be?
     }
 
-    function test_fee_adjusts_based_on_deadline() public {
+    function test_fee_adjusts_based_on_deadline_greater_than(uint256 deadline) public {
+        if (deadline <= ttl) return;
+        if (deadline >= 2147483647) return; // this is the most we can add to block.timestamp before we hit the 2038 problem with Unix
+    
         vm.startPrank(borrower);
         line.setFees(50);
         vm.stopPrank();
@@ -209,8 +202,11 @@ contract OriginationFeeTest is Test, Events {
 
         uint256 fee1 = supportedToken1.balanceOf(arbiter);
 
-        line2 = new LineOfCredit(address(oracle), arbiter, borrower, 200 days);
+        address arbiter2 = address(22);
+        line2 = new LineOfCredit(address(oracle), arbiter2, borrower, deadline);
+        vm.startPrank(arbiter2);
         line2.initTokenizedPosition(LPTAddress);
+        vm.stopPrank();
         line2.init();
 
         _mintAndApprove(address(line2));
@@ -219,16 +215,58 @@ contract OriginationFeeTest is Test, Events {
         line2.setFees(50);
         vm.stopPrank();
 
-        vm.startPrank(arbiter);
+        vm.startPrank(arbiter2);
         line2.setFees(50);
         vm.stopPrank();
 
         // vm.expectEmit
         _addCredit2(address(supportedToken1), 100 ether);
 
-        uint256 fee2 = supportedToken1.balanceOf(arbiter) - fee1;
+        uint256 fee2 = supportedToken1.balanceOf(arbiter2);
 
-        assertGt(fee2, fee1);
+        assertGt(fee2, 205338809034907597);
+    }
+
+    function test_fee_adjusts_based_on_deadline_less_than(uint256 deadline) public {
+        if (deadline >= ttl) return;
+        if (deadline < block.timestamp) return;
+        // if (block.timestamp + deadline >= 2147483647) return;
+        vm.startPrank(borrower);
+        line.setFees(50);
+        vm.stopPrank();
+
+        vm.startPrank(arbiter);
+        line.setFees(50);
+        vm.stopPrank();
+
+        // vm.expectEmit
+        _addCredit(address(supportedToken1), 100 ether);
+
+        uint256 fee1 = supportedToken1.balanceOf(arbiter);
+
+        address arbiter2 = address(22);
+        line2 = new LineOfCredit(address(oracle), arbiter2, borrower, deadline);
+        vm.startPrank(arbiter2);
+        line2.initTokenizedPosition(LPTAddress);
+        vm.stopPrank();
+        line2.init();
+
+        _mintAndApprove(address(line2));
+
+        vm.startPrank(borrower);
+        line2.setFees(50);
+        vm.stopPrank();
+
+        vm.startPrank(arbiter2);
+        line2.setFees(50);
+        vm.stopPrank();
+
+        // vm.expectEmit
+        _addCredit2(address(supportedToken1), 100 ether);
+
+        uint256 fee2 = supportedToken1.balanceOf(arbiter2);
+
+        assertLt(fee2, 205338809034907597);
     }
 
 }
