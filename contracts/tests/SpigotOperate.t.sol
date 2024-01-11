@@ -138,9 +138,16 @@ contract SpigotOperateTest is Test {
         115792089237316195423570985008687907853269984665640564039457584007913129639935;
     uint256 mintAmount = 100000 ether;
 
+      // Fork Settings
+    uint256 constant FORK_BLOCK_NUMBER = 18_981_299; // Forking mainnet at block on 7/6/23 at 7 40 PM EST
+    uint256 ethMainnetFork;
+
 
     function setUp() public {
-        owner = address(this);
+        ethMainnetFork = vm.createFork(vm.envString("MAINNET_RPC_URL"), FORK_BLOCK_NUMBER);
+        vm.selectFork(ethMainnetFork);
+
+        owner = address(11);
         operator = address(10);
         
         spigot = new Spigot(owner, operator);
@@ -150,6 +157,7 @@ contract SpigotOperateTest is Test {
         tokenId = _mintNFT();
 
         // send uni v3 position to spigot
+        vm.startPrank(owner);
         IERC721(UNI_V3_POSITION_MANAGER).transferFrom(owner, address(spigot), tokenId);
 
         // check ownership of uni v3 position
@@ -189,8 +197,8 @@ contract SpigotOperateTest is Test {
             fee: 3000, 
             tickLower: -887272, // cant do this in solidity
             tickUpper: -887272, // cant do this in solidity
-            amount0Desired: 1000000000000000000,
-            amount1Desired: 1000000000000000000,
+            amount0Desired: 40000000000000000,
+            amount1Desired: 100000000000000000000,
             amount0Min: 0,
             amount1Min: 0,
             recipient: owner,
