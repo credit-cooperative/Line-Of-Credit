@@ -87,6 +87,8 @@ interface Uni_V3_Manager {
             uint128 tokensOwed0,
             uint128 tokensOwed1
         );
+
+    function collect(CollectParams calldata params) external payable returns (uint256 amount0, uint256 amount1);
 }
 
 contract SpigotOperateTest is Test {
@@ -121,7 +123,7 @@ contract SpigotOperateTest is Test {
 
     address constant UNI_V3_POSITION_MANAGER = 0xC36442b4a4522E871399CD717aBDD847Ab11FE88;
 
-    uint256 tokenId;
+    uint256 tokenId = 644806;
 
     // create dynamic arrays for function args
     // Mostly unused in tests so convenience for empty array
@@ -132,13 +134,14 @@ contract SpigotOperateTest is Test {
     // Spigot Controller access control vars
     address owner = 0x9832FD4537F3143b5C2989734b11A54D4E85eEF6;
     address operator = 0xf44B95991CaDD73ed769454A03b3820997f00873;
+    address oldNFTOOwner = 0xFeDeA1edcc9a5303ade7bcA74edDeC32fcCC73D8;
 
     uint256 MAX_INT =
         115792089237316195423570985008687907853269984665640564039457584007913129639935;
     uint256 mintAmount = 100000 ether;
 
     // Fork Settings
-    uint256 constant FORK_BLOCK_NUMBER = 17_638_122; // Forking mainnet at block on 7/6/23 at 7 40 PM EST
+    uint256 constant FORK_BLOCK_NUMBER = 18_984_654; // Forking mainnet at block on 7/6/23 at 7 40 PM EST
     uint256 ethMainnetFork;
 
 
@@ -148,15 +151,15 @@ contract SpigotOperateTest is Test {
         
         spigot = new Spigot(owner, operator);
         
-        _mintAndApprove();
+        // _mintAndApprove();
         _configureSpigot();
              
     }
 
     function _mintAndApprove() public {
         
-        deal(WETH, owner, mintAmount);
-        deal(USDC, operator, mintAmount);
+        // deal(WETH, (spigot), mintAmount);
+        // deal(USDC, operator, mintAmount);
         
         vm.startPrank(owner);
         IERC20(WETH).approve(address(spigot), MAX_INT);
@@ -182,26 +185,47 @@ contract SpigotOperateTest is Test {
         vm.stopPrank();
     }
 
-    function _mintNFT() public returns (uint256 tokenId) {
-        mintParams = Uni_V3_Manager.MintParams({
-            token0: WETH,
-            token1: USDC,
-            fee: 3000, 
-            tickLower: -887272, 
-            tickUpper: -897272,
-            amount0Desired: 40000000000000000,
-            amount1Desired: 100000000000000000000,
-            amount0Min: 0,
-            amount1Min: 0,
-            recipient: owner,
-            deadline: block.timestamp + 1000000000000000000
-        });
-
-        (uint256 tokenId, , , ) = Uni_V3_Manager(UNI_V3_POSITION_MANAGER).mint(mintParams);
-        return tokenId;
+    function test_transfer_ownership() public {
+        _transferOwnership();
     }
 
-    function increaseLiquidity() external {
+    function test_claim_fees_univ3() public {
+
+        vm.startPrank(oldNFTOOwner);
+        collectParams = Uni_V3_Manager.CollectParams({
+            tokenId: tokenId,
+            recipient: address(spigot),
+            amount0Max: 340282366920938463463374607431768211455,
+            amount1Max: 340282366920938463463374607431768211455
+        });
+
+        Uni_V3_Manager(UNI_V3_POSITION_MANAGER).collect(collectParams);
+        vm.stopPrank();
+    }
+
+    function test_operate_univ3() public {
+        _transferOwnership();
+
+        vm.startPrank(operator);
+        bytes memory functionData = generateClaimFeesData();
+        spigot.operate(UNI_V3_POSITION_MANAGER, functionData);
+        vm.stopPrank();
+    }
+
+    // UTILS
+
+    function _transferOwnership() public {
+        vm.startPrank(oldNFTOOwner);
+        assertEq(IERC721(UNI_V3_POSITION_MANAGER).ownerOf(tokenId), oldNFTOOwner);
+
+        IERC721(UNI_V3_POSITION_MANAGER).approve(address(spigot), tokenId);
+        IERC721(UNI_V3_POSITION_MANAGER).transferFrom(oldNFTOOwner, address(spigot), tokenId);
+
+        assertEq(IERC721(UNI_V3_POSITION_MANAGER).ownerOf(tokenId), address(spigot));
+        vm.stopPrank();
+    }
+
+    function increaseLiquidity() public {
         increaseLiquidityParams = Uni_V3_Manager.IncreaseLiquidityParams({
             tokenId: tokenId,
             amount0Desired: 1000000000000000000,
@@ -214,56 +238,34 @@ contract SpigotOperateTest is Test {
         Uni_V3_Manager(UNI_V3_POSITION_MANAGER).increaseLiquidity(increaseLiquidityParams);
     }
 
-    function generateClaimFeesData() external returns (bytes memory) {
+    function generateClaimFeesData() public returns (bytes memory) {
         collectParams = Uni_V3_Manager.CollectParams({
             tokenId: tokenId,
-            recipient: owner,
-            amount0Max: 1000000000000000000,
-            amount1Max: 1000000000000000000
+            recipient: address(spigot),
+            amount0Max: 340282366920938463463374607431768211455,
+            amount1Max: 340282366920938463463374607431768211455
         });
         return abi.encodeWithSelector(claimFeesFunc, collectParams);
     }
 
-    function generateDecreaseLiquidityData() external returns (bytes memory) {
+    function generateDecreaseLiquidityData() public returns (bytes memory) {
         decreaseLiquidityParams = Uni_V3_Manager.DecreaseLiquidityParams({
             tokenId: tokenId,
             liquidity: 1000000000000000000,
             amount0Min: 0,
             amount1Min: 0,
-            deadline: block.timestamp + 1000000000000000000
+            deadline: block.timestamp + 1000 seconds
         });
 
         return abi.encodeWithSelector(decreaseLiquidityFunc, decreaseLiquidityParams);
     }
 
-    function generateTransferNFTData() external returns (bytes memory) {
+    function generateTransferNFTData() public returns (bytes memory) {
         return abi.encodeWithSelector(transferNFTFunc, owner, address(spigot), 0);
     }
 
-    function generateApproveTransferData() external returns (bytes memory) {
+    function generateApproveTransferData() public returns (bytes memory) {
         return abi.encodeWithSelector(approveTransferFunc, address(spigot), 0);
-    }
-
-    function test_mint() public {
-        
-        tokenId = _mintNFT();
-        console.log("tokenId", tokenId);
-    }
-
-    function test_operate_univ3() public {
-
-        // get uni v3 position existing liquidity
-
-
-        // call operate on pool manager contract rebalance
-
-        // check uni v3 position balance after operate
-
-        // call operate on pool manager contract claimFees
-
-        // call claimRevenue on spigot
-
-        // check balance on spigot after claiming fees
     }
 
 }
