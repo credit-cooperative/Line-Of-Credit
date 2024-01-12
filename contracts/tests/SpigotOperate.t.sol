@@ -110,7 +110,7 @@ contract SpigotOperateTest is Test {
     // function signatures for mock revenue contract to pass as params to spigot
     bytes4 constant decreaseLiquidityFunc = bytes4(keccak256("decreaseLiquidity(DecreaseLiquidityParams calldata params)"));
     bytes4 constant transferNFTFunc = bytes4(keccak256("transferFrom(address from, address to, uint256 tokenId)"));
-    bytes4 constant claimFeesFunc = bytes4(keccak256("collect(CollectParams calldata params)"));
+    bytes4 constant claimFeesFunc = Uni_V3_Manager.collect.selector;
     bytes4 constant getPosiionData = bytes4(keccak256("positions(uint256 tokenId)"));
     bytes4 constant approveTransferFunc = bytes4(keccak256("approve(address to, uint256 tokenId)"));
     bytes4 constant mint = bytes4(keccak256("mint(MintParams calldata params)"));
@@ -207,6 +207,8 @@ contract SpigotOperateTest is Test {
         _transferOwnership();
 
         vm.startPrank(operator);
+        console.log("Spigot address: ", address(spigot));
+        console.log("owner", IERC721(UNI_V3_POSITION_MANAGER).ownerOf(tokenId));
         bytes memory functionData = generateClaimFeesData();
         spigot.operate(UNI_V3_POSITION_MANAGER, functionData);
         vm.stopPrank();
