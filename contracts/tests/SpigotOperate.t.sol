@@ -69,6 +69,11 @@ interface Uni_V3_Manager {
             uint256 amount0,
             uint256 amount1
         );
+    
+    function decreaseLiquidity(DecreaseLiquidityParams calldata params)
+        external
+        payable
+        returns (uint256 amount0, uint256 amount1);
 
     function positions(uint256 tokenId)
         external
@@ -108,7 +113,7 @@ contract SpigotOperateTest is Test {
     // Named vars for common inputs
     uint256 constant MAX_REVENUE = type(uint256).max / 100;
     // function signatures for mock revenue contract to pass as params to spigot
-    bytes4 constant decreaseLiquidityFunc = bytes4(keccak256("decreaseLiquidity(DecreaseLiquidityParams calldata params)"));
+    bytes4 constant decreaseLiquidityFunc = Uni_V3_Manager.decreaseLiquidity.selector;
     bytes4 constant transferNFTFunc = bytes4(keccak256("transferFrom(address from, address to, uint256 tokenId)"));
     bytes4 constant claimFeesFunc = Uni_V3_Manager.collect.selector;
     bytes4 constant getPosiionData = bytes4(keccak256("positions(uint256 tokenId)"));
