@@ -1,5 +1,7 @@
 ## Installing
 
+First, clone this repo locally on your machine.
+
 We track remote remotes like Foundry and Chainlink via submodules so you will need to install those in addition to our repo itself
 
 If you have forge installed already you can run `forge install`
