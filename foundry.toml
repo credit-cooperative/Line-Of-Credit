@@ -87,7 +87,15 @@ libraries = [
 ]
 
 [profile.polygon]
-libraries = []
+libraries = [
+    "contracts/utils/LineLib.sol:LineLib:0x1cbE547E9FE3f7D78484904d5FF812514B4B3d34",
+    "contracts/utils/CreditLib.sol:CreditLib:0x98B08E3A2c7d5C963340A0D9a07938B817D93DB5",
+    "contracts/utils/CreditListLib.sol:CreditListLib:0x6499BEdB9579E6c5CFb0cA19954Ae3eF367B5205",
+    "contracts/utils/SpigotLib.sol:SpigotLib:0x3914000212295fD1AD008054b9B0496FbCDe3855",
+    "contracts/utils/EscrowLib.sol:EscrowLib:0x11f294f583C087b1FB355b900Aa14155306979D5",
+    "contracts/utils/SpigotedLineLib.sol:SpigotedLineLib:0x8a8B7B6acb79016074EB60fa4052305AbB656d0C",
+    "contracts/utils/LineFactoryLib.sol:LineFactoryLib:0xEC51CCA52dD9c4d17b4B20E319695428414d051e",
+]
 
 
 [profile.arbitrum]
