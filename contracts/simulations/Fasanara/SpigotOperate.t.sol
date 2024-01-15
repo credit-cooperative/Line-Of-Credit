@@ -213,8 +213,8 @@ contract SpigotOperateTest is Test {
 
         vm.startPrank(operator);
 
-        console.log("Spigot address: ", address(spigot));
-        console.log("Uni v3 LP Owner: ", IERC721(UNI_V3_POSITION_MANAGER).ownerOf(tokenId));
+        emit log_named_address("Spigot address: ", address(spigot));
+        emit log_named_address("Uni v3 LP Owner: ", IERC721(UNI_V3_POSITION_MANAGER).ownerOf(tokenId));
 
         bytes memory functionData = generateClaimFeesData();
 
@@ -225,11 +225,11 @@ contract SpigotOperateTest is Test {
 
         uint256 amount0After = IERC20(WETH).balanceOf(address(spigot));
         uint256 amount1After = IERC20(USDC).balanceOf(address(spigot));
-        console.log('');
-        console.log("WETH Before Claim Fees: ", amount0Before);
-        console.log("WETH After Claim Fees: ", amount0After);
-        console.log("USDC Before Claim Fees: ", amount1Before);
-        console.log("USDC After Claim Fees: ", amount1After);
+
+        emit log_named_uint("\n WETH Before Claim Fees: ", amount0Before);
+        emit log_named_uint("WETH After Claim Fees: ", amount0After);
+        emit log_named_uint("USDC Before Claim Fees: ", amount1Before);
+        emit log_named_uint("USDC After Claim Fees: ", amount1After);
 
         vm.stopPrank();
     }
