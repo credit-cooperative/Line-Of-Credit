@@ -1,12 +1,5 @@
 # Purpose: Deployment Script for Simulating Library and Factory Deployment
 
-## Overview
-This pull request introduces a new script file designed to simulate the deployment of all necessary libraries and contracts for setting up a line of credit from a factory contract. The primary purpose of this script is to simulate the gas costs associated with the deployment process.
-
-## Features
-- **Script Creation**: A new script file is added to handle the deployment of libraries and contracts efficiently.
-- **Gas Cost Simulation**: Enables users to simulate gas costs for deploying line of credit contracts.
-
 ## Usage Instructions
 1. **Start Local Blockchain**:
     - Run the following command to start a local blockchain with the London hardfork:
