@@ -100,18 +100,26 @@ libraries = [
 
 [profile.polygon]
 libraries = [
-    "contracts/utils/LineLib.sol:LineLib:0x61Eff7CFA99aD0479850f95c2CE141A73165A28B",
-    "contracts/utils/CreditLib.sol:CreditLib:0x56f31B0BeDb4726C2f4693B811be8Edda19EA890",
-    "contracts/utils/CreditListLib.sol:CreditListLib:0xD4CeF88a8615f470B28ECC2d08300E946a4B9628",
-    "contracts/utils/SpigotLib.sol:SpigotLib:0xa1cf155B3e0D5200Af1d8039e0Ad9a32C5a5bef0",
-    "contracts/utils/EscrowLib.sol:EscrowLib:0xA69afE6f0E220D9e62D70870945DFF81e0516cdc",
-    "contracts/utils/SpigotedLineLib.sol:SpigotedLineLib:0x870B911D16eb48920cC674AFa918Fb896d79af29",
-    "contracts/utils/LineFactoryLib.sol:LineFactoryLib:0x4dae29E09cFa24D828e6F768565CE38D28E77Bb4",
+    "contracts/utils/LineLib.sol:LineLib:0x1cbE547E9FE3f7D78484904d5FF812514B4B3d34",
+    "contracts/utils/CreditLib.sol:CreditLib:0x98B08E3A2c7d5C963340A0D9a07938B817D93DB5",
+    "contracts/utils/CreditListLib.sol:CreditListLib:0x6499BEdB9579E6c5CFb0cA19954Ae3eF367B5205",
+    "contracts/utils/SpigotLib.sol:SpigotLib:0x3914000212295fD1AD008054b9B0496FbCDe3855",
+    "contracts/utils/EscrowLib.sol:EscrowLib:0x11f294f583C087b1FB355b900Aa14155306979D5",
+    "contracts/utils/SpigotedLineLib.sol:SpigotedLineLib:0x8a8B7B6acb79016074EB60fa4052305AbB656d0C",
+    "contracts/utils/LineFactoryLib.sol:LineFactoryLib:0xEC51CCA52dD9c4d17b4B20E319695428414d051e",
 ]
 
 
 [profile.arbitrum]
-libraries = []
+libraries = [
+    "contracts/utils/LineLib.sol:LineLib:0x9f48ccF9BA57ce89bb50ba9960a6B7C320183F19",
+    "contracts/utils/CreditLib.sol:CreditLib:0x87fc87EC34C290963aE55CB42B4A481Ad3850E31",
+    "contracts/utils/CreditListLib.sol:CreditListLib:0xE7972F57252D81F8F8665E2691437146236b26fC",
+    "contracts/utils/SpigotLib.sol:SpigotLib:0x89989dBe4CFa289dE6179e8d54EE755E471a4251",
+    "contracts/utils/EscrowLib.sol:EscrowLib:0xF64fC04626d3f0CA01d7C23cA77110D2B5fd8893",
+    "contracts/utils/SpigotedLineLib.sol:SpigotedLineLib:0x72bBE4dF62D5956e1d640D0fcb16DEe0A30B7049",
+    "contracts/utils/LineFactoryLib.sol:LineFactoryLib:0xf2Fb1e2E4c0395ABA09ab28472b3495F5F480625",
+]
 
 [profile.default.rpc_storage_caching]
 chains = 'all'
