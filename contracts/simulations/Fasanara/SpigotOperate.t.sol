@@ -209,10 +209,16 @@ contract SpigotOperateTest is Test {
     }
 
     function test_operate_univ3() public {
+
+        console.log("Before ownsership transfer");
+        emit log_named_address("Uni v3 LP Owner: ", IERC721(UNI_V3_POSITION_MANAGER).ownerOf(tokenId));
+
+
         _transferOwnership();
 
         vm.startPrank(operator);
 
+        console.log(" \n After ownsership transfer");
         emit log_named_address("Spigot address: ", address(spigot));
         emit log_named_address("Uni v3 LP Owner: ", IERC721(UNI_V3_POSITION_MANAGER).ownerOf(tokenId));
 
