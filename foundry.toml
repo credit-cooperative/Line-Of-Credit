@@ -75,6 +75,18 @@ libraries = [
     "contracts/utils/LineFactoryLib.sol:LineFactoryLib:0x244c9A8746735C315B8eF914e4D70a017fF197D9",
 ]
 
+
+[profile.sepolia]
+libraries = [
+    "contracts/utils/LineLib.sol:LineLib:0xCE95035acd9B5aE1304F652412dB849F8629F377",
+    "contracts/utils/CreditLib.sol:CreditLib:0x18a744de156c9A1A6B6832fd4E47679146F087fA",
+    "contracts/utils/CreditListLib.sol:CreditListLib:0xd3aC493cd5f02A5376849ccb494F233323AABE85",
+    "contracts/utils/SpigotLib.sol:SpigotLib:0x3182c0f682B84D0586F7d2C38fa24a7E720d2359",
+    "contracts/utils/EscrowLib.sol:EscrowLib:0x2492eF0F83F7041867eC067582d5157290e09B06",
+    "contracts/utils/SpigotedLineLib.sol:SpigotedLineLib:0xa5De6E2A9503E227cA345f8aeb795A187a32F34e",
+    "contracts/utils/LineFactoryLib.sol:LineFactoryLib:0x9dBeE9024C5DBd990783157c66ac65066cF277E4"
+]
+
 [profile.mainnet]
 libraries = [
     "contracts/utils/LineLib.sol:LineLib:0xe639a9c07f39ED07F04f348D06f76dc80DC3EDeb",
@@ -87,11 +99,27 @@ libraries = [
 ]
 
 [profile.polygon]
-libraries = []
+libraries = [
+    "contracts/utils/LineLib.sol:LineLib:0x1cbE547E9FE3f7D78484904d5FF812514B4B3d34",
+    "contracts/utils/CreditLib.sol:CreditLib:0x98B08E3A2c7d5C963340A0D9a07938B817D93DB5",
+    "contracts/utils/CreditListLib.sol:CreditListLib:0x6499BEdB9579E6c5CFb0cA19954Ae3eF367B5205",
+    "contracts/utils/SpigotLib.sol:SpigotLib:0x3914000212295fD1AD008054b9B0496FbCDe3855",
+    "contracts/utils/EscrowLib.sol:EscrowLib:0x11f294f583C087b1FB355b900Aa14155306979D5",
+    "contracts/utils/SpigotedLineLib.sol:SpigotedLineLib:0x8a8B7B6acb79016074EB60fa4052305AbB656d0C",
+    "contracts/utils/LineFactoryLib.sol:LineFactoryLib:0xEC51CCA52dD9c4d17b4B20E319695428414d051e",
+]
 
 
 [profile.arbitrum]
-libraries = []
+libraries = [
+    "contracts/utils/LineLib.sol:LineLib:0x9f48ccF9BA57ce89bb50ba9960a6B7C320183F19",
+    "contracts/utils/CreditLib.sol:CreditLib:0x87fc87EC34C290963aE55CB42B4A481Ad3850E31",
+    "contracts/utils/CreditListLib.sol:CreditListLib:0xE7972F57252D81F8F8665E2691437146236b26fC",
+    "contracts/utils/SpigotLib.sol:SpigotLib:0x89989dBe4CFa289dE6179e8d54EE755E471a4251",
+    "contracts/utils/EscrowLib.sol:EscrowLib:0xF64fC04626d3f0CA01d7C23cA77110D2B5fd8893",
+    "contracts/utils/SpigotedLineLib.sol:SpigotedLineLib:0x72bBE4dF62D5956e1d640D0fcb16DEe0A30B7049",
+    "contracts/utils/LineFactoryLib.sol:LineFactoryLib:0xf2Fb1e2E4c0395ABA09ab28472b3495F5F480625",
+]
 
 [profile.default.rpc_storage_caching]
 chains = 'all'
