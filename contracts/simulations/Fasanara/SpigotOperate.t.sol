@@ -4,9 +4,9 @@
  pragma solidity ^0.8.16;
 
 import "forge-std/Test.sol";
-import {Spigot} from "../modules/spigot/Spigot.sol";
-import {SpigotLib} from "../utils/SpigotLib.sol";
-import {ISpigot} from "../interfaces/ISpigot.sol";
+import {Spigot} from "../../modules/spigot/Spigot.sol";
+import {SpigotLib} from "../../utils/SpigotLib.sol";
+import {ISpigot} from "../../interfaces/ISpigot.sol";
 
 import {IERC721} from "openzeppelin/token/ERC721/IERC721.sol";
 import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
@@ -212,10 +212,25 @@ contract SpigotOperateTest is Test {
         _transferOwnership();
 
         vm.startPrank(operator);
+
         console.log("Spigot address: ", address(spigot));
-        console.log("owner", IERC721(UNI_V3_POSITION_MANAGER).ownerOf(tokenId));
+        console.log("Uni v3 LP Owner: ", IERC721(UNI_V3_POSITION_MANAGER).ownerOf(tokenId));
+
         bytes memory functionData = generateClaimFeesData();
+
+        uint256 amount0Before = IERC20(WETH).balanceOf(address(spigot));
+        uint256 amount1Before = IERC20(USDC).balanceOf(address(spigot));
+
         spigot.operate(UNI_V3_POSITION_MANAGER, functionData);
+
+        uint256 amount0After = IERC20(WETH).balanceOf(address(spigot));
+        uint256 amount1After = IERC20(USDC).balanceOf(address(spigot));
+        console.log('');
+        console.log("WETH Before Claim Fees: ", amount0Before);
+        console.log("WETH After Claim Fees: ", amount0After);
+        console.log("USDC Before Claim Fees: ", amount1Before);
+        console.log("USDC After Claim Fees: ", amount1After);
+
         vm.stopPrank();
     }
 
