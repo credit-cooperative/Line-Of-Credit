@@ -36,9 +36,11 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     uint256 public deadlineExtension = 0;
 
     uint256 constant ONE_YEAR = 365.25 days;
-    // Must divide by 100 too offset bps in numerator and divide by another 100 to offset % and get actual token amount
+
+    // 10000 bps = 1%
     uint256 constant BASE_DENOMINATOR = 10000;
-    // = 31557600 * 10000 = 315576000000;
+
+    // 31557600 = 362.25 days X 24 hours X 60 minutes X 60 seconds
     uint256 constant INTEREST_DENOMINATOR = ONE_YEAR * BASE_DENOMINATOR;
 
     /// @notice - the account that can drawdown and manage debt positions
@@ -63,7 +65,6 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     /// @dev    - may contain null elements
     bytes32[] public ids;
 
-    // NOTE: ITS IS 0 FOR TESTING PURPOSES. Otherwise all other tests break
     uint128 public originationFee = 0; // in BPS 4 decimals  fee = 50 loan amount = 10000 * (50/100)
 
     /// @notice id -> position data
@@ -100,9 +101,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     }
 
     function setFees(uint128 _originationFee) external onlyBorrowerOrArbiter mutualConsent(arbiter, borrower) {
-
         originationFee = _originationFee;
-
         // servicingFee = fee;
         // swapFee = fee;
     }
