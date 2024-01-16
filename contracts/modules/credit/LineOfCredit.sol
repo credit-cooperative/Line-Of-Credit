@@ -347,7 +347,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
 
     function _calculateOriginationFee(uint256 amount) internal returns (uint256) {
-        return (amount * orginiationFee * (deadline - block.timestamp)) / INTEREST_DENOMINATOR;
+        return (amount * originationFee * (deadline - block.timestamp)) / INTEREST_DENOMINATOR;
     }
 
     function _calculateWithdrawalFee(uint128 fee, uint256 amount) internal returns (uint256) {
@@ -369,7 +369,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     ) external payable override nonReentrant whileActive mutualConsent(lender, borrower) returns (uint256) {
         uint256 tokenId = tokenContract.mint(msg.sender, address(this));
         
-        bytes32 id = _createCredit(tokenId, token, amount);
+        bytes32 id = _createCredit(tokenId, token, amount, earlyWithdrawalFee);
 
         uint256 fee = 0;
         
