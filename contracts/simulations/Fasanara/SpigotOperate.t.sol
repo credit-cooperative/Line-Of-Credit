@@ -94,6 +94,10 @@ interface Uni_V3_Manager {
         );
 
     function collect(CollectParams calldata params) external payable returns (uint256 amount0, uint256 amount1);
+
+    function transferFrom(address from, address to, uint256 tokenId) external;
+
+    function approve(address to, uint256 tokenId) external;
 }
 
 contract SpigotOperateTest is Test {
@@ -114,10 +118,10 @@ contract SpigotOperateTest is Test {
     uint256 constant MAX_REVENUE = type(uint256).max / 100;
     // function signatures for mock revenue contract to pass as params to spigot
     bytes4 constant decreaseLiquidityFunc = Uni_V3_Manager.decreaseLiquidity.selector;
-    bytes4 constant transferNFTFunc = bytes4(keccak256("transferFrom(address from, address to, uint256 tokenId)"));
+    bytes4 constant transferNFTFunc = Uni_V3_Manager.transferFrom.selector;
     bytes4 constant claimFeesFunc = Uni_V3_Manager.collect.selector;
     bytes4 constant getPosiionData = bytes4(keccak256("positions(uint256 tokenId)"));
-    bytes4 constant approveTransferFunc = bytes4(keccak256("approve(address to, uint256 tokenId)"));
+    bytes4 constant approveTransferFunc = Uni_V3_Manager.approve.selector;
     bytes4 constant mint = bytes4(keccak256("mint(MintParams calldata params)"));
     bytes4 constant burn = bytes4(keccak256("burn(uint256 tokenId)"));
     bytes4 constant newOwnerFunc = bytes4(0x12345678);
@@ -192,6 +196,32 @@ contract SpigotOperateTest is Test {
 
     function test_transfer_ownership() public {
         _transferOwnership();
+    }
+
+    function test_return_ownership() public {
+        _transferOwnership();
+        console.log(" \n Berfore return of ownsership transfer");
+        emit log_named_address("Spigot address: ", address(spigot));
+        emit log_named_address("Uni v3 LP Owner: ", IERC721(UNI_V3_POSITION_MANAGER).ownerOf(tokenId));
+
+        vm.startPrank(owner);
+        console.log("\n Servicer whitelists return ownership functions once conditions have been satisfied");
+        spigot.updateWhitelistedFunction(approveTransferFunc, true);
+        spigot.updateWhitelistedFunction(transferNFTFunc, true);
+        vm.stopPrank();
+
+        vm.startPrank(operator);
+        bytes memory approveFunctionData = generateApproveTransferData();
+        bytes memory transferFunctionData = generateTransferNFTData();
+
+        spigot.operate(UNI_V3_POSITION_MANAGER, approveFunctionData);
+        spigot.operate(UNI_V3_POSITION_MANAGER, transferFunctionData);
+
+        console.log(" \n After return of ownsership transfer");
+        emit log_named_address("Uni v3 LP Owner: ", IERC721(UNI_V3_POSITION_MANAGER).ownerOf(tokenId));
+        emit log_named_address("Original Owner: ", oldNFTOOwner);
+        vm.stopPrank();
+
     }
 
     function test_claim_fees_univ3() public {
@@ -289,11 +319,13 @@ contract SpigotOperateTest is Test {
     }
 
     function generateTransferNFTData() public returns (bytes memory) {
-        return abi.encodeWithSelector(transferNFTFunc, owner, address(spigot), 0);
+        return abi.encodeWithSelector(transferNFTFunc, address(spigot), oldNFTOOwner, tokenId);
     }
 
     function generateApproveTransferData() public returns (bytes memory) {
-        return abi.encodeWithSelector(approveTransferFunc, address(spigot), 0);
+        return abi.encodeWithSelector(approveTransferFunc, operator, tokenId);
     }
+
+
 
 }
