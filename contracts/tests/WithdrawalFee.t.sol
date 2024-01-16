@@ -82,7 +82,7 @@ contract WithdrawalFeeTest is Test, Events {
 
         line.init();
 
-        
+
         // assertEq(uint256(line.init()), uint256(LineLib.STATUS.ACTIVE));
         _mintAndApprove(address(line));
     }
@@ -148,6 +148,8 @@ contract WithdrawalFeeTest is Test, Events {
 
         uint256 lenderBalanceBefore = supportedToken1.balanceOf(lender);
         uint256 borrowerBalanceBefore = supportedToken1.balanceOf(borrower);
+        emit log_named_uint("lender balance before", lenderBalanceBefore);
+        emit log_named_uint("borrower balance before", borrowerBalanceBefore);
 
         vm.startPrank(lender);
         line.withdraw(1, 100 ether);
@@ -158,15 +160,18 @@ contract WithdrawalFeeTest is Test, Events {
 
         assertLt(borrowerBalanceBefore, borrowerBalanceAfter);
         assertLt(lenderBalanceAfter, lenderBalanceBefore + 100 ether);
+        emit log_named_uint("lender balance after", lenderBalanceAfter);
+        emit log_named_uint("borrower balance after", borrowerBalanceAfter);
 
-        
+        assertEq(borrowerBalanceAfter - borrowerBalanceBefore, 100 ether * 50 / 10000);
+        assertEq(lenderBalanceAfter - lenderBalanceBefore, 100 ether - 100 ether * 50 / 10000);
     }
 
     function test_no_withdrawal_fee_if_exactly_deadline() public {
         _addCredit(address(supportedToken1), 100 ether);
 
         vm.warp(150 days + 1 seconds);
-  
+
         console.log("now",block.timestamp);
         console.log("deadline",line.deadline());
         uint256 lenderBalanceBefore = supportedToken1.balanceOf(lender);
