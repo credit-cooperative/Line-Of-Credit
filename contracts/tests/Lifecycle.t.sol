@@ -166,10 +166,10 @@ contract SecuredLineTest is Test {
 
     function _addCredit(address token, uint256 amount) public returns (uint256){
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, amount, token, lender);
+        line.addCredit(dRate, fRate, amount, token, lender, 0);
         vm.stopPrank();
         vm.startPrank(lender);
-        uint256 newTokenId = line.addCredit(dRate, fRate, amount, token, lender);
+        uint256 newTokenId = line.addCredit(dRate, fRate, amount, token, lender, 0);
         vm.stopPrank();
         return newTokenId;
     }   
@@ -262,7 +262,7 @@ contract SecuredLineTest is Test {
 
         // Arbiter repays and closes line with spigot funds
         vm.startPrank(arbiter);
-        (,uint principal,,,,,,) = line.credits(line.ids(0));
+        (,uint principal,,,,,,,) = line.credits(line.ids(0));
         uint interestAccrued = line.interestAccrued(line.ids(0));
         line.claimAndRepay(address(supportedToken1), "");
         line.close(creditPositionId);
@@ -381,7 +381,7 @@ contract SecuredLineTest is Test {
 
         // Arbiter repays and closes line with spigot funds
         vm.startPrank(arbiter);
-        (,uint256 principal2,,,,,,) = line.credits(creditPositionId2);
+        (,uint256 principal2,,,,,,,) = line.credits(creditPositionId2);
         uint256 interestAccrued2 = line.interestAccrued(creditPositionId2);
         line.claimAndRepay(address(supportedToken1), "");
         line.close(creditPositionId2);

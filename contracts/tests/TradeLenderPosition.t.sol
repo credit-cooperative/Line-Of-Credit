@@ -183,12 +183,12 @@ contract LenderPositionTest is Test, Events {
 
     function _addCredit(address token, uint256 amount) public {
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, amount, token, lender);
+        line.addCredit(dRate, fRate, amount, token, lender, 0);
         vm.stopPrank();
         vm.startPrank(lender);
         vm.expectEmit(false, true, true, false);
         emit Events.SetRates(bytes32(0), dRate, fRate);
-        tokenId = line.addCredit(dRate, fRate, amount, token, lender);
+        tokenId = line.addCredit(dRate, fRate, amount, token, lender, 0);
         id = line.tokenToPosition(tokenId);
         vm.stopPrank();
     }
@@ -229,7 +229,7 @@ contract LenderPositionTest is Test, Events {
     function test_token_info_is_same_as_position_info() public {
         _addCredit(address(supportedToken1), 100 ether);
 
-        (uint256 d, uint256 p, uint256 ia, uint256 ir,,,,) = line.credits(id);
+        (uint256 d, uint256 p, uint256 ia, uint256 ir,,,,,) = line.credits(id);
         (uint128 dr, uint128 fr) = line.getRates(id);
         uint256 deadline = line.deadline();
         uint256 split = line.defaultRevenueSplit();

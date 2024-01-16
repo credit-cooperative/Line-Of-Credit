@@ -106,12 +106,12 @@ contract LineTest is Test, Events {
 
     function _addCredit(address token, uint256 amount) public {
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, amount, token, lender);
+        line.addCredit(dRate, fRate, amount, token, lender, 0);
         vm.stopPrank();
         vm.startPrank(lender);
         vm.expectEmit(false, true, true, false);
         emit Events.SetRates(bytes32(0), dRate, fRate);
-        tokenId = line.addCredit(dRate, fRate, amount, token, lender);
+        tokenId = line.addCredit(dRate, fRate, amount, token, lender, 0);
         vm.stopPrank();
     }
 
@@ -145,32 +145,34 @@ contract LineTest is Test, Events {
     function test_isOpen_false_on_create() public {
         _addCredit(address(supportedToken1), 1 ether);
         bytes32 id = line.ids(0);
-        (,,,,,,, bool d) = line.credits(id);
+        (,,,,,,,, bool d) = line.credits(id);
         console.log(d);
         assertEq(d, true);
     }
 
     function test_positions_move_in_queue_of_2() public {
         hoax(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, 0);
         hoax(lender);
         uint256 tokenId1 = line.addCredit(
             dRate,
             fRate,
             1 ether,
             address(supportedToken1),
-            lender
+            lender,
+            0
         );
         bytes32 id = line.tokenToPosition(tokenId1);
         hoax(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken2), lender);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken2), lender, 0);
         hoax(lender);
         uint256 tokenId2 = line.addCredit(
             dRate,
             fRate,
             1 ether,
             address(supportedToken2),
-            lender
+            lender,
+            0
         );
         bytes32 id2 = line.tokenToPosition(tokenId2);
         assertEq(line.ids(0), id);
@@ -248,7 +250,7 @@ contract LineTest is Test, Events {
         console.log(lender.balance);
 
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, 1 ether, Denominations.ETH, lender);
+        line.addCredit(dRate, fRate, 1 ether, Denominations.ETH, lender, 0);
         vm.stopPrank();
 
         // should fail as we cant send Eth and msg.value won't match "amount"
@@ -260,7 +262,8 @@ contract LineTest is Test, Events {
             fRate,
             1 ether,
             Denominations.ETH,
-            lender
+            lender,
+            0
         );
         vm.stopPrank();
 
@@ -433,7 +436,7 @@ contract LineTest is Test, Events {
         hoax(borrower);
         line.depositAndClose();
         assertEq(supportedToken1.balanceOf(address(line)), 1 ether, "Tokens should not be sent back to lender");
-        (,,,,,,, bool d) = line.credits(id);
+        (,,,,,,,, bool d) = line.credits(id);
         assertEq(d, false);
         (uint p, uint i) = line.updateOutstandingDebt();
         assertEq(p + i, 0, "Line outstanding credit should be 0");
@@ -462,7 +465,7 @@ contract LineTest is Test, Events {
         hoax(arbiter);
         line.depositAndClose();
         assertEq(supportedToken1.balanceOf(address(line)), 1 ether, "Tokens should not be sent back to lender");
-        (,,,,,,, bool d) = line.credits(id);
+        (,,,,,,,, bool d) = line.credits(id);
         assertEq(d, false);
         (uint p, uint i) = line.updateOutstandingDebt();
         assertEq(p + i, 0, "Line outstanding credit should be 0");
@@ -633,7 +636,7 @@ contract LineTest is Test, Events {
         vm.warp(block.timestamp + (ttl / 2));
 
         line.accrueInterest();
-        (,,uint256 interestAccrued,,,,,) = line.credits(id);
+        (,,uint256 interestAccrued,,,,,,) = line.credits(id);
 
         assertGt(interestAccrued, 0);
 
@@ -641,7 +644,7 @@ contract LineTest is Test, Events {
         line.withdraw(tokenId, 1 ether);
 
         // check interest accrued during withdrawal. should be 0 bc no time passed since last accrual
-        (,,,,,,,bool isOpen) = line.credits(id);
+        (,,,,,,,,bool isOpen) = line.credits(id);
         assertTrue(isOpen); // ensure still open after full withdrawal so will be charged
     }
 
@@ -655,7 +658,7 @@ contract LineTest is Test, Events {
         vm.warp(block.timestamp + (ttl / 2));
 
         line.accrueInterest();
-        (,,uint256 interestAccrued,,,,,) = line.credits(id);
+        (,,uint256 interestAccrued,,,,,,) = line.credits(id);
 
         assertGt(interestAccrued, 0);
 
@@ -663,7 +666,7 @@ contract LineTest is Test, Events {
         line.withdraw(tokenId, 1 ether);
 
         // check interest accrued during withdrawal. should be 0 bc no time passed since last accrual
-        (uint256 deposit,,uint256 interestAccrued2,,,,,bool isOpen) = line.credits(id);
+        (uint256 deposit,,uint256 interestAccrued2,,,,,,bool isOpen) = line.credits(id);
         assertTrue(isOpen); // ensure still open after full withdrawal so will be charged
         assertEq(interestAccrued, interestAccrued2);
         assertEq(deposit, 0);
@@ -671,7 +674,7 @@ contract LineTest is Test, Events {
         vm.warp(block.timestamp + ttl);
 
         line.accrueInterest();
-        (,,uint256 interestAccrued3,,,,,) = line.credits(id);
+        (,,uint256 interestAccrued3,,,,,,) = line.credits(id);
         // no interest accrued bc no deposit or principal to charge against
         assertEq(interestAccrued, interestAccrued3);
     }
@@ -688,14 +691,14 @@ contract LineTest is Test, Events {
 
 
         line.accrueInterest();
-        (,,uint256 interestAccrued,,,,,) = line.credits(id);
+        (,,uint256 interestAccrued,,,,,,) = line.credits(id);
         assertGt(interestAccrued, 0);
 
         hoax(lender);
         line.withdraw(tokenId, 1 ether);
 
         // check interest accrued during withdrawal. should be 0 bc no time passed since last accrual
-        (,,uint256 interestAccrued2,,,,,) = line.credits(id);
+        (,,uint256 interestAccrued2,,,,,,) = line.credits(id);
         assertEq(interestAccrued2, interestAccrued);
 
         vm.warp(block.timestamp + (ttl / 2));
@@ -707,7 +710,7 @@ contract LineTest is Test, Events {
         line.increaseCredit(tokenId, 1 ether);
 
         // should be no interest after adding credit again
-        (,,uint256 interestAccrued4,,,,,bool isOpen) = line.credits(id);
+        (,,uint256 interestAccrued4,,,,,,bool isOpen) = line.credits(id);
         assertTrue(isOpen); // ensure still open after full withdrawal so will be charged
         assertEq(interestAccrued4, interestAccrued);
     }
@@ -724,21 +727,21 @@ contract LineTest is Test, Events {
 
 
         line.accrueInterest();
-        (,,uint256 interestAccrued,,,,,) = line.credits(id);
+        (,,uint256 interestAccrued,,,,,,) = line.credits(id);
         assertGt(interestAccrued, 0);
 
         hoax(lender);
         line.withdraw(tokenId, 1 ether);
 
         // check interest accrued during withdrawal. should be 0 bc no time passed since last accrual
-        (,,uint256 interestAccrued2,,,,,) = line.credits(id);
+        (,,uint256 interestAccrued2,,,,,,) = line.credits(id);
         assertEq(interestAccrued, interestAccrued2);
 
         vm.warp(block.timestamp + (ttl / 2));
 
         // no interest accrued bc no deposit or principal to charge against
         line.accrueInterest();
-        (,,uint256 interestAccrued3,,,,,) = line.credits(id);
+        (,,uint256 interestAccrued3,,,,,,) = line.credits(id);
         assertEq(interestAccrued, interestAccrued3);
 
 
@@ -752,7 +755,7 @@ contract LineTest is Test, Events {
 
         // should start charging interest again
         line.accrueInterest();
-        (,,uint256 interestAccrued4,,,,,) = line.credits(id);
+        (,,uint256 interestAccrued4,,,,,,) = line.credits(id);
         assertGt(interestAccrued4, interestAccrued);
     }
 
@@ -768,7 +771,7 @@ contract LineTest is Test, Events {
         vm.warp(block.timestamp + (ttl / 2));
 
         line.accrueInterest();
-        (,,uint256 interestAccrued,,,,,) = line.credits(id);
+        (,,uint256 interestAccrued,,,,,,) = line.credits(id);
 
         assertGt(interestAccrued, 0);
 
@@ -776,14 +779,14 @@ contract LineTest is Test, Events {
         line.withdraw(tokenId, 1 ether);
 
         // check interest accrued during withdrawal. should be 0 bc no time passed since last accrual
-        (,,uint256 interestAccrued2,,,,,) = line.credits(id);
+        (,,uint256 interestAccrued2,,,,,,) = line.credits(id);
         assertEq(interestAccrued, interestAccrued2);
 
 
         hoax(borrower);
         line.close(id);
 
-        (,,uint256 interestAccrued3,,,,,bool isOpen) = line.credits(id);
+        (,,uint256 interestAccrued3,,,,,,bool isOpen) = line.credits(id);
         // no interest accrued bc repaid
         assertEq(interestAccrued3, 0);
         assertFalse(isOpen);
@@ -799,7 +802,7 @@ contract LineTest is Test, Events {
         vm.warp(block.timestamp + (ttl / 2));
 
         line.accrueInterest();
-        (,,uint256 interestAccrued,,,,,) = line.credits(id);
+        (,,uint256 interestAccrued,,,,,,) = line.credits(id);
 
         assertGt(interestAccrued, 0);
 
@@ -807,14 +810,14 @@ contract LineTest is Test, Events {
         line.withdraw(tokenId, 1 ether);
 
         // check interest accrued during withdrawal. should be 0 bc no time passed since last accrual
-        (,,uint256 interestAccrued2,,,,,) = line.credits(id);
+        (,,uint256 interestAccrued2,,,,,,) = line.credits(id);
         assertEq(interestAccrued, interestAccrued2);
 
 
         hoax(arbiter);
         line.close(id);
 
-        (,,uint256 interestAccrued3,,,,,bool isOpen) = line.credits(id);
+        (,,uint256 interestAccrued3,,,,,,bool isOpen) = line.credits(id);
         // no interest accrued bc repaid
         assertEq(interestAccrued3, 0);
         assertFalse(isOpen);
@@ -830,7 +833,7 @@ contract LineTest is Test, Events {
         vm.warp(block.timestamp + (ttl / 2));
 
         line.accrueInterest();
-        (,,uint256 interestAccrued,,,,,) = line.credits(id);
+        (,,uint256 interestAccrued,,,,,,) = line.credits(id);
 
         assertGt(interestAccrued, 0);
 
@@ -838,7 +841,7 @@ contract LineTest is Test, Events {
         line.withdraw(tokenId, 1 ether);
 
         // check interest accrued during withdrawal. should be 0 bc no time passed since last accrual
-        (,,uint256 interestAccrued2,,,,,) = line.credits(id);
+        (,,uint256 interestAccrued2,,,,,,) = line.credits(id);
         assertEq(interestAccrued, interestAccrued2);
 
         uint256 prePayBalance = supportedToken1.balanceOf(borrower);
@@ -850,7 +853,7 @@ contract LineTest is Test, Events {
 
         vm.warp(block.timestamp + ttl);
 
-        (,,uint256 interestAccrued3,,,,,bool isOpen) = line.credits(id);
+        (,,uint256 interestAccrued3,,,,,,bool isOpen) = line.credits(id);
         // no interest accrued bc no deposit or principal to charge against
         assertEq(interestAccrued3, 0);
         assertFalse(isOpen);
@@ -870,7 +873,8 @@ contract LineTest is Test, Events {
             fRate,
             1 ether,
             address(supportedToken1),
-            lender
+            lender,
+            0
         );
 
         hoax(borrower);
@@ -880,7 +884,8 @@ contract LineTest is Test, Events {
             fRate,
             1 ether,
             address(supportedToken1),
-            lender
+            lender,
+            0
         );
     }
 
@@ -899,7 +904,8 @@ contract LineTest is Test, Events {
             fRate,
             1 ether,
             address(supportedToken1),
-            lender
+            lender,
+            0
         );
 
         hoax(borrower);
@@ -909,7 +915,8 @@ contract LineTest is Test, Events {
             fRate,
             1 ether,
             address(supportedToken1),
-            lender
+            lender,
+            0
         );
     }
 
@@ -953,11 +960,11 @@ contract LineTest is Test, Events {
 
         vm.warp(ttl-2); // TODO calculate and compare accrued IR
 
-        (uint256 d,,uint256 r,uint256 i,,,uint256 l, bool o) = line.credits(id);
+        (uint256 d,,uint256 r,uint256 i,,,uint256 l,, bool o) = line.credits(id);
         assertEq(o, true, "position is not open");
         hoax(borrower);
         line.close(id);
-        (uint256 d2,,uint256 r2,uint256 i2,,, uint256 l2, bool o2) = line.credits(id);
+        (uint256 d2,,uint256 r2,uint256 i2,,, uint256 l2,, bool o2) = line.credits(id);
         console.log(o2);
         assertEq(o2, false, "position is not closed");
         assertEq(l2 != uint256(0),true, "lender is null");
@@ -990,7 +997,7 @@ contract LineTest is Test, Events {
         vm.warp(ttl-2); // TODO calculate and compare accrued IR
 
         line.accrueInterest();
-        (uint256 d, uint256 p,uint256 r,uint256 i,,,uint256 l, bool o) = line.credits(id);
+        (uint256 d, uint256 p,uint256 r,uint256 i,,,uint256 l,, bool o) = line.credits(id);
 
         assertGt(r, 0);
         assertEq(i, 0);
@@ -1001,7 +1008,7 @@ contract LineTest is Test, Events {
         hoax(borrower);
         line.close(id);
 
-        (uint256 d2,,uint256 r2,uint256 i2,,,uint256 l2, bool o2) = line.credits(id);
+        (uint256 d2,,uint256 r2,uint256 i2,,,uint256 l2,, bool o2) = line.credits(id);
 
         assertEq(i2, r);
         assertEq(r2, 0);
@@ -1024,7 +1031,7 @@ contract LineTest is Test, Events {
 
     function test_cannot_open_credit_position_without_consent() public {
         hoax(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, 0);
         assertEq(
             supportedToken1.balanceOf(address(line)),
             0,
@@ -1039,7 +1046,7 @@ contract LineTest is Test, Events {
 
     function test_cannot_borrow_from_nonexistant_position() public {
         hoax(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, 0);
         vm.expectRevert(ILineOfCredit.PositionIsClosed.selector);
         hoax(borrower);
         line.borrow(bytes32(uint256(12743134)), 1 ether, borrower);
@@ -1062,7 +1069,8 @@ contract LineTest is Test, Events {
             fRate,
             1 ether,
             address(unsupportedToken),
-            lender
+            lender,
+            0
         );
         vm.expectRevert("SimpleOracle: unsupported token");
         hoax(lender);
@@ -1071,7 +1079,8 @@ contract LineTest is Test, Events {
             fRate,
             1 ether,
             address(unsupportedToken),
-            lender
+            lender,
+            0
         );
     }
 
@@ -1144,13 +1153,13 @@ contract LineTest is Test, Events {
     function test_increase_credit_limit_with_consent() public {
         _addCredit(address(supportedToken1), 1 ether);
         bytes32 id = line.ids(0);
-        (uint d,,,,,,,) = line.credits(id);
+        (uint d,,,,,,,,) = line.credits(id);
 
         hoax(borrower);
         line.increaseCredit(tokenId, 1 ether);
         hoax(lender);
         line.increaseCredit(tokenId, 1 ether);
-        (uint d2,,,,,,,) = line.credits(id);
+        (uint d2,,,,,,,,) = line.credits(id);
         assertEq(d2 - d, 1 ether);
     }
 
@@ -1164,14 +1173,14 @@ contract LineTest is Test, Events {
         vm.warp(block.timestamp + (ttl / 3));
 
         line.accrueInterest();
-        (,,uint256 interestAccrued,,,,,) = line.credits(id);
+        (,,uint256 interestAccrued,,,,,,) = line.credits(id);
         assertGt(interestAccrued, 0);
 
         hoax(lender);
         line.withdraw(tokenId, 1 ether);
 
         // check interest accrued during withdrawal. should be 0 bc no time passed since last accrual
-        (uint256 deposit,,uint256 interestAccrued2,,,,,) = line.credits(id);
+        (uint256 deposit,,uint256 interestAccrued2,,,,,,) = line.credits(id);
         assertEq(interestAccrued, interestAccrued2);
         assertEq(deposit, 0);
 
@@ -1179,7 +1188,7 @@ contract LineTest is Test, Events {
 
         // no interest accrued bc no deposit or principal to charge against
         line.accrueInterest();
-        (,,uint256 interestAccrued3,,,,,) = line.credits(id);
+        (,,uint256 interestAccrued3,,,,,,) = line.credits(id);
         assertEq(interestAccrued, interestAccrued3);
 
 
@@ -1189,7 +1198,7 @@ contract LineTest is Test, Events {
         hoax(borrower);
         line.increaseCredit(tokenId, 1 ether);
 
-        (uint256 deposit3,,uint256 interestAccrued4,,,,,) = line.credits(id);
+        (uint256 deposit3,,uint256 interestAccrued4,,,,,,) = line.credits(id);
         assertEq(deposit3, 1 ether);
         // no interest charged yet because we just added credit
         assertEq(interestAccrued, interestAccrued4);
@@ -1199,7 +1208,7 @@ contract LineTest is Test, Events {
     function test_cannot_increase_credit_limit_without_consent() public {
         _addCredit(address(supportedToken1), 1 ether);
         bytes32 id = line.ids(0);
-        (uint d,,,,,,,) = line.credits(id);
+        (uint d,,,,,,,,) = line.credits(id);
 
         hoax(borrower);
         line.increaseCredit(tokenId, 1 ether);
@@ -1271,11 +1280,11 @@ contract LineTest is Test, Events {
     function test_revert_no_token_price() public {
         oracle.changePrice(address(supportedToken1), -1);
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, 0);
         vm.stopPrank();
         vm.startPrank(lender);
         vm.expectRevert(CreditLib.NoTokenPrice.selector);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, 0);
         vm.stopPrank();
     }
 
@@ -1356,11 +1365,11 @@ contract LineTest is Test, Events {
     //         supportedToken1.mint(lender, mintAmount);
 
     //         vm.prank(borrower);
-    //         line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+    //         line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, 0);
 
     //         vm.startPrank(lender);
     //         supportedToken1.approve(address(line), MAX_INT);
-    //         bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender);
+    //         bytes32 id = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, 0);
     //         vm.stopPrank();
 
     //         vm.prank(borrower);
@@ -1379,14 +1388,14 @@ contract LineTest is Test, Events {
         bytes32 id = line.ids(0);
         hoax(borrower);
         line.borrow(id, 1 ether, borrower);
-        (,,uint interestAccruedBefore,,,,,) = line.credits(id);
+        (,,uint interestAccruedBefore,,,,,,) = line.credits(id);
 
         vm.warp(ttl + 10 days);
         // accrue interest can be called after deadline
         line.accrueInterest();
 
         // check that accrued interest is saved to line credits
-        (,,uint interestAccruedAfter,,,,,) = line.credits(id);
+        (,,uint interestAccruedAfter,,,,,,) = line.credits(id);
         assertGt(interestAccruedAfter, interestAccruedBefore);
     }
 

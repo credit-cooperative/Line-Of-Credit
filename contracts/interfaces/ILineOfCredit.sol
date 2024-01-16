@@ -17,6 +17,7 @@ interface ILineOfCredit {
         uint8 decimals; // Decimals of Credit Token for calcs
         address token; // The token being lent out (Credit Token)
         uint256 tokenId; // The person to repay
+        uint128 earlyWithdrawalFee; // early withdrawal fee paid by lender
         bool isOpen; // Status of position
     }
 
@@ -43,6 +44,8 @@ interface ILineOfCredit {
     event IncreaseCredit(bytes32 indexed id, uint256 indexed deposit);
 
     event TransferOriginationFee(uint256 indexed fee, address indexed to);
+
+    event EarlyWithdrawalFee(uint256 indexed fee, address indexed lender, address indexed to);
 
     // Lender Events
 
@@ -131,7 +134,8 @@ interface ILineOfCredit {
         uint128 frate,
         uint256 amount,
         address token,
-        address lender
+        address lender,
+        uint128 earlyWithdrawalFee
     ) external payable returns (uint256);
 
     /**
