@@ -42,6 +42,8 @@ interface ILineOfCredit {
 
     event IncreaseCredit(bytes32 indexed id, uint256 indexed deposit);
 
+    event TransferOriginationFee(uint256 indexed fee, address indexed to);
+
     // Lender Events
 
     // Emits data re Lender removes funds (principal) - there is no corresponding function, just withdraw()
@@ -77,6 +79,7 @@ interface ILineOfCredit {
     error NotActive();
     error NotBorrowing();
     error CallerAccessDenied();
+    error CannotSetOriginationFee();
 
     // Tokens
     error TokenTransferFailed();
@@ -286,7 +289,7 @@ interface ILineOfCredit {
 
      function getRates(bytes32 id) external view returns (uint128, uint128);
 
-     function getDeadline() external view returns (uint256);
+     function deadline() external view returns (uint256);
 
     /**
      * @notice - info on the next lender position that must be repaid

@@ -70,6 +70,7 @@ library LineLib {
      * @param amount - amount of tokens to send
      */
     function receiveTokenOrETH(address token, address sender, uint256 amount) external returns (bool) {
+       
         if (token == address(0)) {
             revert TransferFailed();
         }
