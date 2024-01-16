@@ -45,7 +45,7 @@ interface ILineOfCredit {
 
     event TransferOriginationFee(uint256 indexed fee, address indexed to);
 
-    event EarlyWithdrawalFee(uint256 indexed fee, address indexed to);
+    event EarlyWithdrawalFee(uint256 indexed fee, address indexed lender, address indexed to);
 
     // Lender Events
 

@@ -350,7 +350,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         return (amount * originationFee * (deadline - block.timestamp)) / INTEREST_DENOMINATOR;
     }
 
-    function _calculateWithdrawalFee(uint128 fee, uint256 amount) internal returns (uint256) {
+    function _calculateEarlyWithdrawalFee(uint128 fee, uint256 amount) internal returns (uint256) {
 
         return ((amount * fee) / BASE_DENOMINATOR);
     }
@@ -532,7 +532,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         // dont penalize if they are only withdrawing interest that has been repaid
         if (status == LineLib.STATUS.ACTIVE){
             if (block.timestamp < deadline && amount > credits[id].interestRepaid) {
-                fee = _calculateWithdrawalFee(credits[id].earlyWithdrawalFee, amount);
+                fee = _calculateEarlyWithdrawalFee(credits[id].earlyWithdrawalFee, amount);
             }
         }
 
@@ -544,7 +544,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         if (fee > 0) {
             IERC20(credits[id].token).safeTransfer(borrower, fee); // NOTE: send fee from line to borrower
-            emit EarlyWithdrawalFee(fee, borrower);
+            emit EarlyWithdrawalFee(fee, msg.sender, borrower);
         }
     }
 
