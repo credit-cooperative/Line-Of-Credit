@@ -2,6 +2,8 @@
 // Copyright: https://github.com/credit-cooperative/Line-Of-Credit/blob/master/COPYRIGHT.md
 
  pragma solidity ^0.8.16;
+
+import "forge-std/console.sol";
 import {Denominations} from "chainlink/Denominations.sol";
 import {ILineOfCredit} from "../interfaces/ILineOfCredit.sol";
 import {IOracle} from "../interfaces/IOracle.sol";
@@ -108,7 +110,8 @@ library CreditLib {
         uint256 amount,
         uint256 tokenId,
         address token,
-        address oracle
+        address oracle,
+        uint128 earlyWithdrawalFee
     ) external returns (ILineOfCredit.Credit memory credit) {
         int price = IOracle(oracle).getLatestAnswer(token);
         if (price <= 0) {
@@ -131,6 +134,7 @@ library CreditLib {
             principal: 0,
             interestAccrued: 0,
             interestRepaid: 0,
+            earlyWithdrawalFee: earlyWithdrawalFee,
             isOpen: true
         });
 
