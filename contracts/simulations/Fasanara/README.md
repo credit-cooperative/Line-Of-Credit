@@ -1,10 +1,12 @@
 ## Installing
 
+First, clone this repo locally on your machine.
+
 We track remote remotes like Foundry and Chainlink via submodules so you will need to install those in addition to our repo itself
 
 If you have forge installed already you can run `forge install`
 
-If you done,  follow [installation guide](https://github.com/foundry-rs/foundry) on their repo.
+If you don't, follow [installation guide](https://github.com/foundry-rs/foundry) on their repo, then run `forge install`
 
 Before running tests, make sure the foundry.toml file is correctly configured. Make sure it includes the following:
 
