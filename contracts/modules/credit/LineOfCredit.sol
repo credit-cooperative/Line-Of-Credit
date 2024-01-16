@@ -36,9 +36,11 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     uint256 public deadlineExtension = 0;
 
     uint256 constant ONE_YEAR = 365.25 days;
-    // Must divide by 100 too offset bps in numerator and divide by another 100 to offset % and get actual token amount
+
+    // 10000 bps = 1%
     uint256 constant BASE_DENOMINATOR = 10000;
-    // = 31557600 * 10000 = 315576000000;
+
+    // 31557600 = 362.25 days X 24 hours X 60 minutes X 60 seconds
     uint256 constant INTEREST_DENOMINATOR = ONE_YEAR * BASE_DENOMINATOR;
 
     /// @notice - the account that can drawdown and manage debt positions
@@ -63,8 +65,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     /// @dev    - may contain null elements
     bytes32[] public ids;
 
-    // NOTE: ITS IS 0 FOR TESTING PURPOSES. Otherwise all other tests break
-    uint128 public orginiationFee = 0; // in BPS 4 decimals  fee = 50 loan amount = 10000 * (5000/100)
+    uint128 public originationFee = 0; // in BPS 4 decimals  fee = 50 loan amount = 10000 * (50/100)
 
     /// @notice id -> position data
     mapping(bytes32 => Credit) public credits;
@@ -99,13 +100,10 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         _updateStatus(LineLib.STATUS.ACTIVE);
     }
 
-    function setOriginationFee(uint128 _originationFee) external onlyBorrowerOrArbiter mutualConsent(arbiter, borrower) {
-        //TODO: do we need this logic? Doesnt effectt lenders at all. If borrower and servicer agree, who cares?
-        
-        // if (count > 0) {
-        //     revert CannotSetOriginationFee();   
-        // }
-        orginiationFee = _originationFee;
+    function setFees(uint128 _originationFee) external onlyBorrowerOrArbiter mutualConsent(arbiter, borrower) {
+        originationFee = _originationFee;
+        // servicingFee = fee;
+        // swapFee = fee;
     }
 
     function initTokenizedPosition(address _tokenAddress) external onlyArbiter {
@@ -349,7 +347,6 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
 
     function _calculateOriginationFee(uint256 amount) internal returns (uint256) {
-        require(deadline > block.timestamp, "deadline has passed");
         return (amount * orginiationFee * (deadline - block.timestamp)) / INTEREST_DENOMINATOR;
     }
 
@@ -372,14 +369,12 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     ) external payable override nonReentrant whileActive mutualConsent(lender, borrower) returns (uint256) {
         uint256 tokenId = tokenContract.mint(msg.sender, address(this));
         
-        bytes32 id = _createCredit(tokenId, token, amount, earlyWithdrawalFee);
+        bytes32 id = _createCredit(tokenId, token, amount);
 
         uint256 fee = 0;
         
-        if (orginiationFee > 0){
-            
+        if (originationFee > 0){
             fee = _calculateOriginationFee(amount);
-            console.log("fee", fee);
         }
         
         
@@ -451,7 +446,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
         // Borrower clears the debt then closes the credit line
 
-        credits[id] = _close(_repay(credit, id, totalOwed, borrower), id); // NOTE: the fee is in addition to the totalOwed bc we need to close the line
+        credits[id] = _close(_repay(credit, id, totalOwed, borrower), id);
     }
 
     /// see ILineOfCredit.close

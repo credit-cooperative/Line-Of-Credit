@@ -137,18 +137,18 @@ contract OriginationFeeTest is Test, Events {
     }
 
     function test_arbiter_and_borrower_set_fee() public {
-        assertEq(line.orginiationFee(), 0);
+        assertEq(line.originationFee(), 0);
         assertEq(line.count(), 0);
 
         vm.startPrank(borrower);
-        line.setOriginationFee(50);
+        line.setFees(50);
         vm.stopPrank();
 
         vm.startPrank(arbiter);
-        line.setOriginationFee(50);
+        line.setFees(50);
         vm.stopPrank();
 
-        assertEq(line.orginiationFee(), 50);
+        assertEq(line.originationFee(), 50);
     }
 
     function test_math() public {
@@ -161,13 +161,13 @@ contract OriginationFeeTest is Test, Events {
         // 205338809034907597
     }
 
-    function test_arbiter_gets_fee() public {
+    function test_arbiter_gets_fee() public { // deadline == 150 days
         vm.startPrank(borrower);
-        line.setOriginationFee(50);
+        line.setFees(50);
         vm.stopPrank();
 
         vm.startPrank(arbiter);
-        line.setOriginationFee(50);
+        line.setFees(50);
         vm.stopPrank();
 
         vm.startPrank(lender);
@@ -183,25 +183,18 @@ contract OriginationFeeTest is Test, Events {
         console.log(supportedToken1.balanceOf(arbiter));
         assertEq(supportedToken1.balanceOf(arbiter), 205338809034907597);
 
-        // need to figure out the last few decimals cuz my calc doesnt go that far
-
-
-
-        // check all the math :'(
-
-        // check balance of line is 100 ether - fee
-        // check balance of arbiter is fee amount
-
-        // NOTE: How do i know what the fee is supposed to be?
     }
 
-    function test_fee_adjusts_based_on_deadline() public {
+    function test_fee_adjusts_based_on_deadline_greater_than(uint256 deadline) public {
+        if (deadline <= ttl) return;
+        if (deadline >= 2147483647) return; // this is the most we can add to block.timestamp before we hit the 2038 problem with Unix
+    
         vm.startPrank(borrower);
-        line.setOriginationFee(50);
+        line.setFees(50);
         vm.stopPrank();
 
         vm.startPrank(arbiter);
-        line.setOriginationFee(50);
+        line.setFees(50);
         vm.stopPrank();
 
         // vm.expectEmit
@@ -209,34 +202,71 @@ contract OriginationFeeTest is Test, Events {
 
         uint256 fee1 = supportedToken1.balanceOf(arbiter);
 
-        line2 = new LineOfCredit(address(oracle), arbiter, borrower, 200 days);
+        address arbiter2 = address(22);
+        line2 = new LineOfCredit(address(oracle), arbiter2, borrower, deadline);
+        vm.startPrank(arbiter2);
         line2.initTokenizedPosition(LPTAddress);
+        vm.stopPrank();
         line2.init();
 
         _mintAndApprove(address(line2));
 
         vm.startPrank(borrower);
-        line2.setOriginationFee(50);
+        line2.setFees(50);
         vm.stopPrank();
 
-        vm.startPrank(arbiter);
-        line2.setOriginationFee(50);
+        vm.startPrank(arbiter2);
+        line2.setFees(50);
         vm.stopPrank();
 
         // vm.expectEmit
         _addCredit2(address(supportedToken1), 100 ether);
 
-        uint256 fee2 = supportedToken1.balanceOf(arbiter) - fee1;
+        uint256 fee2 = supportedToken1.balanceOf(arbiter2);
 
-        assertGt(fee2, fee1);
+        assertGt(fee2, 205338809034907597);
     }
 
-    // probably need to test more math and more scenarios
+    function test_fee_adjusts_based_on_deadline_less_than(uint256 deadline) public {
+        if (deadline >= ttl) return;
+        if (deadline < block.timestamp) return;
+        // if (block.timestamp + deadline >= 2147483647) return;
+        vm.startPrank(borrower);
+        line.setFees(50);
+        vm.stopPrank();
 
-    // bigger the deadline, bigger the fee? Is this what we want? 
+        vm.startPrank(arbiter);
+        line.setFees(50);
+        vm.stopPrank();
 
-    // what about bob's point? We cant take a fee if lender deposits and withdraws before time is elapsed.
-        // what if we penalize the lender if they withdraw before the deadline passes? 
+        // vm.expectEmit
+        _addCredit(address(supportedToken1), 100 ether);
 
-    // Do we need something smoother for giving approvals? Would suck to ask for 2 approvals on a frontend (one for line, one for treasury)
+        uint256 fee1 = supportedToken1.balanceOf(arbiter);
+
+        address arbiter2 = address(22);
+        line2 = new LineOfCredit(address(oracle), arbiter2, borrower, deadline);
+        vm.startPrank(arbiter2);
+        line2.initTokenizedPosition(LPTAddress);
+        vm.stopPrank();
+        line2.init();
+
+        _mintAndApprove(address(line2));
+
+        vm.startPrank(borrower);
+        line2.setFees(50);
+        vm.stopPrank();
+
+        vm.startPrank(arbiter2);
+        line2.setFees(50);
+        vm.stopPrank();
+
+        // vm.expectEmit
+        _addCredit2(address(supportedToken1), 100 ether);
+
+        uint256 fee2 = supportedToken1.balanceOf(arbiter2);
+
+        assertLt(fee2, 205338809034907597);
+    }
+
 }
