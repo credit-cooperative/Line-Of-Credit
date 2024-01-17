@@ -410,7 +410,7 @@ contract SecuredLineTest is Test {
         line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false, 0);
         vm.stopPrank();
         vm.startPrank(lender);
-        uint256 tokenId = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false), 0;
+        uint256 tokenId = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false, 0);
         bytes32 id = line.tokenToPosition(tokenId);
         vm.stopPrank();
         vm.startPrank(borrower);

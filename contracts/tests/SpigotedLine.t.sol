@@ -1728,7 +1728,7 @@ contract SpigotedLineTest is Test, Events {
       (, uint256 principal,uint256 interest,,,,,,) = line.credits(line.ids(0));
       vm.prank(lender); // prank lender
       line.useAndRepay(principal + interest);
-      (, principal,,,,,,,) = line.credits(line.ids(0));
+      (, principal,,,,,,,,) = line.credits(line.ids(0));
       assertEq(principal, 0, "principal should be zero");
     }
 

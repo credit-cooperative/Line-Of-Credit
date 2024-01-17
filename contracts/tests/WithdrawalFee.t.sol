@@ -122,12 +122,12 @@ contract WithdrawalFeeTest is Test, Events {
 
     function _addCredit(address token, uint256 amount) public {
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, amount, token, lender, 50);
+        line.addCredit(dRate, fRate, amount, token, lender, false, 50);
         vm.stopPrank();
         vm.startPrank(lender);
         vm.expectEmit(false, true, true, false);
         emit Events.SetRates(bytes32(0), dRate, fRate);
-        line.addCredit(dRate, fRate, amount, token, lender, 50);
+        line.addCredit(dRate, fRate, amount, token, lender, false, 50);
         vm.stopPrank();
     }
 
@@ -135,7 +135,7 @@ contract WithdrawalFeeTest is Test, Events {
         _addCredit(address(supportedToken1), 100 ether);
 
         (,bytes32 id) = line.getPositionFromTokenId(1);
-        (,,,,,,,uint128 withdrawalRate,) = line.credits(id);
+        (,,,,,,,,,uint128 withdrawalRate) = line.credits(id);
         console.log(withdrawalRate);
 
         assertEq(withdrawalRate, 50);
@@ -250,7 +250,7 @@ contract WithdrawalFeeTest is Test, Events {
         line.depositAndRepay(99 ether);
         vm.stopPrank();
 
-        (,,,uint256 interestRepaid,,,,,) = line.credits(id);
+        (,,,uint256 interestRepaid,,,,,,) = line.credits(id);
 
 
         uint256 lenderBalanceBefore = supportedToken1.balanceOf(lender);

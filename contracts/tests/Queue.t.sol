@@ -419,7 +419,7 @@ contract QueueTest is Test, Events {
         );
 
         vm.prank(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(token4), lender, false), 0;
+        line.addCredit(dRate, fRate, 1 ether, address(token4), lender, false, 0);
         vm.prank(lender);
         uint256 tokenId4 = line.addCredit(
             dRate,
