@@ -160,7 +160,8 @@ contract LineTest is Test, Events {
             1 ether,
             address(supportedToken1),
             lender,
-            false
+            false,
+            0
         );
         bytes32 id = line.tokenToPosition(tokenId1);
         hoax(borrower);

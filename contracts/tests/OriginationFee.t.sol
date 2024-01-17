@@ -116,23 +116,23 @@ contract OriginationFeeTest is Test, Events {
 
     function _addCredit(address token, uint256 amount) public {
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, amount, token, lender, 0);
+        line.addCredit(dRate, fRate, amount, token, lender, false, 0);
         vm.stopPrank();
         vm.startPrank(lender);
         vm.expectEmit(false, true, true, false);
         emit Events.SetRates(bytes32(0), dRate, fRate);
-        line.addCredit(dRate, fRate, amount, token, lender, 0);
+        line.addCredit(dRate, fRate, amount, token, lender, false, 0);
         vm.stopPrank();
     }
 
     function _addCredit2(address token, uint256 amount) public {
         vm.startPrank(borrower);
-        line2.addCredit(dRate, fRate, amount, token, lender, 0);
+        line2.addCredit(dRate, fRate, amount, token, lender, false, 0);
         vm.stopPrank();
         vm.startPrank(lender);
         vm.expectEmit(false, true, true, false);
         emit Events.SetRates(bytes32(0), dRate, fRate);
-        line2.addCredit(dRate, fRate, amount, token, lender, 0);
+        line2.addCredit(dRate, fRate, amount, token, lender, false, 0);
         vm.stopPrank();
     }
 
