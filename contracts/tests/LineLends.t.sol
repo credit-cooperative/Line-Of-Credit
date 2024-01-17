@@ -83,11 +83,11 @@ contract LineLendsTest is Test {
 
     function _addCredit(address token, uint256 amount) public {
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, amount, token, lender, false);
+        line.addCredit(dRate, fRate, amount, token, lender, false, 0);
         vm.stopPrank();
         vm.startPrank(lender);
 
-        line.addCredit(dRate, fRate, amount, token, lender, false);
+        line.addCredit(dRate, fRate, amount, token, lender, false, 0);
         vm.stopPrank();
     }
 

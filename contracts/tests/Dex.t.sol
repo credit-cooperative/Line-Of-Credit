@@ -388,7 +388,7 @@ contract EthRevenue is Test {
         vm.startPrank(borrower);
         line.close(line.ids(0));
         vm.stopPrank();
-        (, , , , , , , isOpen,) = line.credits(line.ids(0));
+        (, , , , , , , isOpen,,) = line.credits(line.ids(0));
         assertFalse(isOpen);
 
         unusedDai = line.unused(DAI);
@@ -400,7 +400,7 @@ contract EthRevenue is Test {
         // assertEq(unusedEth, address(line).balance, "unused ETH should match the ETH balance");
 
         // line should be closed anad interest should be 0
-        (, , uint256 interestAccruedTokensAfter, , , , , bool lineIsOpen,) = line.credits(line.ids(0));
+        (, , uint256 interestAccruedTokensAfter, , , , , bool lineIsOpen,,) = line.credits(line.ids(0));
         assertFalse(lineIsOpen);
         assertEq(interestAccruedTokensAfter, 0);
 
@@ -498,12 +498,12 @@ contract EthRevenue is Test {
 
         // Create the position
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, BORROW_AMOUNT_DAI, DAI, lender, false);
+        line.addCredit(dRate, fRate, BORROW_AMOUNT_DAI, DAI, lender, false, 0);
         vm.stopPrank();
 
         startHoax(lender);
         IERC20(DAI).approve(address(line), BORROW_AMOUNT_DAI);
-        tokenId = line.addCredit(dRate, fRate, BORROW_AMOUNT_DAI, DAI, lender, false);
+        tokenId = line.addCredit(dRate, fRate, BORROW_AMOUNT_DAI, DAI, lender, false, 0);
         id = line.tokenToPosition(tokenId);
         emit log_named_bytes32("position id", id);
         vm.stopPrank();

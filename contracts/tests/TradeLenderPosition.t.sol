@@ -183,12 +183,12 @@ contract LenderPositionTest is Test, Events {
 
     function _addCredit(address token, uint256 amount) public {
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, amount, token, lender, false);
+        line.addCredit(dRate, fRate, amount, token, lender, false, 0);
         vm.stopPrank();
         vm.startPrank(lender);
         vm.expectEmit(false, true, true, false);
         emit Events.SetRates(bytes32(0), dRate, fRate);
-        tokenId = line.addCredit(dRate, fRate, amount, token, lender, false);
+        tokenId = line.addCredit(dRate, fRate, amount, token, lender, false, 0);
         id = line.tokenToPosition(tokenId);
         vm.stopPrank();
     }
@@ -231,7 +231,7 @@ contract LenderPositionTest is Test, Events {
 
         (uint256 d, uint256 p, uint256 ia, uint256 ir,,,,,) = line.credits(id);
         (uint128 dr, uint128 fr) = line.getRates(id);
-        uint256 deadline = line.getDeadline();
+        uint256 deadline = line.deadline();
         uint256 split = line.defaultRevenueSplit();
         uint256 mincratio = escrow.minimumCollateralRatio();
 

@@ -35,6 +35,14 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
 
     uint256 public deadlineExtension = 0;
 
+    uint256 constant ONE_YEAR = 365.25 days;
+
+    // 10000 bps = 1%
+    uint256 constant BASE_DENOMINATOR = 10000;
+
+    // 31557600 = 362.25 days X 24 hours X 60 minutes X 60 seconds
+    uint256 constant INTEREST_DENOMINATOR = ONE_YEAR * BASE_DENOMINATOR;
+
     /// @notice - the account that can drawdown and manage debt positions
     address public borrower;
 
@@ -57,6 +65,8 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     /// @dev    - may contain null elements
     bytes32[] public ids;
 
+    uint128 public originationFee = 0; // in BPS 4 decimals  fee = 50 loan amount = 10000 * (50/100)
+
     /// @notice id -> position data
     mapping(bytes32 => Credit) public credits;
 
@@ -78,7 +88,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         borrower = borrower_;
         deadline = block.timestamp + ttl_; //the deadline is the term/maturity/expiry date of the Line of Credit facility
         interestRate = new InterestRateCredit();
-        
+
         emit DeployLine(oracle_, arbiter_, borrower_);
     }
 
@@ -88,6 +98,12 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         }
         _init();
         _updateStatus(LineLib.STATUS.ACTIVE);
+    }
+
+    function setFees(uint128 _originationFee) external onlyBorrowerOrArbiter mutualConsent(arbiter, borrower) {
+        originationFee = _originationFee;
+        // servicingFee = fee;
+        // swapFee = fee;
     }
 
     function initTokenizedPosition(address _tokenAddress) external onlyArbiter {
@@ -167,7 +183,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         if (msg.sender != borrower) {
             tokenContract.openProposal(tokenId);
         }
-        
+
         address lender = tokenContract.ownerOf(tokenId);
         if (_mutualConsent(borrower, lender)) {
             // Run whatever code is needed for the 2/2 consent
@@ -333,13 +349,30 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     }
 
     /// see ILineOfCredit.addCredit
+
+
+    function _calculateOriginationFee(uint256 amount) internal returns (uint256) {
+        return (amount * originationFee * (deadline - block.timestamp)) / INTEREST_DENOMINATOR;
+    }
+
+    function _calculateEarlyWithdrawalFee(uint128 fee, uint256 amount) internal returns (uint256) {
+
+        return ((amount * fee) / BASE_DENOMINATOR);
+    }
+
+    // function _calculateServicingFee(uint256 amount) internal returns (uint256) {
+    //    // TODO: do we need a require of any kind?
+    //     return (amount * servicingFee)/10000;
+    // }
+
     function addCredit(
         uint128 drate,
         uint128 frate,
         uint256 amount,
         address token,
         address lender,
-        bool isRestricted
+        bool isRestricted,
+        uint128 earlyWithdrawalFee
     ) external payable override nonReentrant whileActive mutualConsent(lender, borrower) returns (uint256) {
 
         if (address(tokenContract) == address(0)){
@@ -347,13 +380,25 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         } 
 
         uint256 tokenId = tokenContract.mint(lender, address(this), isRestricted);
-        bytes32 id = _createCredit(tokenId, token, amount, isRestricted);
-        
+        bytes32 id = _createCredit(tokenId, token, amount, isRestricted, earlyWithdrawalFee);
+
+        uint256 fee = 0;
+
+        if (originationFee > 0){
+            fee = _calculateOriginationFee(amount);
+        }
+
         tokenToPosition[tokenId] = id;
         
         _setRates(id, drate, frate);
 
-        LineLib.receiveTokenOrETH(token, lender, amount);
+        if (fee > 0) {
+            IERC20(token).safeTransferFrom(lender, arbiter, fee); // NOTE: send fee from lender to treasury (arbiter for now)
+            emit TransferOriginationFee(fee, arbiter);
+        }
+
+        LineLib.receiveTokenOrETH(token, lender, amount - fee); // send amount - fee from lender to line
+
 
         return tokenId;
     }
@@ -411,6 +456,7 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
         uint256 totalOwed = credit.principal + credit.interestAccrued;
 
         // Borrower clears the debt then closes the credit line
+
         credits[id] = _close(_repay(credit, id, totalOwed, borrower), id);
     }
 
@@ -489,8 +535,27 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     function withdraw(uint256 tokenId, uint256 amount) external override onlyTokenHolder(tokenId) nonReentrant {
         // accrues interest and transfer funds to Lender addres
         bytes32 id = tokenToPosition[tokenId];
-        
-        credits[id] = CreditLib.withdraw(_accrue(credits[id], id), id, tokenId, msg.sender, amount);
+
+        uint256 fee = 0;
+
+
+        // dont penalize if they are only withdrawing interest that has been repaid
+        if (status == LineLib.STATUS.ACTIVE){
+            if (block.timestamp < deadline && amount > credits[id].interestRepaid) {
+                fee = _calculateEarlyWithdrawalFee(credits[id].earlyWithdrawalFee, amount);
+            }
+        }
+
+
+        // check status, if active, penalize the lender by taking a % of withdrawn amount and sending to borrower.
+        // can use the same OG fee equation
+
+        credits[id] = CreditLib.withdraw(_accrue(credits[id], id), id, tokenId, msg.sender, amount - fee);
+
+        if (fee > 0) {
+            IERC20(credits[id].token).safeTransfer(borrower, fee); // NOTE: send fee from line to borrower
+            emit EarlyWithdrawalFee(fee, msg.sender, borrower);
+        }
     }
 
     // for abort Scenario
@@ -537,15 +602,17 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
      * @param token - ERC20 token that is being lent and borrower
      * @param amount - amount of tokens lender will initially deposit
      */
-    function _createCredit(uint256 tokenId, address token, uint256 amount, bool isRestricted) internal returns (bytes32 id) {
+    function _createCredit(uint256 tokenId, address token, uint256 amount, bool isRestricted, uint128 withdrawalFee) internal returns (bytes32 id) {
+
         id = CreditLib.computeId(address(this), tokenId, token);
+
         address lender = getTokenHolder(tokenId);
         // MUST not double add the credit line. once lender is set it cant be deleted even if position is closed.
         if (lender != address(0) && credits[id].isOpen) {
             revert PositionExists();
         }
 
-        credits[id] = CreditLib.create(id, amount, tokenId, token, address(oracle), isRestricted);
+        credits[id] = CreditLib.create(id, amount, tokenId, token, address(oracle), isRestricted, withdrawalFee);
 
         ids.push(id); // add lender to end of repayment queue
 
@@ -668,10 +735,6 @@ contract LineOfCredit is ILineOfCredit, MutualConsent, ReentrancyGuard {
     function getPositionFromTokenId(uint256 tokenId) external view returns (Credit memory, bytes32) {
         bytes32 id = tokenToPosition[tokenId];
         return (credits[id], id);
-    }
-
-    function getDeadline() external view returns (uint256) {
-        return deadline;
     }
 
     function getRates(bytes32 id) external view returns (uint128, uint128) {

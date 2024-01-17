@@ -157,10 +157,10 @@ contract SecuredLineTest is Test {
 
     function _addCredit(address token, uint256 amount) public {
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, amount, token, lender, false);
+        line.addCredit(dRate, fRate, amount, token, lender, false, 0);
         vm.stopPrank();
         vm.startPrank(lender);
-        line.addCredit(dRate, fRate, amount, token, lender, false);
+        line.addCredit(dRate, fRate, amount, token, lender, false, 0);
         vm.stopPrank();
     }
 
@@ -341,10 +341,10 @@ contract SecuredLineTest is Test {
 
     function test_can_liquidate_if_debt_when_deadline_passes() public {
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false, 0);
         vm.stopPrank();
         vm.startPrank(lender);
-        uint256 tokenId = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
+        uint256 tokenId = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false, 0);
         bytes32 id = line.tokenToPosition(tokenId);
         vm.stopPrank();
         vm.startPrank(borrower);
@@ -357,10 +357,10 @@ contract SecuredLineTest is Test {
     // test should succeed to liquidate when no debt (but positions exist) and passed deadline
     function test_can_liquidate_if_no_debt_but_positions_exist_when_deadline_passes() public {
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false, 0);
         vm.stopPrank();
         vm.startPrank(lender);
-        uint256 tokenId = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
+        uint256 tokenId = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false, 0);
         bytes32 id = line.tokenToPosition(tokenId);
         vm.stopPrank();
         vm.warp(ttl + 1);
@@ -407,10 +407,10 @@ contract SecuredLineTest is Test {
     // test should fail to liquidate if above cratio before deadline
     function test_cannot_liquidate_escrow_if_cratio_above_min() public {
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false, 0);
         vm.stopPrank();
         vm.startPrank(lender);
-        uint256 tokenId = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
+        uint256 tokenId = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false), 0;
         bytes32 id = line.tokenToPosition(tokenId);
         vm.stopPrank();
         vm.startPrank(borrower);
@@ -453,11 +453,11 @@ contract SecuredLineTest is Test {
 
     function test_cannot_liquidate_as_anon() public {
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false, 0);
         vm.stopPrank();
 
         vm.startPrank(lender);
-        uint256 tokenId = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
+        uint256 tokenId = line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false, 0);
         bytes32 id = line.tokenToPosition(tokenId);
         vm.stopPrank();
 
@@ -660,7 +660,7 @@ contract SecuredLineTest is Test {
 
         // lender proposes credit position
         vm.startPrank(lender);
-        line.addCredit(dRate, fRate, 100 ether, address(supportedToken1), lender, false);
+        line.addCredit(dRate, fRate, 100 ether, address(supportedToken1), lender, false, 0);
         vm.stopPrank();
 
         bytes32 proposalId = line.mutualConsentProposalIds(0);
@@ -953,7 +953,7 @@ contract SecuredLineTest is Test {
 
         // lender makes credit proposal
         vm.startPrank(lender);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken1), lender, false, 0);
         vm.stopPrank();
         uint256 numCreditProposals = line.proposalCount();
         assertEq(numCreditProposals, 1);

@@ -166,10 +166,10 @@ contract AbortTest is Test {
 
     function _addCredit(address token, uint256 amount) public {
         vm.startPrank(borrower);
-        line.addCredit(dRate, fRate, amount, token, lender, false);
+        line.addCredit(dRate, fRate, amount, token, lender, false, 0);
         vm.stopPrank();
         vm.startPrank(lender);
-        line.addCredit(dRate, fRate, amount, token, lender, false);
+        line.addCredit(dRate, fRate, amount, token, lender, false, 0);
         vm.stopPrank();
     }
 
@@ -313,7 +313,7 @@ contract AbortTest is Test {
         // try to add credit
         vm.startPrank(borrower);
         vm.expectRevert(ILineOfCredit.NotActive.selector);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken3), lender, false);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken3), lender, false, 0);
         vm.stopPrank();
 
         assertEq(uint(line.status()), uint(LineLib.STATUS.ABORTED));
@@ -353,12 +353,12 @@ contract AbortTest is Test {
         // try to add credit
         vm.startPrank(borrower);
         vm.expectRevert(ILineOfCredit.NotActive.selector);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken3), lender, false);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken3), lender, false, 0);
         vm.stopPrank();
 
         vm.startPrank(lender);
         vm.expectRevert(ILineOfCredit.NotActive.selector);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken3), lender, false);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken3), lender, false, 0);
         vm.stopPrank();
     }
 
@@ -404,12 +404,12 @@ contract AbortTest is Test {
 
         vm.startPrank(borrower);
         vm.expectRevert(ILineOfCredit.NotActive.selector);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken3), lender, false);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken3), lender, false, 0);
         vm.stopPrank();
 
         vm.startPrank(lender);
         vm.expectRevert(ILineOfCredit.NotActive.selector);
-        line.addCredit(dRate, fRate, 1 ether, address(supportedToken3), lender, false);
+        line.addCredit(dRate, fRate, 1 ether, address(supportedToken3), lender, false, 0);
         vm.stopPrank();
     }
 }

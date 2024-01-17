@@ -87,7 +87,7 @@ contract LendingPositionToken is ERC721, ILendingPositionToken {
         uint256 principal = credit.principal;
         uint256 interestAccrued = credit.interestAccrued;
         uint256 interestRepaid = credit.interestRepaid;
-        uint256 deadline = ILineOfCredit(line).getDeadline();
+        uint256 deadline = ILineOfCredit(line).deadline();
         uint256 split = ISpigotedLine(line).defaultRevenueSplit();
 
         address escrow = address(IEscrowedLine(line).escrow());

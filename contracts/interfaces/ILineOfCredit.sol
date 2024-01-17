@@ -17,6 +17,7 @@ interface ILineOfCredit {
         uint8 decimals; // Decimals of Credit Token for calcs
         address token; // The token being lent out (Credit Token)
         uint256 tokenId; // The person to repay
+        uint128 earlyWithdrawalFee; // early withdrawal fee paid by lender
         bool isOpen; // Status of position
         bool isRestricted; // Whether the position can be traded
     }
@@ -42,6 +43,10 @@ interface ILineOfCredit {
     event SetRates(bytes32 indexed id, uint128 indexed dRate, uint128 indexed fRate);
 
     event IncreaseCredit(bytes32 indexed id, uint256 indexed deposit);
+
+    event TransferOriginationFee(uint256 indexed fee, address indexed to);
+
+    event EarlyWithdrawalFee(uint256 indexed fee, address indexed lender, address indexed to);
 
     // Lender Events
 
@@ -78,6 +83,7 @@ interface ILineOfCredit {
     error NotActive();
     error NotBorrowing();
     error CallerAccessDenied();
+    error CannotSetOriginationFee();
 
     // Tokens
     error TokenTransferFailed();
@@ -131,7 +137,8 @@ interface ILineOfCredit {
         uint256 amount,
         address token,
         address lender,
-        bool isRestricted
+        bool isRestricted,
+        uint128 earlyWithdrawalFee
     ) external payable returns (uint256);
 
     /**
@@ -289,7 +296,7 @@ interface ILineOfCredit {
 
      function getRates(bytes32 id) external view returns (uint128, uint128);
 
-     function getDeadline() external view returns (uint256);
+     function deadline() external view returns (uint256);
 
     /**
      * @notice - info on the next lender position that must be repaid
