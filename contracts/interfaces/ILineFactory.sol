@@ -31,6 +31,7 @@ interface ILineFactory {
 
     event RegisteredLine(address indexed line, address indexed oracle, address indexed arbiter, address borrower, address operator);
 
+    event ChangedOracle(address indexed oracle);
 
     error ModuleTransferFailed(address line, address spigot, address escrow);
     error InvalidRevenueSplit();
@@ -39,6 +40,8 @@ interface ILineFactory {
     error InvalidArbiterAddress();
     error InvalidEscrowAddress();
     error InvalidSpigotAddress();
+
+
 
     function deployEscrow(uint32 minCRatio, address owner, address borrower) external returns (address);
 
@@ -55,4 +58,6 @@ interface ILineFactory {
     ) external returns (address);
 
     function rolloverSecuredLine(address payable oldLine, address borrower, uint256 ttl) external returns (address);
+
+    function changeOracle(address newOracle) external returns (bool);
 }
