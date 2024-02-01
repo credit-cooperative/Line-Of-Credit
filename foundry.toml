@@ -121,10 +121,6 @@ libraries = [
     "contracts/utils/LineFactoryLib.sol:LineFactoryLib:0xf2Fb1e2E4c0395ABA09ab28472b3495F5F480625",
 ]
 
-[profile.plumetestnet]
-solc-version = "0.8.19"
-libraries = []
-
 [profile.default.rpc_storage_caching]
 chains = 'all'
 endpoints = 'all'
