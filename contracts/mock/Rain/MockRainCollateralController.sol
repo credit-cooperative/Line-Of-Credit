@@ -16,7 +16,7 @@ contract MockRainCollateralController is Ownable {
 
     mapping (address => uint256) public nonce;
 
-    constructor(address _controllerAdmin, address _treasury, address initialOwner) Ownable() {
+    constructor(address _controllerAdmin, address _treasury, address initialOwner) Ownable(initialOwner) {
         controllerAdmin = _controllerAdmin;
         treasury = _treasury;
     }
