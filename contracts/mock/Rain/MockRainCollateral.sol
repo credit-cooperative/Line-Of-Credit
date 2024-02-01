@@ -17,7 +17,7 @@ contract MockRainCollateral is Ownable {
         _;
     }
 
-    constructor(address initialOwner, address _factory) Ownable(initialOwner) {
+    constructor(address initialOwner, address _factory) Ownable() {
         factory = _factory;
     }
 

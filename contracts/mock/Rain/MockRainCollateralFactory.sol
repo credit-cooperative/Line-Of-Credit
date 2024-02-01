@@ -7,7 +7,7 @@ contract MockRainCollateralFactory is Ownable {
 
     address public controller;
 
-    constructor(address initialOwner, address _controller) Ownable(initialOwner) {
+    constructor(address initialOwner, address _controller) Ownable() {
         controller = _controller;
     }
 
