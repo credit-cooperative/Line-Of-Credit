@@ -84,7 +84,7 @@ libraries = [
     "contracts/utils/SpigotLib.sol:SpigotLib:0x3182c0f682B84D0586F7d2C38fa24a7E720d2359",
     "contracts/utils/EscrowLib.sol:EscrowLib:0x2492eF0F83F7041867eC067582d5157290e09B06",
     "contracts/utils/SpigotedLineLib.sol:SpigotedLineLib:0xa5De6E2A9503E227cA345f8aeb795A187a32F34e",
-    "contracts/utils/LineFactoryLib.sol:LineFactoryLib:0x9dBeE9024C5DBd990783157c66ac65066cF277E4"
+    "contracts/utils/LineFactoryLib.sol:LineFactoryLib:0x9dBeE9024C5DBd990783157c66ac65066cF277E4",
 ]
 
 [profile.mainnet]
