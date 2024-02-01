@@ -92,3 +92,8 @@ echo $SecuredLineAddress
 # transfer ownership of spigot: updateOwner
 # transfer ownership of escrow: updateLine
 
+
+forge create --rpc-url $POLYGON_RPC_URL \
+--constructor-args 0xF1baA8242e3AAF65D4Eb030459854cddE209acb9 0xFE002526dEc5B3e4b5134b75b20c065178323343 0xf44b95991cadd73ed769454a03b3820997f00873 0xdef1c0ded9bec7f1a1670819833240f027b25eff 0xc4c69bcfaf69fef0b9ae09f3cb143e71a4f438f4  0xd9dc9d5bc40bbcc1126d2064a932ce69cf837e74 432000 0 \
+--private-key $POLYGON_PRIVATE_KEY --etherscan-api-key $POLYGONSCAN_API_KEY contracts/modules/credit/SecuredLine.sol:SecuredLine --verify
+
