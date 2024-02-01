@@ -20,7 +20,7 @@ contract DeployTokenScript is Script {
 
     function run() external {
 
-        uint256 deployerPrivateKey= vm.envUint("GOERLI_PRIVATE_KEY");
+        uint256 deployerPrivateKey= vm.envUint("LOCAL_PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
         //  Pass in name and symbol for new tokens
@@ -29,6 +29,9 @@ contract DeployTokenScript is Script {
 
         ccCoinOne.mint(mintee1, mintAmount);
         ccCoinTwo.mint(mintee1, mintAmount);
+
+        ccCoinOne.mint(mintee2, mintAmount);
+        ccCoinTwo.mint(mintee2, mintAmount);
 
         vm.stopBroadcast();
     }
