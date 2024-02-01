@@ -21,6 +21,17 @@ git submodule deinit --force .
 git submodule update --init --recursive
 ```
 
+If still faceing issues, try this command:
+```
+git reset HEAD <path-to-lib>
+```
+
+
+Also try updating foundry suite by running:
+
+```
+foundryup
+```
 ## Deploying
 
 ### Testnet Deployments
