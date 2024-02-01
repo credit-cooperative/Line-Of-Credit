@@ -4,5 +4,5 @@ import "openzeppelin/access/Ownable.sol";
 
 contract MockRainBeacon is Ownable {
 
-    constructor(address initialOwner) Ownable() {}
+    constructor(address initialOwner) Ownable(initialOwner) {}
 }
