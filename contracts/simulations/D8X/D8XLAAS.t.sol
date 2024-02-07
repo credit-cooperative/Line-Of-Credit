@@ -33,25 +33,64 @@ contract D8XLAAS is Test {
     ISecuredLine public securedLine;
     ISpigotedLine public spigotedLine;
     IEscrow public escrow;
+    ISpigot public spigot;
+    ISpigot.Setting private settings;
 
-    treasury = IPerpetualTreasury(0xaB7794EcD2c8e9Decc6B577864b40eBf9204720f);
-    usdc = IERC20(0xA8CE8aee21bC2A48a5EF670afCc9274C7bbbC035);
+    uint256 MAX_INT =
+        115792089237316195423570985008687907853269984665640564039457584007913129639935;
+
+    address constant treasuryAddress = 0xaB7794EcD2c8e9Decc6B577864b40eBf9204720f;
+    address USDC = 0xA8CE8aee21bC2A48a5EF670afCc9274C7bbbC035;
 
     address constant borrower = 0xf44B95991CaDD73ed769454A03b3820997f00873;
     address constant lender = 0x9832FD4537F3143b5C2989734b11A54D4E85eEF6;
     address constant operator = 0x97fCbc96ed23e4E9F0714008C8f137D57B4d6C97;
 
-    uint256 FORk_BLOCK_NUMBER = 9770820;
+    bytes4 constant increaseLiquidity = IPerpetualTreasury.addLiquidity.selector;
+    bytes4 constant decreaseLiquidity = IPerpetualTreasury.withdrawLiquidity.selector;
+    bytes4 constant executeLiquidityWithdrawal = IPerpetualTreasury.executeLiquidityWithdrawal.selector;
+    bytes4 constant getTokenAmountToReturn = IPerpetualTreasury.getTokenAmountToReturn.selector;
+    bytes4 constant approveFunc = IERC20.approve.selector;
+    bytes4 constant transferFunc = IERC20.transfer.selector;
+    bytes4 constant newOwnerFunc = bytes4(0x12345678);
+    bytes4 constant claimFunc = bytes4(0x00000000);
+
+    uint256 FORK_BLOCK_NUMBER = 9770820;
     uint256 zkEVMMainnetFork;
 
-    function setUp{
+    function setUp() public {
         zkEVMMainnetFork = vm.createFork(vm.envString("ZKEMV_RPC_URL"), FORK_BLOCK_NUMBER);
         vm.selectFork(zkEVMMainnetFork);
+
+        deal(USDC, lender, 500000000000);
+
+        spigot = new Spigot(borrower, operator);
+
+        _initSpigot();
+        _mintAndApprove();
+
+
     }
 
+    function _mintAndApprove() public {
+        
+        vm.startPrank(lender);
+        IERC20(USDC).approve(address(spigot), MAX_INT);
+        vm.stopPrank();
+    }
 
+    function _initSpigot() public {
+        vm.startPrank(borrower);
+        settings = ISpigot.Setting(0, claimFunc, newOwnerFunc);
+        spigot.addSpigot(treasuryAddress, settings);
+        
+        spigot.updateWhitelistedFunction(increaseLiquidity, true);
+        spigot.updateWhitelistedFunction(decreaseLiquidity, true);
+        spigot.updateWhitelistedFunction(executeLiquidityWithdrawal, true);
+        vm.stopPrank();
+    }
 
-
-
-
+    function test_this() public {
+        return;
+    }
 }
