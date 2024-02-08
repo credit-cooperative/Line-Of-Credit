@@ -57,7 +57,7 @@ contract D8XLAAS is Test {
     bytes4 constant newOwnerFunc = bytes4(0x12345678);
     bytes4 constant claimFunc = bytes4(0x00000000);
 
-    uint256 FORK_BLOCK_NUMBER = 9619637;
+    uint256 FORK_BLOCK_NUMBER = 9619636;
     uint256 zkEVMMainnetFork;
 
     function setUp() public {
@@ -107,5 +107,13 @@ contract D8XLAAS is Test {
         bytes memory data = abi.encodeWithSelector(increaseLiquidity, poolId, tokenAmount);
         spigot.operate(treasuryAddress, data);
         vm.stopPrank();
+    }
+
+    function test_add_liquidity_with_EOA() public {
+        vm.startPrank(lender);
+        IERC20(USDC).approve(treasuryAddress, 500000000000);
+        uint8 poolId = 2;
+        uint256 tokenAmount = 500000000000;
+        IPerpetualTreasury(treasuryAddress).addLiquidity(poolId, tokenAmount);
     }
 }
