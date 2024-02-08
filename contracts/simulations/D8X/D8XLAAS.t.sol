@@ -39,8 +39,10 @@ contract D8XLAAS is Test {
     uint256 MAX_INT =
         115792089237316195423570985008687907853269984665640564039457584007913129639935;
 
-    address constant treasuryAddress = 0xaB7794EcD2c8e9Decc6B577864b40eBf9204720f;
+    //address constant treasuryAddress = 0xaB7794EcD2c8e9Decc6B577864b40eBf9204720f;
+    address constant treasuryAddress = 0xa598F5B8336fDD330e7E9AfFb7a19705310fb43F;
     address USDC = 0xA8CE8aee21bC2A48a5EF670afCc9274C7bbbC035;
+    address constant LPShares = 0x7948b01062fc562FA50De8D53e4d6ac1Fa39C7bC;
 
     address constant borrower = 0xf44B95991CaDD73ed769454A03b3820997f00873;
     address constant lender = 0x9832FD4537F3143b5C2989734b11A54D4E85eEF6;
@@ -55,7 +57,7 @@ contract D8XLAAS is Test {
     bytes4 constant newOwnerFunc = bytes4(0x12345678);
     bytes4 constant claimFunc = bytes4(0x00000000);
 
-    uint256 FORK_BLOCK_NUMBER = 9770820;
+    uint256 FORK_BLOCK_NUMBER = 9619637;
     uint256 zkEVMMainnetFork;
 
     function setUp() public {
@@ -90,7 +92,20 @@ contract D8XLAAS is Test {
         vm.stopPrank();
     }
 
-    function test_this() public {
-        return;
+    function test_add_liquidity_with_spigot() public {
+        vm.startPrank(lender);
+        IERC20(USDC).transfer(address(spigot), 500000000000);
+        vm.stopPrank();
+
+        vm.startPrank(address(spigot));
+        IERC20(USDC).approve(treasuryAddress, MAX_INT);
+        vm.stopPrank();
+
+        vm.startPrank(operator);
+        uint8 poolId = 2;
+        uint256 tokenAmount = 500000000000;
+        bytes memory data = abi.encodeWithSelector(increaseLiquidity, poolId, tokenAmount);
+        spigot.operate(treasuryAddress, data);
+        vm.stopPrank();
     }
 }
