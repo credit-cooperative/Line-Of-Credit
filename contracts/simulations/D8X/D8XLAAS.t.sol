@@ -19,10 +19,11 @@ import {ISecuredLine} from "../../interfaces/ISecuredLine.sol";
 // zkevm chainlink usdc price feed 0x0167D934CB7240e65c35e347F00Ca5b12567523a
 
 interface IPerpetualTreasury {
-    function addLiquidity(uint8 _poolId, uint256 _tokenAmount) external;
+    function addLiquidity(uint8 _poolId, uint256 _tokenAmount) external ;
     function withdrawLiquidity(uint8 _poolId, uint256 _shareAmount) external;
     function executeLiquidityWithdrawal(uint8 _poolId, address _lpAddr) external;
-    function getTokenAmountToReturn(uint8 _poolId, uint256 _shareAmount) external;
+    function getShareTokenPriceD18(uint8 _poolId) external returns (uint256 price);
+    function getTokenAmountToReturn(uint8 _poolId, uint256 _shareAmount) external ;
 }
 
 contract D8XLAAS is Test {
@@ -39,8 +40,8 @@ contract D8XLAAS is Test {
     uint256 MAX_INT =
         115792089237316195423570985008687907853269984665640564039457584007913129639935;
 
-    //address constant treasuryAddress = 0xaB7794EcD2c8e9Decc6B577864b40eBf9204720f;
-    address constant treasuryAddress = 0xa598F5B8336fDD330e7E9AfFb7a19705310fb43F;
+    address constant treasuryAddress = 0xaB7794EcD2c8e9Decc6B577864b40eBf9204720f; //proxy
+    //address constant treasuryAddress = 0xa598F5B8336fDD330e7E9AfFb7a19705310fb43F; // implementation
     address USDC = 0xA8CE8aee21bC2A48a5EF670afCc9274C7bbbC035;
     address constant LPShares = 0x7948b01062fc562FA50De8D53e4d6ac1Fa39C7bC;
 
@@ -115,5 +116,15 @@ contract D8XLAAS is Test {
         uint8 poolId = 2;
         uint256 tokenAmount = 500000000000;
         IPerpetualTreasury(treasuryAddress).addLiquidity(poolId, tokenAmount);
+    }
+
+    function test_get_share_price() public {
+        uint8 poolId = 2;
+        IPerpetualTreasury(treasuryAddress).getShareTokenPriceD18(poolId);
+        // bytes memory data = abi.encodeWithSelector(IPerpetualTreasury.getShareTokenPriceD18.selector, poolId);
+        // (bool success, bytes memory priceData)= treasuryAddress.call(data);
+        //require(success, "failed to get share price");
+        // uint256 price = abi.decode(priceData, (uint256));
+        // console.log(price);
     }
 }
