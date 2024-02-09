@@ -3,7 +3,7 @@
 
 // import  'forge-std/console.sol';
 import "chainlink/interfaces/FeedRegistryInterface.sol";
-import "chainlink/interfaces/AggregatorV3Interface.sol";
+import "chainlink/shared/interfaces/AggregatorV3Interface.sol";
 import {Denominations} from "chainlink/Denominations.sol";
 
 import {LineLib} from "../../utils/LineLib.sol";
