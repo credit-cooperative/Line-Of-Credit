@@ -42,7 +42,8 @@ contract D8XLAAS is Test {
 
     address constant treasuryAddress = 0xaB7794EcD2c8e9Decc6B577864b40eBf9204720f; //proxy
     //address constant treasuryAddress = 0xa598F5B8336fDD330e7E9AfFb7a19705310fb43F; // implementation
-    address USDC = 0xA8CE8aee21bC2A48a5EF670afCc9274C7bbbC035;
+    // address USDC = 0xA8CE8aee21bC2A48a5EF670afCc9274C7bbbC035; normal usdc
+    address USDC = 0x37eAA0eF3549a5Bb7D431be78a3D99BD360d19e5; // usdc.e
     address constant LPShares = 0x7948b01062fc562FA50De8D53e4d6ac1Fa39C7bC;
 
     address constant borrower = 0xf44B95991CaDD73ed769454A03b3820997f00873;
@@ -58,7 +59,7 @@ contract D8XLAAS is Test {
     bytes4 constant newOwnerFunc = bytes4(0x12345678);
     bytes4 constant claimFunc = bytes4(0x00000000);
 
-    uint256 FORK_BLOCK_NUMBER = 9619636;
+    uint256 FORK_BLOCK_NUMBER = 9_878_725;
     uint256 zkEVMMainnetFork;
 
     function setUp() public {
@@ -126,5 +127,12 @@ contract D8XLAAS is Test {
         //require(success, "failed to get share price");
         // uint256 price = abi.decode(priceData, (uint256));
         // console.log(price);
+    }
+
+    function test_read_treasury() public {
+        uint8 poolId = 2;
+        uint256 price =  IPerpetualTreasury(treasuryAddress).getShareTokenPriceD18(poolId);
+        console.log(price);
+
     }
 }
