@@ -2,6 +2,7 @@ pragma solidity ^0.8.9;
 
 import "forge-std/Test.sol";
 import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
 import {Spigot} from "../../modules/spigot/Spigot.sol";
 import {IOracle} from "../../interfaces/IOracle.sol";
 import {zkEVMOracle} from "../../modules/oracle/zkEVMOracle.sol";
@@ -109,6 +110,17 @@ contract D8XLAAS is Test {
         bytes memory data = abi.encodeWithSelector(increaseLiquidity, poolId, tokenAmount);
         spigot.operate(treasuryAddress, data);
         vm.stopPrank();
+
+        uint256 balanceAfter = IERC20(LPShares).balanceOf(address(spigot));
+        uint8 decimals = IERC20Metadata(LPShares).decimals();
+        console.log(balanceAfter/(10**decimals));
+        uint256 price =  IPerpetualTreasury(treasuryAddress).getShareTokenPriceD18(poolId);
+        console.log("price of LP tokens",price);
+        console.log("balance of LP tokens",balanceAfter);
+        console.log("value of LP tokens",balanceAfter*price/(10**decimals));
+
+   
+
     }
 
     function test_add_liquidity_with_EOA() public {
