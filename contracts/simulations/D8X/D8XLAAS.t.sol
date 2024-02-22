@@ -119,7 +119,25 @@ contract D8XLAAS is Test {
         console.log("balance of LP tokens",balanceAfter);
         console.log("value of LP tokens",balanceAfter*price/(10**decimals));
 
-   
+        bytes memory rmLiquidityData = abi.encodeWithSelector(decreaseLiquidity, poolId, balanceAfter);
+        vm.startPrank(operator);
+        spigot.operate(treasuryAddress, rmLiquidityData);
+        vm.stopPrank();
+
+        uint256 balanceAfterRm = IERC20(LPShares).balanceOf(address(spigot));
+
+        // should be equal bc we need to execute the liquidity withdrawal
+        assertEq(balanceAfterRm, balanceAfter);
+
+        vm.warp(15 days);
+
+        bytes memory executeLiquidityData = abi.encodeWithSelector(executeLiquidityWithdrawal, poolId, address(spigot));
+        vm.startPrank(operator);
+        spigot.operate(treasuryAddress, executeLiquidityData);
+        vm.stopPrank();
+
+        uint256 balanceAfterExec = IERC20(LPShares).balanceOf(address(spigot));
+        assertEq(balanceAfterExec, 0);
 
     }
 
