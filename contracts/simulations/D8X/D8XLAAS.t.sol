@@ -95,7 +95,9 @@ contract D8XLAAS is Test {
         vm.stopPrank();
     }
 
-    function test_add_liquidity_with_spigot() public {
+    // NOTE: This is a simple end to end test of D8X
+
+    function test_add_liquidity_with_spigot_and_then_remove_liquidity() public {
         vm.startPrank(lender);
         IERC20(USDC).transfer(address(spigot), 500000000000);
         vm.stopPrank();
