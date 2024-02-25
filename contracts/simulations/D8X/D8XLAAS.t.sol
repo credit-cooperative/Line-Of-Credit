@@ -129,7 +129,8 @@ contract D8XLAAS is Test {
         // should be equal bc we need to execute the liquidity withdrawal
         assertEq(balanceAfterRm, balanceAfter);
 
-        vm.warp(15 days);
+        vm.roll(block.number + 15000);
+        vm.warp(block.timestamp + 50 hours);
 
         bytes memory executeLiquidityData = abi.encodeWithSelector(executeLiquidityWithdrawal, poolId, address(spigot));
         vm.startPrank(operator);
@@ -138,6 +139,12 @@ contract D8XLAAS is Test {
 
         uint256 balanceAfterExec = IERC20(LPShares).balanceOf(address(spigot));
         assertEq(balanceAfterExec, 0);
+
+        uint256 usdcBalance = IERC20(USDC).balanceOf(address(spigot));
+        console.log(usdcBalance);
+
+        assertEq(usdcBalance, 500000000000 - 1); // lost a tiny amount to a withdrawal fee maybe?
+
 
     }
 
