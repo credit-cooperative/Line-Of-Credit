@@ -18,7 +18,7 @@ contract PlumeDeployment is Script {
     address payable swapTarget = payable(0xfD2c49851DB3D1A189Fc887671A5752d2336D128);//Uni Swap Router on Plume
 
     function run() public {
-        uint privKey = vm.envUint("PRIVATE_KEY");
+        uint256 privKey = vm.envUint("PLUME_PRIVATE_KEY");
         address deployer = vm.rememberKey(privKey);
 
         console.log("deployer address: %s", deployer);
