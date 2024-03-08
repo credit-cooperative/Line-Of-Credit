@@ -14,9 +14,8 @@ contract PlumeDeployment is Script {
     LineFactory lineFactory;
 
     //TODO: Replace before Deploymentss
-    address arbiter = address(0x42069);
+    address arbiter = address(0x895A8900437ba52A7C1450b09CD05C2Ba8A0EBE5);
     address payable swapTarget = payable(0xfD2c49851DB3D1A189Fc887671A5752d2336D128);//Uni Swap Router on Plume
-    address multisig = address(0xdead);
 
     function run() public {
         uint privKey = vm.envUint("PRIVATE_KEY");
@@ -30,21 +29,21 @@ contract PlumeDeployment is Script {
         oracle = new GenericOracle();
 
         lineFactory = new LineFactory(
-            address(moduleFactory), 
-            arbiter, 
+            address(moduleFactory),
+            arbiter,
             address(oracle),
             swapTarget
         );
 
-        //Transfer ownership of the oracle to the multisig
-        oracle.setOwner(multisig);
+        //Transfer ownership of the oracle to the arbiter
+        oracle.setOwner(arbiter);
 
         vm.stopBroadcast();
-        require(oracle.owner() == multisig, "oracle ownership not transferred correctly");
-    
+        require(oracle.owner() == arbiter, "oracle ownership not transferred correctly");
+
         console.log("Module Factory: %s", address(moduleFactory));
         console.log("Oracle: %s", address(oracle));
         console.log("Line Factory: %s", address(lineFactory));
-        
+
     }
 }
