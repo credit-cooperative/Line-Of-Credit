@@ -119,4 +119,4 @@ There are 4 variables that will need to be adjusted depening on if you are deplo
 ### Plume
 
 
-```forge script --rpc-url https://plume-testnet.rpc.caldera.xyz/http PlumeDeployment --verify --verifier blockscout --verifier-url https://plume-testnet.explorer.caldera.xyz/api\? --broadcast --legacy```
+```forge script --rpc-url https://plume-testnet.rpc.caldera.xyz/http PlumeDeployment --verify --verifier blockscout --verifier-url https://plume-testnet.explorer.caldera.xyz/api\? --broadcast --legacy --skip-simulation```
