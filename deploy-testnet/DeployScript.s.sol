@@ -14,7 +14,7 @@ import {SecuredLine} from "../contracts/modules/credit/SecuredLine.sol";
 import {Spigot} from "../contracts/modules/spigot/Spigot.sol";
 import {Escrow} from "../contracts/modules/escrow/Escrow.sol";
 
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 
 contract DeployScript is Script {
     Escrow escrow;
