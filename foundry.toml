@@ -1,9 +1,9 @@
 [profile.default]
 src = 'contracts'
+out = 'out'
 test = 'test'
 solc-version = "0.8.20"
 script = 'scripts'
-out = 'out'
 libs = ['lib']
 
 remappings = [
@@ -44,8 +44,8 @@ block_coinbase = '0x0000000000000000000000000000000000000000'
 block_timestamp = 1
 block_difficulty = 0
 memory_limit = 33554432
-extra_output = []
-extra_output_files = []
+# extra_output = []
+# extra_output_files = []
 fuzz_max_local_rejects = 1024
 fuzz_max_global_rejects = 65536
 names = false
@@ -88,14 +88,16 @@ libraries = [
 ]
 
 [profile.mainnet]
+out = 'out'
+solc-version = "0.8.20"
 libraries = [
-    "contracts/utils/LineLib.sol:LineLib:0xe639a9c07f39ED07F04f348D06f76dc80DC3EDeb",
-    "contracts/utils/CreditLib.sol:CreditLib:0x713cCD56D4353224880Bdf4aB5BC1f9eB0947a5B",
-    "contracts/utils/CreditListLib.sol:CreditListLib:0x9f48ccF9BA57ce89bb50ba9960a6B7C320183F19",
-    "contracts/utils/SpigotLib.sol:SpigotLib:0x87fc87EC34C290963aE55CB42B4A481Ad3850E31",
-    "contracts/utils/EscrowLib.sol:EscrowLib:0xA5C5f0c572c0f843d4234C6316D75fBD5A9C5bf1",
-    "contracts/utils/SpigotedLineLib.sol:SpigotedLineLib:0x06e5E43210e76149996f344eDfC09D432FCaeBc9",
-    "contracts/utils/LineFactoryLib.sol:LineFactoryLib:0x1C75806d3C160671a7620ca236C6B0203d0fCD13",
+    "contracts/utils/LineLib.sol:LineLib:0x73cb72a7efaddd99cdd2d110e2f4b8b65bf3b812",
+    "contracts/utils/CreditLib.sol:CreditLib:0x4dca189d7fb51d9cc375e4d697e5800c5d21ff87",
+    "contracts/utils/CreditListLib.sol:CreditListLib:0x9cbe9741b3503a790e69e1587b5d51c0056154dc",
+    "contracts/utils/SpigotLib.sol:SpigotLib:0x05b4180e2ee77a04f3f0dc833e36b7d9f1141e02",
+    "contracts/utils/EscrowLib.sol:EscrowLib:0x9ae9c76276e503105f20c8b452ccd0c4ee3b2df2",
+    "contracts/utils/SpigotedLineLib.sol:SpigotedLineLib:0x274946031D204567281F7616718b4aBB940Ef784",
+    "contracts/utils/LineFactoryLib.sol:LineFactoryLib:0x2b721a999b83cbcc1DBD697A27199d5b4Be70102",
 ]
 
 [profile.polygon]
