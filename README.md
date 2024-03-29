@@ -113,8 +113,11 @@ There are 4 variables that will need to be adjusted depening on if you are deplo
 
 ### Local
 
-### Goerli
+### Sepolia
 
+```forge script --chain-id 11155111 --fork-url https://eth-sepolia.g.alchemy.com/v2/dlZi4_b0R-owQTlVvoUAfScabDLiqZ10 --etherscan-api-key UJ1WYIW6CDU4MZWS4HFJJX91AWK8KGCWGD --verify --verifier-url https://api-sepolia.etherscan.io/api --broadcast contracts/scripts/SepoliaDeployment.s.sol```
+
+```forge script --chain-id 11155111 --fork-url https://eth-sepolia.g.alchemy.com/v2/dlZi4_b0R-owQTlVvoUAfScabDLiqZ10 --etherscan-api-key UJ1WYIW6CDU4MZWS4HFJJX91AWK8KGCWGD --verify --verifier-url https://api-sepolia.etherscan.io/api --broadcast contracts/scripts/DeployToken.s.sol```
 
 ### Plume
 
