@@ -23,7 +23,7 @@ contract LineFactory is ILineFactory {
     uint32 constant defaultMinCRatio = 3000; // 30.00% minimum collateral ratio
 
     address public immutable arbiter;
-    address public immutable oracle;
+    address public oracle;
     address payable public immutable swapTarget;
 
     constructor(address moduleFactory, address arbiter_, address oracle_, address payable swapTarget_) {
@@ -161,5 +161,18 @@ contract LineFactory is ILineFactory {
         address e = address(ISecuredLine(oldLine).escrow());
         line = LineFactoryLib.deploySecuredLine(oracle, arbiter, borrower, swapTarget, s, e, ttl, defaultRevenueSplit);
         emit DeployedSecuredLine(line, s, e, swapTarget, defaultRevenueSplit);
+    }
+
+    function changeOracle(address newOracle) external returns (bool) {
+        if (msg.sender != arbiter){
+            revert InvalidArbiterAddress();
+        }
+        if (newOracle == address(0)) {
+            revert InvalidOracleAddress();
+        }
+        oracle = newOracle;
+        emit ChangedOracle(newOracle);
+
+        return true;
     }
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
- pragma solidity ^0.8.16;
+ pragma solidity ^0.8.19;
 
 // import  'forge-std/console.sol';
 import "chainlink/interfaces/FeedRegistryInterface.sol";
@@ -9,12 +9,8 @@ import {Denominations} from "chainlink/Denominations.sol";
 import {LineLib} from "../../utils/LineLib.sol";
 import "../../interfaces/IOracle.sol";
 
-/**
- * @title   - Chainlink Feed Registry Wrapper
- * @notice  - simple contract that wraps Chainlink's Feed Registry to get asset prices for any tokens without needing to know the specific oracle address
- *          - only makes request for USD prices and returns results in standard 8 decimals for Chainlink USD feeds
- */
-contract PolygonOracle is IOracle {
+contract GenericOracle is IOracle {
+
     /// @notice Price Feeds - Chainlink Feed Registry with aggregated prices across
     mapping(address => address) public priceFeed; // token => chainlink price feed
     /// @notice NULL_PRICE - null price when asset price feed is deemed invalid
@@ -25,6 +21,8 @@ contract PolygonOracle is IOracle {
     /// Assumes Chainlink updates price minimum of once every 24hrs and 1 hour buffer for network issues
     uint256 public constant MAX_PRICE_LATENCY = 25 hours;
 
+    address public owner;
+
     event StalePrice(address indexed token, uint256 answerTimestamp);
     event NullPrice(address indexed token);
     event NoDecimalData(address indexed token, bytes errData);
@@ -32,11 +30,12 @@ contract PolygonOracle is IOracle {
 
     // TODO: Add DAI and USDC pricefeeds to mapping in constructor
 
-    // DAI/USD: 0x4746DeC9e833A82EC7C2C1356372CcF2cfcD2F3D
-    // USDC/USD: 0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7
+    // DAI/USD: 0xc5c8e77b397e531b8ec06bfb0048328b30e9ecfb
+    // USDC/USD: 0x50834f3163758fcc1df9973b6e91f0f0f0434ad3
+    // ETH/USD: 
+
     constructor() {
-        priceFeed[0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063] = 0x4746DeC9e833A82EC7C2C1356372CcF2cfcD2F3D; // DAI
-        priceFeed[0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174] = 0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7; // USDC
+        owner = msg.sender;
     }
 
     /**
@@ -45,7 +44,8 @@ contract PolygonOracle is IOracle {
      * @return price - the latest price in USD to 8 decimals
      */
     function getLatestAnswer(address token_) external returns (int256) {
-        require(priceFeed[token_] != address(0), "UNSUPPORTED");
+        if(priceFeed[token_] == address(0)) return 1e8;//Chainlink oracles are e1e8
+
         address token = token_ == LineLib.WETH ? Denominations.ETH : token_;
 
         try AggregatorV3Interface(priceFeed[token_]).latestRoundData() returns (
@@ -92,6 +92,9 @@ contract PolygonOracle is IOracle {
      * @return price    - the latest price in USD to 8 decimals
      */
     function _getLatestAnswer(address token) external view returns (int256) {
+        //Fallback in case oracle doesn't exist
+        if(priceFeed[token] == address(0)) return 1e8;//Chainlink oracles are e1e8
+
         try AggregatorV3Interface(priceFeed[token]).latestRoundData() returns (
             uint80 /* uint80 roundID */,
             int256 _price,
@@ -122,5 +125,17 @@ contract PolygonOracle is IOracle {
         } catch (bytes memory) {
             return NULL_PRICE;
         }
+       
     }
+
+    function setOwner(address _owner) external {
+        require(msg.sender == owner, "NOT_OWNER");
+        owner = _owner;
+    }
+
+    function setPriceFeed(address token, address feed) external {
+        require(msg.sender == owner, "NOT_OWNER");
+        priceFeed[token] = feed;
+    }
+
 }
