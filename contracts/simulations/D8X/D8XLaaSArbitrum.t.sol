@@ -59,11 +59,11 @@ contract D8XLaaSArbitrum is Test {
     bytes4 constant claimFunc = bytes4(0x00000000);
 
     uint256 FORK_BLOCK_NUMBER = 9_878_725;
-    uint256 zkEVMMainnetFork;
+    uint256 arbitrumFork;
 
     function setUp() public {
-        zkEVMMainnetFork = vm.createFork(vm.envString("ZKEMV_RPC_URL"), FORK_BLOCK_NUMBER);
-        vm.selectFork(zkEVMMainnetFork);
+        arbitrumFork = vm.createFork(vm.envString("ARBITRUM_RPC_URL"), FORK_BLOCK_NUMBER);
+        vm.selectFork(arbitrumFork);
 
         deal(USDC, lender, 500000000000);
 
