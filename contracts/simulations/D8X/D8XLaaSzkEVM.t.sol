@@ -27,7 +27,7 @@ interface IPerpetualTreasury {
     function getTokenAmountToReturn(uint8 _poolId, uint256 _shareAmount) external ;
 }
 
-contract D8XLAAS is Test {
+contract D8XLaaSzkEVM is Test {
     IPerpetualTreasury public treasury;
     IOracle public oracle;
     IERC20 public usdc;
