@@ -198,23 +198,25 @@ contract RainRe7Sim is Test {
         vm.startPrank(rainBorrower);
         line.depositAndClose();
         
+        
     
         // call rollover on the factory
 
         address newLine = factory.rolloverSecuredLine(payable(securedLineAddress), rainBorrower, ttl);
+        ISecuredLine(securedLineAddress).rollover(newLine);
         vm.stopPrank();
 
         // confirm new line is created
-        // assertEq(newLine != address(0), true, "new line not created");
+        assertEq(newLine != address(0), true, "new line not created");
         // confirm new line owns old modules
-        // assertEq(IEscrow(escrowAddress).line(), newLine, "escrowAddress not transferred");
-        // assertEq(ISpigot(spigotAddress).owner(), newLine, "spigot not transferred");
+        assertEq(IEscrow(escrowAddress).line(), newLine, "escrowAddress not transferred");
+        assertEq(ISpigot(spigotAddress).owner(), newLine, "spigot not transferred");
     
         // confirm new line has same borrower
-        //assertEq(ILineOfCredit(newLine).borrower(), rainBorrower, "borrower not transferred");
+        assertEq(ILineOfCredit(newLine).borrower(), rainBorrower, "borrower not transferred");
 
         //confirm line is active
-        //assertEq(ILineOfCredit(newLine).status(), 1, "line not active");
+        assertEq(uint256(ILineOfCredit(newLine).status()), 1, "line not active");
     }
 
 
