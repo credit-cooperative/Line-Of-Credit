@@ -196,8 +196,8 @@ contract RainRe7Sim is Test {
         vm.stopPrank();
 
         vm.startPrank(rainBorrower);
-        spigot.claimRevenue(rainCollateralControllerAddress, USDC, abi.encodeWithSelector(spigot.claim.selector));
-        //line.depositAndClose();
+    
+        line.depositAndClose();
         
         
     
