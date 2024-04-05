@@ -196,7 +196,8 @@ contract RainRe7Sim is Test {
         vm.stopPrank();
 
         vm.startPrank(rainBorrower);
-        line.depositAndClose();
+        spigot.claimRevenue(rainCollateralControllerAddress, USDC, abi.encodeWithSelector(spigot.claim.selector));
+        //line.depositAndClose();
         
         
     
@@ -207,15 +208,20 @@ contract RainRe7Sim is Test {
         vm.stopPrank();
 
         // confirm new line is created
+        console.log("new line address is not equal to address(0)");
         assertEq(newLine != address(0), true, "new line not created");
         // confirm new line owns old modules
+        console.log("escrowAddress is owned by newLine");
         assertEq(IEscrow(escrowAddress).line(), newLine, "escrowAddress not transferred");
+        console.log("spigotAddress is owned by newLine");
         assertEq(ISpigot(spigotAddress).owner(), newLine, "spigot not transferred");
     
         // confirm new line has same borrower
+        console.log("newLine borrower is rainBorrower");
         assertEq(ILineOfCredit(newLine).borrower(), rainBorrower, "borrower not transferred");
 
         //confirm line is active
+        console.log("newLine status is active");
         assertEq(uint256(ILineOfCredit(newLine).status()), 1, "line not active");
     }
 
