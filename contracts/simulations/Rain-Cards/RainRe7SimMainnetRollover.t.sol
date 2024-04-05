@@ -199,8 +199,6 @@ contract RainRe7Sim is Test {
     
         line.depositAndClose();
         
-        
-    
         // call rollover on the factory
 
         address newLine = factory.rolloverSecuredLine(payable(securedLineAddress), rainBorrower, ttl);
