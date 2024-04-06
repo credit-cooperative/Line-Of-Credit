@@ -41,9 +41,9 @@ contract D8XLaaSArbitrum is Test {
     uint256 MAX_INT =
         115792089237316195423570985008687907853269984665640564039457584007913129639935;
 
-    address constant treasuryAddress ; //proxy TODO
-    address USDC ; // usdc.e TODO
-    address constant LPShares ; // TODO
+    address constant treasuryAddress = 0x8f8BccE4c180B699F81499005281fA89440D1e95; //proxy
+    address stUSD = 0x0022228a2cc5E7eF0274A7Baa600d44da5aB5776; 
+    address constant LPShares; // TODO
 
     address constant borrower = 0xf44B95991CaDD73ed769454A03b3820997f00873;
     address constant lender = 0x9832FD4537F3143b5C2989734b11A54D4E85eEF6;
@@ -105,7 +105,7 @@ contract D8XLaaSArbitrum is Test {
         vm.stopPrank();
 
         vm.startPrank(operator);
-        uint8 poolId = 2;
+        uint8 poolId = 3;
         uint256 tokenAmount = 500000000000;
         bytes memory data = abi.encodeWithSelector(increaseLiquidity, poolId, tokenAmount);
         spigot.operate(treasuryAddress, data);
