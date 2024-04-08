@@ -78,7 +78,7 @@ contract RainRe7Sim is Test {
 
     // Rain Cards Borrower Address
     address rainBorrower = 0x34FB953287cF28B3404C1D21E56c495545CCb600; // Rain Borrower Address
-    address lenderAddress = makeAddr("lender");
+    address lenderAddress = 0x6a73204dB71F8e054bf9A0680b02Ae96f700b595;
 
     // Rain Controller Contract & Associated Addresses
     address rainCollateralFactoryAddress = 0x31EBf70312f488D0bdAc374b340f0D01dBf153B5;
@@ -133,7 +133,8 @@ contract RainRe7Sim is Test {
     uint128 fRate = 1000; // BPS
 
     // Fork Settings
-    uint256 constant FORK_BLOCK_NUMBER = 19_591_810; // Forking mainnet at block on 7/6/23 at 7 40 PM EST
+    //uint256 constant FORK_BLOCK_NUMBER = 19_591_810; // Forking mainnet at block on 7/6/23 at 7 40 PM EST
+    uint256 constant FORK_BLOCK_NUMBER = 19_613_983;
     uint256 ethMainnetFork;
 
     event log_named_bytes4(string key, bytes4 value);
@@ -190,20 +191,42 @@ contract RainRe7Sim is Test {
 
     function test_rain_rollover_simulation_mainnet() public {
         // repay existing line
-        vm.startPrank(lenderAddress);
-        IERC20(USDC).approve(rainBorrower, 2000000 * 10 ** 6);
-        IERC20(USDC).transfer(rainBorrower, 2000000 * 10 ** 6);
-        vm.stopPrank();
+        // vm.startPrank(lenderAddress);
+        // IERC20(USDC).approve(rainBorrower, 2000000 * 10 ** 6);
+        // IERC20(USDC).transfer(rainBorrower, 2000000 * 10 ** 6);
+        // vm.stopPrank();
 
-        vm.startPrank(rainBorrower);
-    
-        line.depositAndClose();
+        // vm.startPrank(rainBorrower);
+
+        bytes32 id = 0x26a781a12de8f38d7d585ca913bfd4bd84b0715901b7557062d7251729be987c;
+        // uint256 interestAccrued = line.interestAccrued(id);
+        // line.depositAndClose();
+        // vm.stopPrank();
+
+       
         
         // call rollover on the factory
 
-        address newLine = factory.rolloverSecuredLine(payable(securedLineAddress), rainBorrower, ttl);
+        vm.startPrank(rainBorrower);
+        //address newLine = factory.rolloverSecuredLine(payable(securedLineAddress), rainBorrower, ttl);
+        address newLine = 0xaf700a1d4B05db9E7159F2D3657A3Ca8f337d79D;
         ISecuredLine(securedLineAddress).rollover(newLine);
         vm.stopPrank();
+
+        uint256 balanceBefore = IERC20(USDC).balanceOf(lenderAddress);
+       
+
+        vm.startPrank(lenderAddress);
+        line.withdraw(id, 23412559884 + 1000000 * 10 ** 6);
+        vm.stopPrank();
+
+         uint256 balanceAfter = IERC20(USDC).balanceOf(lenderAddress);
+
+         uint256 diff = balanceAfter - balanceBefore;
+
+         console.log(diff);
+
+        
 
         // confirm new line is created
         console.log("new line address is not equal to address(0)");
