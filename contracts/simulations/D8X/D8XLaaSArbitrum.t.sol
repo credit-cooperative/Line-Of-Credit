@@ -16,6 +16,7 @@ import {ISpigot} from "../../interfaces/ISpigot.sol";
 import {Spigot} from "../../modules/spigot/Spigot.sol";
 import {ILineOfCredit} from "../../interfaces/ILineOfCredit.sol";
 import {ISecuredLine} from "../../interfaces/ISecuredLine.sol";
+import {ILineFactory} from "../../interfaces/ILineFactory.sol";
 
 // zkevm chainlink usdc price feed 0x0167D934CB7240e65c35e347F00Ca5b12567523a
 
@@ -37,10 +38,14 @@ contract D8XLaaSArbitrum is Test {
     IEscrow public escrow;
     ISpigot public spigot;
     ISpigot.Setting private settings;
+    ILineFactory public lineFactory;
 
     uint256 MAX_INT =
         115792089237316195423570985008687907853269984665640564039457584007913129639935;
 
+    address constant lineFactory = 0xF36399Bf8CB0f47e6e79B1F615385e3A94C8473a;
+    uint256 ttl = 90 days;
+    
     address constant treasuryAddress = 0x8f8BccE4c180B699F81499005281fA89440D1e95; //proxy
     address stUSD = 0x0022228a2cc5E7eF0274A7Baa600d44da5aB5776; 
     address constant LPShares; // TODO
@@ -48,6 +53,7 @@ contract D8XLaaSArbitrum is Test {
     address constant borrower = 0xf44B95991CaDD73ed769454A03b3820997f00873;
     address constant lender = 0x9832FD4537F3143b5C2989734b11A54D4E85eEF6;
     address constant operator = 0x97fCbc96ed23e4E9F0714008C8f137D57B4d6C97;
+    
 
     bytes4 constant increaseLiquidity = IPerpetualTreasury.addLiquidity.selector;
     bytes4 constant decreaseLiquidity = IPerpetualTreasury.withdrawLiquidity.selector;
@@ -67,7 +73,12 @@ contract D8XLaaSArbitrum is Test {
 
         deal(USDC, lender, 500000000000);
 
-        spigot = new Spigot(borrower, operator);
+        ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams(borrower, ttl, 3000, 90);
+
+        address lineAddress = ILineFactory(lineFactory).deploySecuredLineWithConfig(coreParams);
+
+
+        spigot = ILineOfCredit(lineAddress).spigot();
 
         _initSpigot();
         _mintAndApprove();
