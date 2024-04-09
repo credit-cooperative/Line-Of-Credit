@@ -117,6 +117,8 @@ contract RainRe7Sim is Test {
     address public spigotAddress = 0x78176f8723F48a72FE9d2bE10D456529a77F7458;
     address public escrowAddress = 0xf60e510104776414d4947Ca81C9066C8e7e05aFd;
     address public lineFactory = 0x07d5c33a3AFa24A25163D2afDD663BAb4C17b6d5;
+    address public zeroEx = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
+    address public deployer= 0x06dae7Ba3958EF288adB0B9b3732eC204E48BC47;
 
     // Asset Addresses
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -125,9 +127,9 @@ contract RainRe7Sim is Test {
     uint256 MAX_INT = type(uint256).max;
 
     // Loan Terms
-    uint256 ttl = 45 days;
+    uint256 ttl = 120 days;
     uint32 minCRatio = 0; // BPS
-    uint8 revenueSplit = 50;
+    uint8 revenueSplit = 100;
     uint256 loanSizeInUSDC = 200000 * 10 ** 6;
     uint128 dRate = 1000; // BPS
     uint128 fRate = 1000; // BPS
@@ -207,26 +209,48 @@ contract RainRe7Sim is Test {
         
         // call rollover on the factory
 
-        vm.startPrank(rainBorrower);
-        //address newLine = factory.rolloverSecuredLine(payable(securedLineAddress), rainBorrower, ttl);
-        address newLine = 0xaf700a1d4B05db9E7159F2D3657A3Ca8f337d79D;
-        ISecuredLine(securedLineAddress).rollover(newLine);
+        vm.startPrank(deployer);
+
+        ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
+            borrower: rainBorrower,
+            ttl: ttl,
+            cratio: minCRatio,
+            revenueSplit: revenueSplit
+        });
+    
+        address newLine = factory.deploySecuredLineWithModules(coreParams, spigotAddress, escrowAddress);
         vm.stopPrank();
+
+
+
+        vm.startPrank(rainBorrower);
+
+        ISecuredLine(securedLineAddress).rollover(newLine);
+
+        vm.stopPrank();
+
+        SpigotedLine spigotedLine = SpigotedLine(payable(newLine));
+
+        uint256 split = spigotedLine.defaultRevenueSplit();
+
+        assertEq(split, revenueSplit, "revenue split not equal");
+
+        address currentBorrower = spigotedLine.borrower();
+
+        assertEq(currentBorrower, rainBorrower, "borrower not equal");
 
         uint256 balanceBefore = IERC20(USDC).balanceOf(lenderAddress);
        
 
-        vm.startPrank(lenderAddress);
-        line.withdraw(id, 23412559884 + 1000000 * 10 ** 6);
-        vm.stopPrank();
+        // vm.startPrank(lenderAddress);
+        // line.withdraw(id, 23412559884 + 1000000 * 10 ** 6);
+        // vm.stopPrank();
 
          uint256 balanceAfter = IERC20(USDC).balanceOf(lenderAddress);
 
          uint256 diff = balanceAfter - balanceBefore;
 
          console.log(diff);
-
-        
 
         // confirm new line is created
         console.log("new line address is not equal to address(0)");
