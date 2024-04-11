@@ -150,12 +150,46 @@ contract D8XLaaSzkEVM is Test {
 
     }
 
-    function test_add_liquidity_with_EOA() public {
+    function test_add_liquidity_with_EOA_send_to_spigot_liquidate_from_spigot() public {
         vm.startPrank(lender);
         IERC20(USDC).approve(treasuryAddress, 500000000000);
         uint8 poolId = 2;
         uint256 tokenAmount = 500000000000;
         IPerpetualTreasury(treasuryAddress).addLiquidity(poolId, tokenAmount);
+
+        uint256 balanceAfter = IERC20(LPShares).balanceOf(lender);
+
+        IERC20(LPShares).transfer(address(spigot), balanceAfter);
+
+        uint256 balanceOfSpigot = IERC20(LPShares).balanceOf(address(spigot));
+
+        assertEq(balanceOfSpigot, balanceAfter);
+
+        bytes memory rmLiquidityData = abi.encodeWithSelector(decreaseLiquidity, poolId, balanceAfter);
+        vm.startPrank(operator);
+        spigot.operate(treasuryAddress, rmLiquidityData);
+        vm.stopPrank();
+
+        uint256 balanceAfterRm = IERC20(LPShares).balanceOf(address(spigot));
+
+        // should be equal bc we need to execute the liquidity withdrawal
+        assertEq(balanceAfterRm, balanceOfSpigot);
+
+        vm.roll(block.number + 15000);
+        vm.warp(block.timestamp + 50 hours);
+
+        bytes memory executeLiquidityData = abi.encodeWithSelector(executeLiquidityWithdrawal, poolId, address(spigot));
+        vm.startPrank(operator);
+        spigot.operate(treasuryAddress, executeLiquidityData);
+        vm.stopPrank();
+
+        uint256 balanceAfterExec = IERC20(LPShares).balanceOf(address(spigot));
+        assertEq(balanceAfterExec, 0);
+
+        uint256 usdcBalance = IERC20(USDC).balanceOf(address(spigot));
+        console.log(usdcBalance);
+
+        assertEq(usdcBalance, 500000000000 - 1);
     }
 
     function test_get_share_price() public {
