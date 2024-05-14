@@ -7,14 +7,14 @@ import "chainlink/shared/interfaces/AggregatorV3Interface.sol";
 import {Denominations} from "chainlink/Denominations.sol";
 
 import {LineLib} from "../../utils/LineLib.sol";
-import "../../interfaces/IOracle.sol";
+import "../../interfaces/IArbitrumOracle.sol";
 
 /**
  * @title   - Chainlink Feed Registry Wrapper
  * @notice  - simple contract that wraps Chainlink's Feed Registry to get asset prices for any tokens without needing to know the specific oracle address
  *          - only makes request for USD prices and returns results in standard 8 decimals for Chainlink USD feeds
  */
-contract ArbitrumOracle is IOracle {
+contract ArbitrumOracle is IArbitrumOracle {
     /// @notice Price Feeds - Chainlink Feed Registry with aggregated prices across
     mapping(address => address) public priceFeed; // token => chainlink price feed
     /// @notice NULL_PRICE - null price when asset price feed is deemed invalid
