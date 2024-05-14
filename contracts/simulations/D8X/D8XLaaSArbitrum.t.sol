@@ -1,10 +1,12 @@
 pragma solidity ^0.8.9;
 
 import "forge-std/Test.sol";
+import "forge-std/console.sol";
 import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "openzeppelin/token/ERC20/extensions/IERC20Metadata.sol";
+import {LineFactory} from "../../modules/factories/LineFactory.sol";
 import {Spigot} from "../../modules/spigot/Spigot.sol";
-import {IOracle} from "../../interfaces/IOracle.sol";
+import {IArbitrumOracle} from "../../interfaces/IArbitrumOracle.sol";
 import {zkEVMOracle} from "../../modules/oracle/zkEVMOracle.sol";
 import {LineOfCredit} from "../../modules/credit/LineOfCredit.sol";
 import {SpigotedLine} from "../../modules/credit/SpigotedLine.sol";
@@ -17,6 +19,7 @@ import {Spigot} from "../../modules/spigot/Spigot.sol";
 import {ILineOfCredit} from "../../interfaces/ILineOfCredit.sol";
 import {ISecuredLine} from "../../interfaces/ISecuredLine.sol";
 import {ILineFactory} from "../../interfaces/ILineFactory.sol";
+import {stUSDPriceFeedArbitrum} from "../../modules/oracle/stUSDPriceFeedArbitrum.sol";
 
 // zkevm chainlink usdc price feed 0x0167D934CB7240e65c35e347F00Ca5b12567523a
 
@@ -30,7 +33,7 @@ interface IPerpetualTreasury {
 
 contract D8XLaaSArbitrum is Test {
     IPerpetualTreasury public treasury;
-    IOracle public oracle;
+    IArbitrumOracle public oracle;
     IERC20 public usdc;
     IERC20 public lp;
     ISecuredLine public securedLine;
@@ -39,21 +42,24 @@ contract D8XLaaSArbitrum is Test {
     ISpigot public spigot;
     ISpigot.Setting private settings;
     ILineFactory public lineFactory;
+    SecuredLine public line;
 
     uint256 MAX_INT =
         115792089237316195423570985008687907853269984665640564039457584007913129639935;
 
     address constant lineFactoryAddress = 0xF36399Bf8CB0f47e6e79B1F615385e3A94C8473a;
-    uint256 ttl = 90 days;
+    uint256 ttl = 30 days;
     
     address constant treasuryAddress = 0x8f8BccE4c180B699F81499005281fA89440D1e95; //proxy
     address stUSD = 0x0022228a2cc5E7eF0274A7Baa600d44da5aB5776; 
-    address constant LPShares = address(0x123); // TODO
+    address constant LPShares = 0xC09258f1069a95A489B6E52436f88aC77ffb06db; // stUSD d8x lp shares
     address constant USDC = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
 
+    address constant arbiter = 0xFE002526dEc5B3e4b5134b75b20c065178323343;
     address constant borrower = 0xf44B95991CaDD73ed769454A03b3820997f00873;
     address constant lender = 0x9832FD4537F3143b5C2989734b11A54D4E85eEF6;
     address constant operator = 0x97fCbc96ed23e4E9F0714008C8f137D57B4d6C97;
+    address constant zeroExSwapTarget = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
     
 
     bytes4 constant increaseLiquidity = IPerpetualTreasury.addLiquidity.selector;
@@ -65,51 +71,118 @@ contract D8XLaaSArbitrum is Test {
     bytes4 constant newOwnerFunc = bytes4(0x12345678);
     bytes4 constant claimFunc = bytes4(0x00000000);
 
+    stUSDPriceFeedArbitrum public priceFeed;
+    address public arbOracle = 0x47B005bC1AD130D6a61c2d21047Ee84e03e5Aa8f;
+    address public owner = 0x539E70A18073436Eef2E3314A540A7c71dD4B57B;
+
     uint256 FORK_BLOCK_NUMBER = 211_276_876;
     uint256 arbitrumFork;
     uint256 lentAmount = 400000 * 10**18;
+    address lineAddress; 
 
     function setUp() public {
         arbitrumFork = vm.createFork(vm.envString("ARBITRUM_RPC_URL"), FORK_BLOCK_NUMBER);
         vm.selectFork(arbitrumFork);
+        
+        oracle = IArbitrumOracle(arbOracle);
+
+        priceFeed = new stUSDPriceFeedArbitrum();
+        vm.startPrank(owner);
+        oracle.setPriceFeed(stUSD, address(priceFeed));
+        vm.stopPrank();
+        
+        console.log("here");
 
         deal(stUSD, lender, lentAmount);
 
-        ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams(borrower, ttl, 3000, 90);
+        console.log("here 2");
 
-        address lineAddress = ILineFactory(lineFactoryAddress).deploySecuredLineWithConfig(coreParams);
+        lineAddress = _deployLoCWithConfig(LineFactory(lineFactoryAddress));
 
+        line = SecuredLine(payable(lineAddress));
 
-        spigot = ISpigotedLine(lineAddress).spigot();
+        spigot = ISpigotedLine(line).spigot();
+
+        console.log("here 2");
 
         _initSpigot();
         _mintAndApprove();
 
+    }
 
+    function _deployLoCWithConfig(LineFactory lineFactory) internal returns (address){
+        // create Escrow and Spigot
+        escrow = new Escrow(0, address(oracle), borrower, borrower);
+        spigot = new Spigot(borrower, operator);
+
+        // create SecuredLine
+        securedLine = new SecuredLine(address(oracle), arbiter, borrower, payable(zeroExSwapTarget), address(spigot), address(escrow), ttl, 100);
+
+        // transfer ownership of both Spigot and Escrow to SecuredLine
+        vm.startPrank(borrower);
+        spigot.updateOwner(address(securedLine));
+        escrow.updateLine(address(securedLine));
+        vm.stopPrank();
+
+        // call init() on Line of Credit, register on Line Factory
+        ILineOfCredit(address(securedLine)).init();
+        console.log("3");
+
+        // Arbiter registers Spigot, Escrow, and SecuredLine using Factory Contracts to appear in Subgraph & Dapp
+        vm.startPrank(arbiter);
+
+        lineFactory.registerSecuredLine(address(securedLine), address(spigot), address(escrow), borrower, operator, 100, 0);
+
+        vm.stopPrank();
+
+        return address(securedLine);
     }
 
     function _mintAndApprove() public {
         
         vm.startPrank(lender);
         IERC20(stUSD).approve(address(spigot), MAX_INT);
+        IERC20(stUSD).approve(address(line), MAX_INT);
         vm.stopPrank();
+
+        vm.startPrank(borrower);
+        IERC20(stUSD).approve(address(spigot), MAX_INT);
+        vm.stopPrank();
+
+
     }
 
     function _initSpigot() public {
-        vm.startPrank(borrower);
+        vm.startPrank(arbiter);
         settings = ISpigot.Setting(0, claimFunc, newOwnerFunc);
-        spigot.addSpigot(treasuryAddress, settings);
+        line.addSpigot(treasuryAddress, settings);
         
-        spigot.updateWhitelistedFunction(increaseLiquidity, true);
-        spigot.updateWhitelistedFunction(decreaseLiquidity, true);
-        spigot.updateWhitelistedFunction(executeLiquidityWithdrawal, true);
+        line.updateWhitelist(increaseLiquidity, true);
+        line.updateWhitelist(decreaseLiquidity, true);
+        line.updateWhitelist(executeLiquidityWithdrawal, true);
+        vm.stopPrank();
+    }
+
+    function _addCredit() internal {
+        vm.startPrank(lender);
+        ILineOfCredit(lineAddress).addCredit(700, 700, lentAmount, stUSD, lender);
+        vm.stopPrank();
+
+        vm.startPrank(borrower);
+        ILineOfCredit(lineAddress).addCredit(700, 700, lentAmount, stUSD, lender);
         vm.stopPrank();
     }
 
     // NOTE: This is a simple end to end test of D8X
 
-    function test_add_liquidity_with_spigot_and_then_remove_liquidity() public {
-        vm.startPrank(lender);
+    function test_add_liquidity_with_spigot_and_then_remove_liquidity_arb() public {
+        _addCredit();
+
+        bytes32 id = line.ids(0);
+
+        vm.startPrank(borrower);
+        ILineOfCredit(lineAddress).borrow(id, lentAmount);
+        
         IERC20(stUSD).transfer(address(spigot), lentAmount);
         vm.stopPrank();
 
@@ -157,8 +230,6 @@ contract D8XLaaSArbitrum is Test {
         console.log(stUSDBalance);
 
         assertEq(stUSDBalance, lentAmount - 1); // lost a tiny amount to a withdrawal fee maybe?
-
-
     }
 
     function test_add_liquidity_with_EOA() public {
