@@ -49,11 +49,8 @@ contract stUSDPriceFeedArbitrumTest is Test {
 
         int256 price = oracle.getLatestAnswer(stUSD);
         assertTrue(price > 0, "Price should be greater than 0");
+        console.log("Price: ", uint256(price));
 
     }
-
-
-
-
 }
    

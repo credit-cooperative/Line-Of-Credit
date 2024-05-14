@@ -65,14 +65,15 @@ contract D8XLaaSArbitrum is Test {
     bytes4 constant newOwnerFunc = bytes4(0x12345678);
     bytes4 constant claimFunc = bytes4(0x00000000);
 
-    uint256 FORK_BLOCK_NUMBER = 9_878_725;
+    uint256 FORK_BLOCK_NUMBER = 211_276_876;
     uint256 arbitrumFork;
+    uint256 lentAmount = 400000 * 10**18;
 
     function setUp() public {
         arbitrumFork = vm.createFork(vm.envString("ARBITRUM_RPC_URL"), FORK_BLOCK_NUMBER);
         vm.selectFork(arbitrumFork);
 
-        deal(USDC, lender, 500000000000);
+        deal(stUSD, lender, lentAmount);
 
         ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams(borrower, ttl, 3000, 90);
 
@@ -90,7 +91,7 @@ contract D8XLaaSArbitrum is Test {
     function _mintAndApprove() public {
         
         vm.startPrank(lender);
-        IERC20(USDC).approve(address(spigot), MAX_INT);
+        IERC20(stUSD).approve(address(spigot), MAX_INT);
         vm.stopPrank();
     }
 
@@ -109,16 +110,16 @@ contract D8XLaaSArbitrum is Test {
 
     function test_add_liquidity_with_spigot_and_then_remove_liquidity() public {
         vm.startPrank(lender);
-        IERC20(USDC).transfer(address(spigot), 500000000000);
+        IERC20(stUSD).transfer(address(spigot), lentAmount);
         vm.stopPrank();
 
         vm.startPrank(address(spigot));
-        IERC20(USDC).approve(treasuryAddress, MAX_INT);
+        IERC20(stUSD).approve(treasuryAddress, MAX_INT);
         vm.stopPrank();
 
         vm.startPrank(operator);
         uint8 poolId = 3;
-        uint256 tokenAmount = 500000000000;
+        uint256 tokenAmount = lentAmount;
         bytes memory data = abi.encodeWithSelector(increaseLiquidity, poolId, tokenAmount);
         spigot.operate(treasuryAddress, data);
         vm.stopPrank();
@@ -152,24 +153,24 @@ contract D8XLaaSArbitrum is Test {
         uint256 balanceAfterExec = IERC20(LPShares).balanceOf(address(spigot));
         assertEq(balanceAfterExec, 0);
 
-        uint256 usdcBalance = IERC20(USDC).balanceOf(address(spigot));
-        console.log(usdcBalance);
+        uint256 stUSDBalance = IERC20(stUSD).balanceOf(address(spigot));
+        console.log(stUSDBalance);
 
-        assertEq(usdcBalance, 500000000000 - 1); // lost a tiny amount to a withdrawal fee maybe?
+        assertEq(stUSDBalance, lentAmount - 1); // lost a tiny amount to a withdrawal fee maybe?
 
 
     }
 
     function test_add_liquidity_with_EOA() public {
         vm.startPrank(lender);
-        IERC20(USDC).approve(treasuryAddress, 500000000000);
-        uint8 poolId = 2;
-        uint256 tokenAmount = 500000000000;
+        IERC20(stUSD).approve(treasuryAddress, lentAmount);
+        uint8 poolId = 3;
+        uint256 tokenAmount = lentAmount;
         IPerpetualTreasury(treasuryAddress).addLiquidity(poolId, tokenAmount);
     }
 
     function test_get_share_price() public {
-        uint8 poolId = 2;
+        uint8 poolId = 3;
         IPerpetualTreasury(treasuryAddress).getShareTokenPriceD18(poolId);
         // bytes memory data = abi.encodeWithSelector(IPerpetualTreasury.getShareTokenPriceD18.selector, poolId);
         // (bool success, bytes memory priceData)= treasuryAddress.call(data);
@@ -179,7 +180,7 @@ contract D8XLaaSArbitrum is Test {
     }
 
     function test_read_treasury() public {
-        uint8 poolId = 2;
+        uint8 poolId = 3;
         uint256 price =  IPerpetualTreasury(treasuryAddress).getShareTokenPriceD18(poolId);
         console.log(price);
 

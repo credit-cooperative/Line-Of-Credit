@@ -15,8 +15,8 @@ interface IVault {
     }
 
     function latestRoundData() external view returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound) {
-        uint8 decimals = IVault(stUSD).decimals();
-        return (0, IVault(stUSD).convertToAssets(1 * 10**decimals), 0, block.timestamp, 0);
+        uint8 decimalNumber = IVault(stUSD).decimals();
+        return (0, IVault(stUSD).convertToAssets(1 * 10**decimalNumber), 0, block.timestamp, 0);
     }
 
     function decimals() external view returns (uint8) {
