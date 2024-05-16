@@ -31,7 +31,7 @@ contract stUSDPriceFeedArbitrumTest is Test {
         priceFeed = new stUSDPriceFeedArbitrum();
        (,int256 price,,,) = priceFeed.latestRoundData();
        console.log("Price: ", uint256(price)); 
-        assertTrue(price > 1, "Price should be greater than 0");
+        assertTrue(price > 100000000, "Price should be greater than 0");
     }
 
     function test_Decimals() public {
@@ -48,7 +48,7 @@ contract stUSDPriceFeedArbitrumTest is Test {
         vm.stopPrank();
 
         int256 price = oracle.getLatestAnswer(stUSD);
-        assertTrue(price > 0, "Price should be greater than 0");
+        assertTrue(price > 100000000, "Price should be greater than 0");
         console.log("Price: ", uint256(price));
 
     }
