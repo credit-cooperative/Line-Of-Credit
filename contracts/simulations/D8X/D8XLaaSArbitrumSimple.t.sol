@@ -57,9 +57,7 @@ contract D8XLaaSArbitrumSimple is Test {
 
     address constant arbiter = 0xFE002526dEc5B3e4b5134b75b20c065178323343;
     address constant borrower = 0xf44B95991CaDD73ed769454A03b3820997f00873; // TODO: what is the actual borrower address?
-    address constant lender = 0x9832FD4537F3143b5C2989734b11A54D4E85eEF6;
-    address constant operator = 0x97fCbc96ed23e4E9F0714008C8f137D57B4d6C97;
-    address constant zeroExSwapTarget = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
+    address constant lender = 0x7dFf12833a6f0e88f610E79E11E9506848cCF187;
 
     bytes4 constant increaseLiquidity = IPerpetualTreasury.addLiquidity.selector;
     bytes4 constant decreaseLiquidity = IPerpetualTreasury.withdrawLiquidity.selector;
@@ -72,7 +70,7 @@ contract D8XLaaSArbitrumSimple is Test {
 
     stUSDPriceFeedArbitrum public priceFeed;
     address public arbOracle = 0x47B005bC1AD130D6a61c2d21047Ee84e03e5Aa8f;
-    address public owner = 0x539E70A18073436Eef2E3314A540A7c71dD4B57B; // TODO: transfer ownership to us!
+    address public owner = 0x539E70A18073436Eef2E3314A540A7c71dD4B57B; // TODO: transfer ownership to arbiter/servicer!
 
     uint256 FORK_BLOCK_NUMBER = 211_276_876;
     uint256 arbitrumFork;
