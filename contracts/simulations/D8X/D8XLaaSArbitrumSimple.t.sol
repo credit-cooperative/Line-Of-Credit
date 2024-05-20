@@ -193,20 +193,30 @@ contract D8XLaaSArbitrumSimple is Test {
         IPerpetualTreasury(treasuryAddress).executeLiquidityWithdrawal(poolId, collateralMultisig);
         assertEq(0, IERC20(LPShares).balanceOf(address(collateralMultisig)), "LP balance should be 0");
         assertApproxEqRel(lentAmount, IERC20(stUSD).balanceOf(collateralMultisig), MARGIN_OF_ERROR, "borrower stUSD balance should be greater than or equal to lent amount");
-        emit log_named_uint('- borrower stUSD balance: ', IERC20(stUSD).balanceOf(collateralMultisig));
+        emit log_named_uint('- collateralMultisig stUSD balance: ', IERC20(stUSD).balanceOf(collateralMultisig));
         vm.stopPrank();
 
-        emit log_named_string('\n \u2713 Borrower calls deposit and close on Line of Credit', '');
+        emit log_named_string('\n \u2713 Collateral Multisig calls deposit and repay on Line of Credit', '');
 
         uint256 interestAccrued = ILineOfCredit(lineAddress).interestAccrued(id);
         console.log('- interest acccrued to the line: ', interestAccrued);
 
-        console.log('- borrower acquires stUSD from other sources to pay back credit position');
-        deal(stUSD, borrower, lentAmount + interestAccrued);
-        console.log('- borrower stUSD balance: ', IERC20(stUSD).balanceOf(borrower));
+        console.log('- collateralMultisig acquires stUSD from other sources to pay back credit position');
+        deal(stUSD, collateralMultisig, lentAmount + interestAccrued);
+        console.log('- collateralMultisig stUSD balance: ', IERC20(stUSD).balanceOf(collateralMultisig));
+
+        vm.startPrank(collateralMultisig);
+        IERC20(stUSD).approve(lineAddress, MAX_INT);
+        ILineOfCredit(lineAddress).depositAndRepay(lentAmount + interestAccrued);
+        vm.stopPrank();
+
+        emit log_named_string('\n \u2713 Borrowers calls close on Line of Credit credit position', '');
 
         vm.startPrank(borrower);
-        ILineOfCredit(lineAddress).depositAndClose();
+
+        console.log('- borrower acquires stUSD from other sources to close credit position');
+        deal(stUSD, borrower, interestAccrued);
+        ILineOfCredit(lineAddress).close(id);
         // uint256 statusIsRepaid = uint256(line.status());
         assertEq(3, uint256(line.status()));
         emit log_named_uint("- status (3 == REPAID) ", uint256(line.status()));
