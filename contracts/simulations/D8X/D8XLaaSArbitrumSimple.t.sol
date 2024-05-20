@@ -58,6 +58,7 @@ contract D8XLaaSArbitrumSimple is Test {
     address constant arbiter = 0xFE002526dEc5B3e4b5134b75b20c065178323343;
     address constant borrower = 0xf44B95991CaDD73ed769454A03b3820997f00873; // TODO: what is the actual borrower address?
     address constant lender = 0x7dFf12833a6f0e88f610E79E11E9506848cCF187;
+    address constant collateralMultisig = 0x9eA1C96e3E5f2b61Aa9ed7dbbd426933eC3ceCA4;
 
     bytes4 constant increaseLiquidity = IPerpetualTreasury.addLiquidity.selector;
     bytes4 constant decreaseLiquidity = IPerpetualTreasury.withdrawLiquidity.selector;
@@ -171,21 +172,28 @@ contract D8XLaaSArbitrumSimple is Test {
 
         vm.stopPrank();
 
+        emit log_named_string('\n \u2713 borrower transfer LP Shares to Collateral Multisig ', '');
+        vm.startPrank(borrower);
+        IERC20(LPShares).transfer(collateralMultisig, balanceAfter);
+        assertEq(IERC20(LPShares).balanceOf(address(borrower)), 0, "LP balance should be 0");
+        assertEq(IERC20(LPShares).balanceOf(address(collateralMultisig)), balanceAfter, "LP balance should be greater than 0");
+        vm.stopPrank();
+
         emit log_named_string('\n \u2713 borrower requests withdraws funds from  D8X treasury address after 27 days', '');
         console.log('- timestamp before: ', block.timestamp);
         vm.warp(block.timestamp + ttl);
         console.log('- timestamp after: ', block.timestamp);
-        vm.prank(borrower);
+        vm.prank(collateralMultisig);
         IPerpetualTreasury(treasuryAddress).withdrawLiquidity(poolId, balanceAfter);
 
         emit log_named_string('\n \u2713 borrower requests withdraws funds from D8X treasury address after 30 days', '');
         vm.warp(block.timestamp + 3 days);
         console.log('- timestamp after withdrawal: ', block.timestamp);
-        vm.startPrank(borrower);
-        IPerpetualTreasury(treasuryAddress).executeLiquidityWithdrawal(poolId, borrower);
-        assertEq(0, IERC20(LPShares).balanceOf(address(borrower)), "LP balance should be 0");
-        assertApproxEqRel(lentAmount, IERC20(stUSD).balanceOf(borrower), MARGIN_OF_ERROR, "borrower stUSD balance should be greater than or equal to lent amount");
-        emit log_named_uint('- borrower stUSD balance: ', IERC20(stUSD).balanceOf(borrower));
+        vm.startPrank(collateralMultisig);
+        IPerpetualTreasury(treasuryAddress).executeLiquidityWithdrawal(poolId, collateralMultisig);
+        assertEq(0, IERC20(LPShares).balanceOf(address(collateralMultisig)), "LP balance should be 0");
+        assertApproxEqRel(lentAmount, IERC20(stUSD).balanceOf(collateralMultisig), MARGIN_OF_ERROR, "borrower stUSD balance should be greater than or equal to lent amount");
+        emit log_named_uint('- borrower stUSD balance: ', IERC20(stUSD).balanceOf(collateralMultisig));
         vm.stopPrank();
 
         emit log_named_string('\n \u2713 Borrower calls deposit and close on Line of Credit', '');
@@ -218,7 +226,7 @@ contract D8XLaaSArbitrumSimple is Test {
         uint256 lenderBalanceAfter = IERC20(stUSD).balanceOf(lender);
         assertEq(lenderBalanceBefore + lentAmount + interestAccrued, lenderBalanceAfter);
 
-        vm.stopPrank();
+        // vm.stopPrank();
     }
 
 
