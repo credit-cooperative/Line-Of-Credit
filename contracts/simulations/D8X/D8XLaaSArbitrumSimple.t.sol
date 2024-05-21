@@ -73,7 +73,7 @@ contract D8XLaaSArbitrumSimple is Test {
     address public arbOracle = 0x47B005bC1AD130D6a61c2d21047Ee84e03e5Aa8f;
     address public owner = 0x539E70A18073436Eef2E3314A540A7c71dD4B57B; // TODO: transfer ownership to arbiter/servicer!
 
-    uint256 FORK_BLOCK_NUMBER = 211_276_876;
+    uint256 FORK_BLOCK_NUMBER = 213_355_469; // 211_276_876;
     uint256 arbitrumFork;
     uint256 lentAmount = 400000 * 10**18;
     uint256 MARGIN_OF_ERROR = 0.001e18; //.1% margin of error (1e18 is 100%)
@@ -85,10 +85,11 @@ contract D8XLaaSArbitrumSimple is Test {
 
         oracle = IArbitrumOracle(arbOracle);
 
-        priceFeed = new stUSDPriceFeedArbitrum();
-        vm.startPrank(owner);
-        oracle.setPriceFeed(stUSD, address(priceFeed)); // TODO: do this on arbitrum
-        vm.stopPrank();
+        // Commented since this has already been done on Arbitrum
+        // priceFeed = new stUSDPriceFeedArbitrum();
+        // vm.startPrank(owner);
+        // oracle.setPriceFeed(stUSD, address(priceFeed)); // TODO: do this on arbitrum
+        // vm.stopPrank();
 
         deal(stUSD, lender, lentAmount);
 
