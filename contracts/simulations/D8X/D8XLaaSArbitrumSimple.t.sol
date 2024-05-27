@@ -50,14 +50,14 @@ contract D8XLaaSArbitrumSimple is Test {
     address constant lineFactoryAddress = 0xF36399Bf8CB0f47e6e79B1F615385e3A94C8473a;
     uint256 ttl = 30 days;
 
-    address constant treasuryAddress = 0x8f8BccE4c180B699F81499005281fA89440D1e95; //proxy // TODO: unverified - will we use?
+    address constant treasuryAddress = 0x8f8BccE4c180B699F81499005281fA89440D1e95;
     address constant stUSD = 0x0022228a2cc5E7eF0274A7Baa600d44da5aB5776;
     address constant LPShares = 0xC09258f1069a95A489B6E52436f88aC77ffb06db; // stUSD d8x lp shares // TODO: unverified
     address constant USDC = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
 
     address constant arbiter = 0xFE002526dEc5B3e4b5134b75b20c065178323343;
-    address constant borrower = 0xf44B95991CaDD73ed769454A03b3820997f00873; // TODO: what is the actual borrower address?
-    address constant lender = 0x7dFf12833a6f0e88f610E79E11E9506848cCF187;
+    address constant borrower = 0xc05BB2387CF26C6a3750EDB61696117c0CDdD446;
+    address constant lender = 0xeD14851aE989Cfcf74e89156E95480069af7A070;
     address constant collateralMultisig = 0x9eA1C96e3E5f2b61Aa9ed7dbbd426933eC3ceCA4;
 
     bytes4 constant increaseLiquidity = IPerpetualTreasury.addLiquidity.selector;
@@ -73,11 +73,11 @@ contract D8XLaaSArbitrumSimple is Test {
     address public arbOracle = 0x47B005bC1AD130D6a61c2d21047Ee84e03e5Aa8f;
     address public owner = 0x539E70A18073436Eef2E3314A540A7c71dD4B57B; // TODO: transfer ownership to arbiter/servicer!
 
-    uint256 FORK_BLOCK_NUMBER = 213_355_469; // 211_276_876;
+    uint256 FORK_BLOCK_NUMBER = 215_609_674; // 213_355_469;
     uint256 arbitrumFork;
     uint256 lentAmount = 400000 * 10**18;
     uint256 MARGIN_OF_ERROR = 0.001e18; //.1% margin of error (1e18 is 100%)
-    address lineAddress;
+    address lineAddress = 0x2Ea5E096B456c1cB77e5F7A498CaD238ed9c2735;
 
     function setUp() public {
         arbitrumFork = vm.createFork(vm.envString("ARBITRUM_RPC_URL"), FORK_BLOCK_NUMBER);
@@ -93,14 +93,15 @@ contract D8XLaaSArbitrumSimple is Test {
 
         deal(stUSD, lender, lentAmount);
 
-        ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
-            borrower: borrower,
-            ttl: ttl,
-            cratio: 0,
-            revenueSplit: 0
-        });
-
-        lineAddress = ILineFactory(lineFactoryAddress).deploySecuredLineWithConfig(coreParams);
+        // NOTE: Leftover from before deploying the line on Arbitrum
+        // ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
+        //     borrower: borrower,
+        //     ttl: ttl,
+        //     cratio: 0,
+        //     revenueSplit: 0
+        // });
+        //
+        // lineAddress = ILineFactory(lineFactoryAddress).deploySecuredLineWithConfig(coreParams);
 
         line = SecuredLine(payable(lineAddress));
 
