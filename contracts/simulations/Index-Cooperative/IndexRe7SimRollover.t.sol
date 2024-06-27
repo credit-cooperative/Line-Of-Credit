@@ -3,6 +3,7 @@ pragma solidity ^0.8.9;
 import "forge-std/Test.sol";
 import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
 import {Spigot} from "../../modules/spigot/Spigot.sol";
+import {Escrow} from "../../modules/escrow/Escrow.sol";
 import {IOracle} from "../../interfaces/IOracle.sol";
 import {MockRegistry} from "../../mock/MockRegistry.sol";
 import {ILineFactory} from "../../interfaces/ILineFactory.sol";
@@ -48,7 +49,7 @@ contract IndexRe7Sim is Test {
     bytes32 constant DEFAULT_ADMIN_ROLE = 0x00;
 
     // Interfaces
-    ILineFactory lineFactory;
+    ILineFactory factory;
     IOracle oracle;
 
     ISpigot spigot;
@@ -65,7 +66,7 @@ contract IndexRe7Sim is Test {
 
 
     // Credit Coop Infra Addresses
-    address constant lineFactoryAddress = 0x89989dBe4CFa289dE6179e8d54EE755E471a4251;
+    address constant lineFactoryAddress = 0x07d5c33a3AFa24A25163D2afDD663BAb4C17b6d5;
     address constant oracleAddress = 0x5a4AAF300473eaF8A9763318e7F30FA8a3f5Dd48;
     address constant zeroExSwapTarget = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
 
@@ -76,7 +77,7 @@ contract IndexRe7Sim is Test {
     // Borrower and Lender Addresses
     // address borrowerAddress = makeAddr("borrower"); // TODO  - indexCoopLiquidityOperations
     address borrowerAddress = 0x7ec0D4Fdda3C194408d59241D27CE0d2016D890F; // joing sig
-    address lenderAddress = 0x316BE293C8f2380769e7b7e7382679FE5a3b6600; // re7
+    address lenderAddress = 0x45e5bdB64AF009A5792b650BF5bd110665500Da3; // re7
 
 
    // dsETH Addresses
@@ -87,8 +88,9 @@ contract IndexRe7Sim is Test {
     address constant dsETHOperator = 0x6904110f17feD2162a11B5FA66B188d801443Ea4;// Operator of the dsETH product
 
     // Credit Coop Addresses
-    address constant arbiterAddress = 0xeb0566b1EF38B95da2ed631eBB8114f3ac7b9a8a ; // Credit Coop MultiSig
-    address public securedLineAddress = 0x7b394334b1ba26fD8432D9E3a33Ddf0cb3357d9F; // Line address, to be defined in setUp()
+    address constant arbiterAddress = 0xeb0566b1EF38B95da2ed631eBB8114f3ac7b9a8a; // Credit Coop MultiSig
+    address public securedLineAddress = 0xa0bf40bA76F8Fe562c15F029B2e50Fe80b0d600d; // Line address, to be defined in setUp()
+    address public deployer = 0x06dae7Ba3958EF288adB0B9b3732eC204E48BC47;
 
     // Asset Addresses
     address constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
@@ -111,7 +113,7 @@ contract IndexRe7Sim is Test {
     // Fork Settings
 
     // uint256 constant FORK_BLOCK_NUMBER = 16_991_081; // Forking mainnet at block right after Line Factory was deployed
-    uint256 constant FORK_BLOCK_NUMBER = 18_929_269; // Forking mainnet at block on 4/12/23 at 11 30 AM EST
+    uint256 constant FORK_BLOCK_NUMBER = 20_184_519; // Forking mainnet at block on 6/27/24 at 1 30 AM EST
     uint256 ethMainnetFork;
 
     event log_named_bytes4(string key, bytes4 value);
@@ -130,7 +132,7 @@ contract IndexRe7Sim is Test {
         // Create  Interfaces for CC infra
 
         oracle = IOracle(address(oracleAddress));
-        lineFactory = ILineFactory(address(lineFactoryAddress));
+        factory = ILineFactory(address(lineFactoryAddress));
 
         // Deal assets to all 3 parties (borrower, lender, arbiter) NOTE: will use actual address of parties whhen they are known
 
@@ -176,19 +178,27 @@ contract IndexRe7Sim is Test {
 
     function test_index_re7_simulation_rollover() public {
 
+        bytes32 positionId = LineOfCredit(securedLineAddress).ids(0);
+        emit log_named_bytes32("- positionId", positionId);
+        uint256 interestOwed = line.interestAccrued(positionId);
+        emit log_named_uint("- interestAccrued: ", interestOwed);
+        emit log_named_uint("- loanSizeInWETH: ", loanSizeInWETH);
+
         vm.startPrank(borrowerAddress);
         emit log_named_string("\n \u2713 Borrower Calls depositAndClose to Fully Repay and Close Line of Credit", "");
         IERC20(WETH).approve(securedLineAddress, MAX_INT);
         line.depositAndClose();
         vm.stopPrank();
-        
+
+        uint256 status = uint256(line.status());
+        assertEq(3, status);
+        emit log_named_uint("- status (3 == REPAID) ", status);
+
         // get lender
         vm.startPrank(lenderAddress);
         emit log_named_string("\n \u2713 Lender Withdraws All Repaid Principal and Interest", "");
-        bytes32 positionId = 0x9f591e1ee168b64a4cc48b5b140b9334bb1a2b5a200c80406799861510d22192;
        (,,,,,,address lender,) = LineOfCredit(securedLineAddress).credits(positionId);
         emit log_named_address("- lender", lender);
-        uint256 interestOwed = line.interestAccrued(positionId);
         line.withdraw(positionId, interestOwed + loanSizeInWETH);
 
         // check that the lender balance is principal + interest
@@ -196,23 +206,74 @@ contract IndexRe7Sim is Test {
         emit log_named_uint("- lender balance after close", lenderBalanceAfterClose);
         vm.stopPrank();
 
-        // rollover
+        // call rollover on the factory
+        emit log_named_string("\n \u2713 Factory deployer calls deploySecuredLineWithModules", "");
+        vm.startPrank(deployer);
 
-        securedLine2 = ISecuredLine(0xabcbC4AbE694BCa5ee652A0452426b3c07E2BB36);
-        line2 = ILineOfCredit(0xabcbC4AbE694BCa5ee652A0452426b3c07E2BB36);
+        ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
+            borrower: borrowerAddress,
+            ttl: ttl,
+            cratio: minCRatio,
+            revenueSplit: revenueSplit
+        });
 
-        vm.startPrank(borrowerAddress);
-        emit log_named_string("\n \u2713 Borrower Calls Rollover to Rollover Line of Credit", "");
-        securedLine.rollover(address(securedLine2));
+        emit log_named_address("- escrow: ", address(escrow));
+        emit log_named_address("- spigot: ", address(spigot));
+
+        address newLine = factory.deploySecuredLineWithModules(coreParams, address(spigot), address(escrow));
         vm.stopPrank();
 
-        // check that the new line is active
-        uint256 statusIsRollover = uint256(line2.status());
-        assertEq(1, statusIsRollover);
-        
-        // check that the owner of the spigot and escrow is the new line
-        assertEq(address(securedLine2), address(spigot.owner()));
-        assertEq(address(securedLine2), address(escrow.line()));
+        emit log_named_address("- newLine: ", newLine);
+
+        SecuredLine newSecuredLine = SecuredLine(payable(newLine));
+
+        uint256 statusBeforeRollover = uint256(newSecuredLine.status());
+        assertEq(0, statusBeforeRollover, "status not active");
+        emit log_named_uint("- status before rollover", statusBeforeRollover);
+
+
+
+        // borrower calls rollover on old line
+        emit log_named_string("\n \u2713 Borrower Calls Rollover", "");
+        vm.startPrank(borrowerAddress);
+        ISecuredLine(securedLineAddress).rollover(newLine);
+        vm.stopPrank();
+
+        uint256 split = newSecuredLine.defaultRevenueSplit();
+        assertEq(split, revenueSplit, "revenue split not equal");
+        emit log_named_uint("- revenue split", split);
+
+        uint256 minCRatio2 = IEscrow(newSecuredLine.escrow()).minimumCollateralRatio();
+        assertEq(minCRatio, minCRatio2, "min c ratio not equal");
+        emit log_named_uint("- minCRatio", minCRatio2);
+
+        uint256 cratio2 = IEscrow(newSecuredLine.escrow()).getCollateralRatio();
+        assertGt(cratio2, minCRatio, "cratio is below threshold");
+        emit log_named_uint("- cRatio", cratio2);
+
+        uint collateralValue = Escrow(address(newSecuredLine.escrow())).getCollateralValue();
+        // assertGt(cratio2, minCRatio, "cratio is below threshold");
+        emit log_named_uint("- collateralValue", collateralValue);
+        emit log_named_uint("- balance of WETH", IERC20(WETH).balanceOf(address(newSecuredLine.escrow())));
+
+        address currentBorrower = newSecuredLine.borrower();
+        assertEq(currentBorrower, borrowerAddress, "borrower not equal");
+
+        address currentSpigot = address(newSecuredLine.spigot());
+        assertEq(currentSpigot, address(spigot), "spigot not equal");
+        emit log_named_address("- spigot", currentSpigot);
+
+        address currentEscrow = address(newSecuredLine.escrow());
+        assertEq(currentEscrow, address(escrow), "escrow not equal");
+        emit log_named_address("- escrow", currentEscrow);
+
+        uint256 statusAfterRollover = uint256(newSecuredLine.status());
+        assertEq(1, statusAfterRollover, "status not active");
+        emit log_named_uint("- status after rollover", statusAfterRollover);
+
+        // // check that the owner of the spigot and escrow is the new line
+        // assertEq(address(securedLine2), address(spigot.owner()));
+        // assertEq(address(securedLine2), address(escrow.line()));
     }
 
 
@@ -228,7 +289,7 @@ contract IndexRe7Sim is Test {
             revenueSplit: revenueSplit // uint8(revenueSplit) - 100% to spigot
         });
 
-        securedLineAddress = lineFactory.deploySecuredLineWithConfig(coreParams);
+        securedLineAddress = factory.deploySecuredLineWithConfig(coreParams);
         return securedLineAddress;
     }
 
