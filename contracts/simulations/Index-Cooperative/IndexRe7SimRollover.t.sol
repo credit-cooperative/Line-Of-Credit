@@ -91,6 +91,7 @@ contract IndexRe7Sim is Test {
     // Credit Coop Addresses
     address constant arbiterAddress = 0xeb0566b1EF38B95da2ed631eBB8114f3ac7b9a8a; // Credit Coop MultiSig
     address public securedLineAddress = 0xa0bf40bA76F8Fe562c15F029B2e50Fe80b0d600d; // Line address, to be defined in setUp()
+    address public securedLineAddress2 = 0xf30255C1b68109d298c04415eC6b5cAb353F2082;
     address public deployer = 0x06dae7Ba3958EF288adB0B9b3732eC204E48BC47;
 
     // Asset Addresses
@@ -114,7 +115,8 @@ contract IndexRe7Sim is Test {
     // Fork Settings
 
     // uint256 constant FORK_BLOCK_NUMBER = 16_991_081; // Forking mainnet at block right after Line Factory was deployed
-    uint256 constant FORK_BLOCK_NUMBER = 20_184_519; // Forking mainnet at block on 6/27/24 at 1 30 AM EST
+    // uint256 constant FORK_BLOCK_NUMBER = 20_184_519; // Forking mainnet at block on 6/27/24 at 1 30 AM EST
+    uint256 constant FORK_BLOCK_NUMBER = 20_185_446;
     uint256 ethMainnetFork;
 
     event log_named_bytes4(string key, bytes4 value);
@@ -180,23 +182,28 @@ contract IndexRe7Sim is Test {
     function test_index_re7_simulation_rollover() public {
 
         // deployer calls rollover on the factory
-        emit log_named_string("\n \u2713 Factory deployer calls deploySecuredLineWithModules", "");
-        vm.startPrank(deployer);
+        // emit log_named_string("\n \u2713 Factory deployer calls deploySecuredLineWithModules", "");
+        // vm.startPrank(deployer);
 
-        ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
-            borrower: borrowerAddress,
-            ttl: ttl,
-            cratio: minCRatio,
-            revenueSplit: revenueSplit
-        });
+        // uint256 newTtl = 1727809200 - block.timestamp;
+        // emit log_named_uint("- current timestamp", block.timestamp);
+        // emit log_named_uint("- newTtl", newTtl);
 
-        address newLine = factory.deploySecuredLineWithModules(coreParams, address(spigot), address(escrow));
-        vm.stopPrank();
+        // ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
+        //     borrower: borrowerAddress,
+        //     ttl: newTtl,
+        //     cratio: minCRatio,
+        //     revenueSplit: revenueSplit
+        // });
 
-        emit log_named_address("- newLine: ", newLine);
-        emit log_named_address("- escrow: ", address(escrow));
-        emit log_named_address("- spigot: ", address(spigot));
-        securedLine2 = SecuredLine(payable(newLine));
+        // address newLine = factory.deploySecuredLineWithModules(coreParams, address(spigot), address(escrow));
+        // vm.stopPrank();
+
+        // emit log_named_address("- newLine: ", newLine);
+        // emit log_named_address("- escrow: ", address(escrow));
+        // emit log_named_address("- spigot: ", address(spigot));
+        // securedLine2 = SecuredLine(payable(newLine));
+        securedLine2 = SecuredLine(payable(securedLineAddress2));
 
         uint256 statusBeforeRollover = uint256(securedLine2.status());
         assertEq(0, statusBeforeRollover, "status not active");
@@ -236,8 +243,12 @@ contract IndexRe7Sim is Test {
         // borrower calls rollover on old line
         emit log_named_string("\n \u2713 Borrower Calls Rollover", "");
         vm.startPrank(borrowerAddress);
-        ISecuredLine(securedLineAddress).rollover(newLine);
+        ISecuredLine(securedLineAddress).rollover(securedLineAddress2);
         vm.stopPrank();
+
+        uint256 deadline = securedLine2.deadline();
+        // assertEq(split, revenueSplit, "revenue split not equal");
+        emit log_named_uint("- deadline", deadline);
 
         uint256 split = securedLine2.defaultRevenueSplit();
         assertEq(split, revenueSplit, "revenue split not equal");
