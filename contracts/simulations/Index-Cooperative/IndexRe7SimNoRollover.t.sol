@@ -55,7 +55,7 @@ contract IndexRe7Sim is Test {
     ISpigot spigot;
     ISpigot.Setting private settings;
     ISecuredLine securedLine;
-    SecuredLine securedLine2;
+    ISecuredLine securedLine2;
     ILineOfCredit line;
     ILineOfCredit line2;
     ISpigotedLine spigotedLine;
@@ -86,7 +86,6 @@ contract IndexRe7Sim is Test {
     address constant feeSplitExtensionOwner = 0x4e59b44847b379578588920cA78FbF26c0B4956C; // Owner of the dsETH fee split extension
     address constant dsETHManager = 0xBB6134ba82192E0ab23De846f1Cae7aa9Ae383d5; // Manager of the dsETH product
     address constant dsETHOperator = 0x6904110f17feD2162a11B5FA66B188d801443Ea4;// Operator of the dsETH product
-    address constant icETHManager = 0xb97F5a34696adf30db822612379235c3c53B714A; // Manager of icETH product
 
     // Credit Coop Addresses
     address constant arbiterAddress = 0xeb0566b1EF38B95da2ed631eBB8114f3ac7b9a8a; // Credit Coop MultiSig
@@ -177,10 +176,10 @@ contract IndexRe7Sim is Test {
     //             S C E N A R I O   T E S T             //
     ///////////////////////////////////////////////////////
 
-    function test_index_re7_simulation_rollover() public {
+    function test_index_re7_simulation_without_rollover() public {
 
-        // deployer calls rollover on the factory
-        emit log_named_string("\n \u2713 Factory deployer calls deploySecuredLineWithModules", "");
+        // deploy new line of credit
+        emit log_named_string("\n \u2713 Factory deployer calls deploySecuredLineWithConfig", "");
         vm.startPrank(deployer);
 
         ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
@@ -190,29 +189,21 @@ contract IndexRe7Sim is Test {
             revenueSplit: revenueSplit
         });
 
-        address newLine = factory.deploySecuredLineWithModules(coreParams, address(spigot), address(escrow));
+        address newLine = factory.deploySecuredLineWithConfig(coreParams);
         vm.stopPrank();
 
         emit log_named_address("- newLine: ", newLine);
-        emit log_named_address("- escrow: ", address(escrow));
-        emit log_named_address("- spigot: ", address(spigot));
-        securedLine2 = SecuredLine(payable(newLine));
 
-        uint256 statusBeforeRollover = uint256(securedLine2.status());
-        assertEq(0, statusBeforeRollover, "status not active");
-        emit log_named_uint("- status before rollover", statusBeforeRollover);
+        SecuredLine newSecuredLine = SecuredLine(payable(newLine));
 
-        // borrower calls depositAndClose on old line
-        vm.startPrank(borrowerAddress);
-        emit log_named_string("\n \u2713 Borrower Calls depositAndClose to Fully Repay and Close Line of Credit", "");
         bytes32 positionId = LineOfCredit(securedLineAddress).ids(0);
-        emit log_named_address("- secured line address", securedLineAddress);
         emit log_named_bytes32("- positionId", positionId);
         uint256 interestOwed = line.interestAccrued(positionId);
         emit log_named_uint("- interestAccrued: ", interestOwed);
         emit log_named_uint("- loanSizeInWETH: ", loanSizeInWETH);
-        emit log_named_uint("- totalDebtOwed: ", interestOwed + loanSizeInWETH);
 
+        vm.startPrank(borrowerAddress);
+        emit log_named_string("\n \u2713 Borrower Calls depositAndClose to Fully Repay and Close Line of Credit", "");
         IERC20(WETH).approve(securedLineAddress, MAX_INT);
         line.depositAndClose();
         vm.stopPrank();
@@ -221,7 +212,7 @@ contract IndexRe7Sim is Test {
         assertEq(3, status);
         emit log_named_uint("- status (3 == REPAID) ", status);
 
-        // lender withdraws WETH balance
+        // get lender
         vm.startPrank(lenderAddress);
         emit log_named_string("\n \u2713 Lender Withdraws All Repaid Principal and Interest", "");
        (,,,,,,address lender,) = LineOfCredit(securedLineAddress).credits(positionId);
@@ -233,77 +224,69 @@ contract IndexRe7Sim is Test {
         emit log_named_uint("- lender balance after close", lenderBalanceAfterClose);
         vm.stopPrank();
 
-        // borrower calls rollover on old line
-        emit log_named_string("\n \u2713 Borrower Calls Rollover", "");
+        // Get Index Coop out of old line
+        emit log_named_string("\n \u2713 Joint Multisig Gets Index Coop out of old line", "");
         vm.startPrank(borrowerAddress);
-        ISecuredLine(securedLineAddress).rollover(newLine);
+        // release spigot
+        bool isReleased = SecuredLine(payable(securedLineAddress)).releaseSpigot(borrowerAddress);
+
+        // remove spigot
+        // bool isRemoved = ISpigot(SecuredLine(payable(securedLineAddress)).spigot()).removeSpigot();
+
+
+        // claim owner tokens
+        // transfer icETH to Index Coop
+
         vm.stopPrank();
 
-        uint256 split = securedLine2.defaultRevenueSplit();
-        assertEq(split, revenueSplit, "revenue split not equal");
-        emit log_named_uint("- revenue split", split);
 
-        uint256 minCRatio2 = IEscrow(securedLine2.escrow()).minimumCollateralRatio();
-        assertEq(minCRatio, minCRatio2, "min c ratio not equal");
-        emit log_named_uint("- minCRatio", minCRatio2);
+        // uint256 statusBeforeRollover = uint256(newSecuredLine.status());
+        // assertEq(0, statusBeforeRollover, "status not active");
+        // emit log_named_uint("- status before rollover", statusBeforeRollover);
 
-        uint256 cratio2 = IEscrow(securedLine2.escrow()).getCollateralRatio();
-        assertGt(cratio2, minCRatio, "cratio is below threshold");
-        emit log_named_uint("- cRatio", cratio2);
 
-        uint collateralValue = Escrow(address(securedLine2.escrow())).getCollateralValue();
-        emit log_named_uint("- collateralValue", collateralValue);
-        emit log_named_uint("- balance of WETH", IERC20(WETH).balanceOf(address(securedLine2.escrow())));
 
-        address currentBorrower = securedLine2.borrower();
-        assertEq(currentBorrower, borrowerAddress, "borrower not equal");
+        // // borrower calls rollover on old line
+        // emit log_named_string("\n \u2713 Borrower Calls Rollover", "");
+        // vm.startPrank(borrowerAddress);
+        // ISecuredLine(securedLineAddress).rollover(newLine);
+        // vm.stopPrank();
 
-        address currentSpigot = address(securedLine2.spigot());
-        assertEq(currentSpigot, address(spigot), "spigot not equal");
-        emit log_named_address("- spigot", currentSpigot);
+        // uint256 split = newSecuredLine.defaultRevenueSplit();
+        // assertEq(split, revenueSplit, "revenue split not equal");
+        // emit log_named_uint("- revenue split", split);
 
-        address currentEscrow = address(securedLine2.escrow());
-        assertEq(currentEscrow, address(escrow), "escrow not equal");
-        emit log_named_address("- escrow", currentEscrow);
+        // uint256 minCRatio2 = IEscrow(newSecuredLine.escrow()).minimumCollateralRatio();
+        // assertEq(minCRatio, minCRatio2, "min c ratio not equal");
+        // emit log_named_uint("- minCRatio", minCRatio2);
 
-        uint256 statusAfterRollover = uint256(securedLine2.status());
-        assertEq(1, statusAfterRollover, "status not active");
-        emit log_named_uint("- status after rollover", statusAfterRollover);
+        // uint256 cratio2 = IEscrow(newSecuredLine.escrow()).getCollateralRatio();
+        // assertGt(cratio2, minCRatio, "cratio is below threshold");
+        // emit log_named_uint("- cRatio", cratio2);
 
-        // check that the owner of the spigot and escrow is the new line
-        assertEq(address(securedLine2), address(spigot.owner()));
-        assertEq(address(securedLine2), address(escrow.line()));
+        // uint collateralValue = Escrow(address(newSecuredLine.escrow())).getCollateralValue();
+        // // assertGt(cratio2, minCRatio, "cratio is below threshold");
+        // emit log_named_uint("- collateralValue", collateralValue);
+        // emit log_named_uint("- balance of WETH", IERC20(WETH).balanceOf(address(newSecuredLine.escrow())));
 
-        // lender proposes new position and borrower accepts
-        bytes32 newPositionId = _lenderFundLoan(address(securedLine2));
+        // address currentBorrower = newSecuredLine.borrower();
+        // assertEq(currentBorrower, borrowerAddress, "borrower not equal");
 
-        // borrower borrows credit
-        emit log_named_string("\n \u2713 Borrower calls Borrow", "");
-        vm.startPrank(borrowerAddress);
-        securedLine2.borrow(newPositionId, loanSizeInWETH);
+        // address currentSpigot = address(newSecuredLine.spigot());
+        // assertEq(currentSpigot, address(spigot), "spigot not equal");
+        // emit log_named_address("- spigot", currentSpigot);
 
-        // borrower depositAndClose
-        emit log_named_string("\n \u2713 Borrower Repays and Closes Line of Credit", "");
-        emit log_named_uint("- borrower WETH balance", IERC20(WETH).balanceOf(borrowerAddress));
-        IERC20(WETH).approve(address(securedLine2), MAX_INT);
-        securedLine2.depositAndClose();
+        // address currentEscrow = address(newSecuredLine.escrow());
+        // assertEq(currentEscrow, address(escrow), "escrow not equal");
+        // emit log_named_address("- escrow", currentEscrow);
 
-        emit log_named_uint(" - securedLine2 status", uint256(securedLine2.status()));
+        // uint256 statusAfterRollover = uint256(newSecuredLine.status());
+        // assertEq(1, statusAfterRollover, "status not active");
+        // emit log_named_uint("- status after rollover", statusAfterRollover);
 
-        // borrower releaseSpigot and remove Spigot
-        securedLine2.releaseSpigot(borrowerAddress);
-        spigot.removeSpigot(icETHManager);
-        assertEq(IManager(icETHManager).methodologist(), borrowerAddress);
-        emit log_named_address("- methodologist", IManager(icETHManager).methodologist());
-
-        // borrower releaseCollateral
-        uint256 WETHBalance = IERC20(WETH).balanceOf(address(securedLine2.escrow()));
-        uint256 borrowerBalanceBefore = IERC20(WETH).balanceOf(borrowerAddress);
-        escrow.releaseCollateral(WETHBalance, WETH, borrowerAddress);
-        uint256 borrowerBalanceAfter = IERC20(WETH).balanceOf(borrowerAddress);
-        assertEq(borrowerBalanceAfter, borrowerBalanceBefore + WETHBalance, "borrower balance should match before + collateral");
-
-        vm.stopPrank();
+        // // check that the owner of the spigot and escrow is the new line
+        // assertEq(address(securedLine2), address(spigot.owner()));
+        // assertEq(address(securedLine2), address(escrow.line()));
     }
 
 
@@ -357,13 +340,13 @@ contract IndexRe7Sim is Test {
 
 
     // fund a loan as a lender
-    function _lenderFundLoan(address newLine) internal returns (bytes32 id) {
+    function _lenderFundLoan() internal returns (bytes32 id) {
         assertEq(vm.activeFork(), ethMainnetFork, "mainnet fork is not active");
 
         emit log_named_string("\n \u2713 Lender Proposes Position to Line of Credit", "");
-        vm.startPrank(lenderAddress);
-        IERC20(WETH).approve(address(newLine), loanSizeInWETH);
-        SecuredLine(payable(newLine)).addCredit(
+        vm.startPrank( lenderAddress );
+        IERC20(WETH).approve(address(line), loanSizeInWETH);
+        line.addCredit(
             dRate, // drate
             fRate, // frate
             loanSizeInWETH, // amount
@@ -373,8 +356,9 @@ contract IndexRe7Sim is Test {
         vm.stopPrank();
 
         emit log_named_string("\n \u2713 Borrower Accepts Lender Proposal to Line of Credit", "");
-        vm.startPrank(borrowerAddress);
-        id = SecuredLine(payable(newLine)).addCredit(
+        vm.startPrank(indexCoopLiquidityOperations);
+
+        id = line.addCredit(
             dRate, // drate
             fRate, // frate
             loanSizeInWETH, // amount
@@ -383,7 +367,7 @@ contract IndexRe7Sim is Test {
         );
         vm.stopPrank();
 
-        assertEq(IERC20(WETH).balanceOf(address(newLine)), loanSizeInWETH, "LoC balance doesn't match");
+        assertEq(IERC20(WETH).balanceOf(address(line)), loanSizeInWETH, "LoC balance doesn't match");
         emit log_named_bytes32("- credit id", id);
         return id;
     }
