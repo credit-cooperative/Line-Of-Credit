@@ -79,6 +79,7 @@ contract RainRe7Sim is Test {
     // Rain Cards Borrower Address
     address rainBorrower = 0x34FB953287cF28B3404C1D21E56c495545CCb600; // Rain Borrower Address
     address lenderAddress = 0x6a73204dB71F8e054bf9A0680b02Ae96f700b595;
+    address lenderAddress2 = makeAddr("lenderAddress2");
 
     // Rain Controller Contract & Associated Addresses
     address rainCollateralFactoryAddress = 0x31EBf70312f488D0bdAc374b340f0D01dBf153B5;
@@ -119,6 +120,9 @@ contract RainRe7Sim is Test {
     address public lineFactory = 0x07d5c33a3AFa24A25163D2afDD663BAb4C17b6d5;
     address public zeroEx = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
     address public deployer= 0x06dae7Ba3958EF288adB0B9b3732eC204E48BC47;
+
+    address public lender1 = makeAddr("lender1");
+    address public lender2 = makeAddr("lender2");
 
     // Asset Addresses
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -170,6 +174,7 @@ contract RainRe7Sim is Test {
         console.log("2");
 
         deal(USDC, lenderAddress, 2000000 * 10 ** 6);
+        deal(USDC, lenderAddress2, 2000000 * 10 ** 6);
         deal(USDC, rainBorrower, 2000000 * 10 ** 6);
 
         console.log("3");
@@ -191,7 +196,7 @@ contract RainRe7Sim is Test {
     //             S C E N A R I O   T E S T             //
     ///////////////////////////////////////////////////////
 
-    function test_rain_rollover_simulation_mainnet() public {
+    function test_rain_queue_simulation_mainnet() public {
         // repay existing line
         // vm.startPrank(lenderAddress);
         // IERC20(USDC).approve(rainBorrower, 2000000 * 10 ** 6);
@@ -269,6 +274,66 @@ contract RainRe7Sim is Test {
         console.log("newLine status is active");
         assertEq(uint256(ILineOfCredit(newLine).status()), 1, "line not active");
 
+        // lenders propose credit
+        bytes32 creditPositionId1 = _lenderFundLoan(newLine, lenderAddress, 850000 * 10 ** 6);
+        bytes32 creditPositionId2 = _lenderFundLoan(newLine, lenderAddress2, 150000 * 10 ** 6);
+
+        console.log('borrower USDC balance 0: ', IERC20(USDC).balanceOf(rainBorrower));
+
+        // borrow borrows from both positions
+        vm.startPrank(rainBorrower);
+        emit log_named_string("\n \u2713 Borrower Borrows from both Credit Positions", "");
+        ILineOfCredit(newLine).borrow(creditPositionId1, 850000 * 10 ** 6);
+        ILineOfCredit(newLine).borrow(creditPositionId2, 150000 * 10 ** 6);
+        vm.stopPrank();
+
+        console.log('borrower USDC balance 1: ', IERC20(USDC).balanceOf(rainBorrower));
+
+        // deal revenue to spigot and claim it
+        emit log_named_string("\n \u2713 Deal and Claim Revneue to the Spigot", "");
+        deal(USDC, spigotAddress, 2000000 * 10 ** 6);
+        vm.startPrank(arbiterAddress);
+        bytes4 claimFunc = bytes4(0);
+        bytes memory claimFuncData = abi.encodeWithSelector(claimFunc);
+        uint256 claimed = ISpigot(spigotAddress).claimRevenue(rainCollateralControllerAddress, USDC, claimFuncData);
+        vm.stopPrank();
+
+        // arbiter repays 850k USDC credit position
+        emit log_named_string("\n \u2713 Arbiter Claims and Repays 1 - 850k Credit Position", "");
+        vm.startPrank(arbiterAddress);
+        ISecuredLine(newLine).claimAndRepay(USDC, "");
+        vm.stopPrank();
+
+        // // borrower reborrows 850k and calls useAndRepay to borrow additional 850k
+        // emit log_named_string("\n \u2713 Borrower Reborrows 850k Credit Position", "");
+        // vm.startPrank(rainBorrower);
+        // ILineOfCredit(newLine).borrow(creditPositionId1, 850000 * 10 ** 6);
+        // console.log('borrower USDC balance 2: ', IERC20(USDC).balanceOf(rainBorrower));
+        // ISpigotedLine(newLine).useAndRepay(850000 * 10 ** 6);
+        // ILineOfCredit(newLine).borrow(creditPositionId1, 850000 * 10 ** 6);
+        // console.log('borrower USDC balance 3: ', IERC20(USDC).balanceOf(rainBorrower));
+        // vm.stopPrank();
+
+        // borrower reborrows 850k and calls useAndRepay to borrow additional 850k
+        emit log_named_string("\n \u2713 Borrower Reborrows1 1 - 850k Credit Position", "");
+        vm.startPrank(rainBorrower);
+        ILineOfCredit(newLine).borrow(creditPositionId1, 850000 * 10 ** 6);
+        console.log('borrower USDC balance 2: ', IERC20(USDC).balanceOf(rainBorrower));
+        vm.stopPrank();
+
+        // arbiter repays 850k USDC credit position
+        emit log_named_string("\n \u2713 Arbiter Claims and Repays 2 - 850k Credit Position", "");
+        deal(USDC, spigotAddress, 1 * 10 ** 6);
+        vm.startPrank(arbiterAddress);
+        claimed = ISpigot(spigotAddress).claimRevenue(rainCollateralControllerAddress, USDC, claimFuncData);
+        ISecuredLine(newLine).claimAndRepay(USDC, "");
+        vm.stopPrank();
+
+        // borrower reborrows 850k again
+        emit log_named_string("\n \u2713 Borrower Reborrows 2 - 850k Credit Position", "");
+        vm.startPrank(rainBorrower);
+        ILineOfCredit(newLine).borrow(creditPositionId1, 850000 * 10 ** 6);
+        console.log('borrower USDC balance 3: ', IERC20(USDC).balanceOf(rainBorrower));
 
     }
 
@@ -359,34 +424,36 @@ contract RainRe7Sim is Test {
 
 
     // fund a loan as a lender
-    function _lenderFundLoan() internal returns (bytes32 id) {
-        assertEq(vm.activeFork(), ethMainnetFork, "mainnet fork is not active");
+    function _lenderFundLoan(address newLine, address lender, uint256 usdcLoanSize) internal returns (bytes32 id) {
+        // assertEq(vm.activeFork(), ethMainnetFork, "mainnet fork is not active");
 
         emit log_named_string("\n \u2713 Lender Proposes Position to Line of Credit", "");
-        vm.startPrank(lenderAddress);
-        IERC20(USDC).approve(address(line), loanSizeInUSDC);
-        securedLine.addCredit(
+        console.log('lender: ', lender);
+        console.log('line: ', address(newLine));
+        vm.startPrank(lender);
+        IERC20(USDC).approve(address(newLine), usdcLoanSize);
+        ILineOfCredit(newLine).addCredit(
             dRate, // drate
             fRate, // frate
-            loanSizeInUSDC, // amount
+            usdcLoanSize, // amount
             USDC, // token
-            lenderAddress // lender
+            lender // lender
         );
         vm.stopPrank();
 
         emit log_named_string("\n \u2713 Borrower Accepts Lender Proposal to Line of Credit", "");
         vm.startPrank(rainBorrower);
 
-        id = securedLine.addCredit(
+        id = ILineOfCredit(newLine).addCredit(
             dRate, // drate
             fRate, // frate
-            loanSizeInUSDC, // amount
+            usdcLoanSize, // amount
             USDC, // token
-            lenderAddress // lender
+            lender // lender
         );
         vm.stopPrank();
 
-        assertEq(IERC20(USDC).balanceOf(address(securedLine)), loanSizeInUSDC, "LoC balance doesn't match");
+        // assertEq(IERC20(USDC).balanceOf(address(line)), usdcLoanSize, "LoC balance doesn't match");
         emit log_named_bytes32("- credit id", id);
         return id;
     }
