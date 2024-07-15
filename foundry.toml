@@ -1,7 +1,7 @@
 [profile.default]
 src = 'contracts'
 test = 'test'
-solc-version = "0.8.20"
+solc-version = "0.8.21"
 script = 'scripts'
 out = 'out'
 libs = ['lib']
@@ -21,7 +21,7 @@ broadcast = 'broadcast'
 allow_paths = []
 include_paths = []
 force = false
-evm_version = 'london'
+evm_version = 'shanghai'
 gas_reports = ['*']
 gas_reports_ignore = []
 auto_detect_solc = true
@@ -123,6 +123,9 @@ libraries = [
 
 [profile.plumetestnet]
 solc-version = "0.8.19"
+libraries = []
+
+[profile.zkevm]
 libraries = []
 
 [profile.default.rpc_storage_caching]
