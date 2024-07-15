@@ -50,14 +50,15 @@ contract D8XLaaSArbitrumSimple is Test {
     address constant lineFactoryAddress = 0xF36399Bf8CB0f47e6e79B1F615385e3A94C8473a;
     uint256 ttl = 30 days;
 
-    address constant treasuryAddress = 0x8f8BccE4c180B699F81499005281fA89440D1e95; //proxy // TODO: unverified - will we use?
+    address constant treasuryAddress = 0x8f8BccE4c180B699F81499005281fA89440D1e95;
     address constant stUSD = 0x0022228a2cc5E7eF0274A7Baa600d44da5aB5776;
     address constant LPShares = 0xC09258f1069a95A489B6E52436f88aC77ffb06db; // stUSD d8x lp shares // TODO: unverified
     address constant USDC = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
 
     address constant arbiter = 0xFE002526dEc5B3e4b5134b75b20c065178323343;
-    address constant borrower = 0xf44B95991CaDD73ed769454A03b3820997f00873; // TODO: what is the actual borrower address?
-    address constant lender = 0x7dFf12833a6f0e88f610E79E11E9506848cCF187;
+    address constant borrower = 0xc05BB2387CF26C6a3750EDB61696117c0CDdD446;
+    address constant lender = 0xeD14851aE989Cfcf74e89156E95480069af7A070;
+    address constant collateralMultisig = 0x9eA1C96e3E5f2b61Aa9ed7dbbd426933eC3ceCA4;
 
     bytes4 constant increaseLiquidity = IPerpetualTreasury.addLiquidity.selector;
     bytes4 constant decreaseLiquidity = IPerpetualTreasury.withdrawLiquidity.selector;
@@ -72,11 +73,11 @@ contract D8XLaaSArbitrumSimple is Test {
     address public arbOracle = 0x47B005bC1AD130D6a61c2d21047Ee84e03e5Aa8f;
     address public owner = 0x539E70A18073436Eef2E3314A540A7c71dD4B57B; // TODO: transfer ownership to arbiter/servicer!
 
-    uint256 FORK_BLOCK_NUMBER = 211_276_876;
+    uint256 FORK_BLOCK_NUMBER = 215_609_674; // 213_355_469;
     uint256 arbitrumFork;
     uint256 lentAmount = 400000 * 10**18;
     uint256 MARGIN_OF_ERROR = 0.001e18; //.1% margin of error (1e18 is 100%)
-    address lineAddress;
+    address lineAddress = 0x2Ea5E096B456c1cB77e5F7A498CaD238ed9c2735;
 
     function setUp() public {
         arbitrumFork = vm.createFork(vm.envString("ARBITRUM_RPC_URL"), FORK_BLOCK_NUMBER);
@@ -84,21 +85,23 @@ contract D8XLaaSArbitrumSimple is Test {
 
         oracle = IArbitrumOracle(arbOracle);
 
-        priceFeed = new stUSDPriceFeedArbitrum();
-        vm.startPrank(owner);
-        oracle.setPriceFeed(stUSD, address(priceFeed)); // TODO: do this on arbitrum
-        vm.stopPrank();
+        // Commented since this has already been done on Arbitrum
+        // priceFeed = new stUSDPriceFeedArbitrum();
+        // vm.startPrank(owner);
+        // oracle.setPriceFeed(stUSD, address(priceFeed)); // TODO: do this on arbitrum
+        // vm.stopPrank();
 
         deal(stUSD, lender, lentAmount);
 
-        ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
-            borrower: borrower,
-            ttl: ttl,
-            cratio: 0,
-            revenueSplit: 0
-        });
-
-        lineAddress = ILineFactory(lineFactoryAddress).deploySecuredLineWithConfig(coreParams);
+        // NOTE: Leftover from before deploying the line on Arbitrum
+        // ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
+        //     borrower: borrower,
+        //     ttl: ttl,
+        //     cratio: 0,
+        //     revenueSplit: 0
+        // });
+        //
+        // lineAddress = ILineFactory(lineFactoryAddress).deploySecuredLineWithConfig(coreParams);
 
         line = SecuredLine(payable(lineAddress));
 
@@ -171,34 +174,51 @@ contract D8XLaaSArbitrumSimple is Test {
 
         vm.stopPrank();
 
+        emit log_named_string('\n \u2713 borrower transfer LP Shares to Collateral Multisig ', '');
+        vm.startPrank(borrower);
+        IERC20(LPShares).transfer(collateralMultisig, balanceAfter);
+        assertEq(IERC20(LPShares).balanceOf(address(borrower)), 0, "LP balance should be 0");
+        assertEq(IERC20(LPShares).balanceOf(address(collateralMultisig)), balanceAfter, "LP balance should be greater than 0");
+        vm.stopPrank();
+
         emit log_named_string('\n \u2713 borrower requests withdraws funds from  D8X treasury address after 27 days', '');
         console.log('- timestamp before: ', block.timestamp);
         vm.warp(block.timestamp + ttl);
         console.log('- timestamp after: ', block.timestamp);
-        vm.prank(borrower);
+        vm.prank(collateralMultisig);
         IPerpetualTreasury(treasuryAddress).withdrawLiquidity(poolId, balanceAfter);
 
         emit log_named_string('\n \u2713 borrower requests withdraws funds from D8X treasury address after 30 days', '');
         vm.warp(block.timestamp + 3 days);
         console.log('- timestamp after withdrawal: ', block.timestamp);
-        vm.startPrank(borrower);
-        IPerpetualTreasury(treasuryAddress).executeLiquidityWithdrawal(poolId, borrower);
-        assertEq(0, IERC20(LPShares).balanceOf(address(borrower)), "LP balance should be 0");
-        assertApproxEqRel(lentAmount, IERC20(stUSD).balanceOf(borrower), MARGIN_OF_ERROR, "borrower stUSD balance should be greater than or equal to lent amount");
-        emit log_named_uint('- borrower stUSD balance: ', IERC20(stUSD).balanceOf(borrower));
+        vm.startPrank(collateralMultisig);
+        IPerpetualTreasury(treasuryAddress).executeLiquidityWithdrawal(poolId, collateralMultisig);
+        assertEq(0, IERC20(LPShares).balanceOf(address(collateralMultisig)), "LP balance should be 0");
+        assertApproxEqRel(lentAmount, IERC20(stUSD).balanceOf(collateralMultisig), MARGIN_OF_ERROR, "borrower stUSD balance should be greater than or equal to lent amount");
+        emit log_named_uint('- collateralMultisig stUSD balance: ', IERC20(stUSD).balanceOf(collateralMultisig));
         vm.stopPrank();
 
-        emit log_named_string('\n \u2713 Borrower calls deposit and close on Line of Credit', '');
+        emit log_named_string('\n \u2713 Collateral Multisig calls deposit and repay on Line of Credit', '');
 
         uint256 interestAccrued = ILineOfCredit(lineAddress).interestAccrued(id);
         console.log('- interest acccrued to the line: ', interestAccrued);
 
-        console.log('- borrower acquires stUSD from other sources to pay back credit position');
-        deal(stUSD, borrower, lentAmount + interestAccrued);
-        console.log('- borrower stUSD balance: ', IERC20(stUSD).balanceOf(borrower));
+        console.log('- collateralMultisig acquires stUSD from other sources to pay back credit position');
+        deal(stUSD, collateralMultisig, lentAmount + interestAccrued);
+        console.log('- collateralMultisig stUSD balance: ', IERC20(stUSD).balanceOf(collateralMultisig));
+
+        vm.startPrank(collateralMultisig);
+        IERC20(stUSD).approve(lineAddress, MAX_INT);
+        ILineOfCredit(lineAddress).depositAndRepay(lentAmount + interestAccrued);
+        vm.stopPrank();
+
+        emit log_named_string('\n \u2713 Borrowers calls close on Line of Credit credit position', '');
 
         vm.startPrank(borrower);
-        ILineOfCredit(lineAddress).depositAndClose();
+
+        console.log('- borrower acquires stUSD from other sources to close credit position');
+        deal(stUSD, borrower, interestAccrued);
+        ILineOfCredit(lineAddress).close(id);
         // uint256 statusIsRepaid = uint256(line.status());
         assertEq(3, uint256(line.status()));
         emit log_named_uint("- status (3 == REPAID) ", uint256(line.status()));
@@ -218,7 +238,7 @@ contract D8XLaaSArbitrumSimple is Test {
         uint256 lenderBalanceAfter = IERC20(stUSD).balanceOf(lender);
         assertEq(lenderBalanceBefore + lentAmount + interestAccrued, lenderBalanceAfter);
 
-        vm.stopPrank();
+        // vm.stopPrank();
     }
 
 
