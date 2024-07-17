@@ -24,6 +24,8 @@ contract PolygonOracle is IOracle {
     /// Assumes Chainlink updates price minimum of once every 24hrs and 1 hour buffer for network issues
     uint256 public constant MAX_PRICE_LATENCY = 25 hours;
 
+    address public owner;
+
     event StalePrice(address indexed token, uint256 answerTimestamp);
     event NullPrice(address indexed token);
     event NoDecimalData(address indexed token, bytes errData);
