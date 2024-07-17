@@ -122,4 +122,14 @@ contract PolygonOracle is IOracle {
             return NULL_PRICE;
         }
     }
+
+    function setOwner(address _owner) external {
+        require(msg.sender == owner, "NOT_OWNER");
+        owner = _owner;
+    }
+
+    function setPriceFeed(address token, address feed) external {
+        require(msg.sender == owner, "NOT_OWNER");
+        priceFeed[token] = feed;
+    }
 }
