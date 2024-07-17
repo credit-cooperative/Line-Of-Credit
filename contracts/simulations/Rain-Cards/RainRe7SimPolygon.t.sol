@@ -701,7 +701,7 @@ contract RainRe7SimPolygon is Test {
         return bytes4(keccak256(bytes(_signature)));
     }
 
-    function _initSpigot(uint8 split, bytes4 claimFunc, bytes4 newOwnerFunc) internal // bytes4[] memory _whitelist
+    function _initSpigot(uint8 split, bytes4 claimFunc, bytes4 newOwnerFunc) internal
     {
         settings1 = ISpigot.Setting(split, claimFunc, newOwnerFunc);
         settings2 = ISpigot.Setting(0, claimFunc, newOwnerFunc);
