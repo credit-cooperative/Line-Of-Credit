@@ -49,7 +49,7 @@ contract BralePolygonSimple is Test {
     address public polygonOracle = 0x034e4164f84580D22251ca944186Bb137d74A586; 
     address public oracleOwner = 0xf44B95991CaDD73ed769454A03b3820997f00873; 
 
-    uint256 FORK_BLOCK_NUMBER = 59_497_343;
+    uint256 FORK_BLOCK_NUMBER = 59_515_619;
     uint256 polygonFork;
     uint256 lentAmount = 100000 * 1e6; // 100k USDC
     uint256 MARGIN_OF_ERROR = 0.001e18; //.1% margin of error (1e18 is 100%)
@@ -61,10 +61,10 @@ contract BralePolygonSimple is Test {
 
         oracle = IPolygonOracle(polygonOracle);
 
-        priceFeed = new SBCPriceFeedPolygon();
-        vm.startPrank(oracleOwner);
-        oracle.setPriceFeed(SBC, address(priceFeed));
-        vm.stopPrank();
+        // priceFeed = new SBCPriceFeedPolygon();
+        // vm.startPrank(oracleOwner);
+        // oracle.setPriceFeed(SBC, address(priceFeed));
+        // vm.stopPrank();
 
         borrower = makeAddr('borrower');
         lender = makeAddr('lender');
