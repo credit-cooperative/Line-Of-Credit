@@ -16,7 +16,7 @@ echo $ModuleFactoryAddress
 # Constructor Arguments: ModuleFactory Address, Arbiter Address, Oracle Address, Swap Target Address (same as Mainnet)
 
 LineFactory=$(forge create --rpc-url $POLYGON_RPC_URL \
---constructor-args 0x4AE0962441B763981000A99306AB5016238B8F40 0xFE002526dEc5B3e4b5134b75b20c065178323343 0x80F61d6f386e1A4d9F2aa1CcEcAB25f8FB7c093e 0xdef1c0ded9bec7f1a1670819833240f027b25eff \
+--constructor-args 0x4AE0962441B763981000A99306AB5016238B8F40 0xFE002526dEc5B3e4b5134b75b20c065178323343 0x034e4164f84580D22251ca944186Bb137d74A586 0xdef1c0ded9bec7f1a1670819833240f027b25eff \
 --private-key $POLYGON_PRIVATE_KEY --etherscan-api-key $POLYGONSCAN_API_KEY \
 contracts/modules/factories/LineFactory.sol:LineFactory --verify --json)]
 LineFactoryAddress=$(echo "$LineFactory" | jq -r '.deployedTo')

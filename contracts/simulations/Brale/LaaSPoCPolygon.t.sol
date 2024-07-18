@@ -36,22 +36,21 @@ contract BralePolygonSimple is Test {
     uint256 MAX_INT =
         115792089237316195423570985008687907853269984665640564039457584007913129639935;
 
-    address constant lineFactoryAddress ;
+    address constant lineFactoryAddress = 0x3e59121ce72F1a66F0eb14b5130C142542F93aD6;
     uint256 ttl = 60 days;
 
     address constant SBC  = 0xfdcC3dd6671eaB0709A4C0f3F53De9a333d80798;
     address constant USDC = 0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359;
 
     address constant arbiter = 0xFE002526dEc5B3e4b5134b75b20c065178323343;
-    address constant borrower ; // todo
-    address constant lender ; // todo
-    address constant collateralMultisig ; // todo
+    address borrower;
+    address lender;
 
     SBCPriceFeedPolygon public priceFeed;
-    address public polygonOracle = 0x80F61d6f386e1A4d9F2aa1CcEcAB25f8FB7c093e; // todo
-    address public owner = ; // todo
+    address public polygonOracle = 0x034e4164f84580D22251ca944186Bb137d74A586; 
+    address public oracleOwner = 0xf44B95991CaDD73ed769454A03b3820997f00873; 
 
-    uint256 FORK_BLOCK_NUMBER ; // todo
+    uint256 FORK_BLOCK_NUMBER = 59_496_579;
     uint256 polygonFork;
     uint256 lentAmount = 100000 * 1e6; // 100k USDC
     uint256 MARGIN_OF_ERROR = 0.001e18; //.1% margin of error (1e18 is 100%)
@@ -64,9 +63,12 @@ contract BralePolygonSimple is Test {
         oracle = IPolygonOracle(polygonOracle);
 
         priceFeed = new SBCPriceFeedPolygon();
-        vm.startPrank(owner);
-        oracle.setPriceFeed(SBC, address(priceFeed)); // TODO: do this on arbitrum
+        vm.startPrank(oracleOwner);
+        oracle.setPriceFeed(SBC, address(priceFeed));
         vm.stopPrank();
+
+        borrower = makeAddr('borrower');
+        lender = makeAddr('lender');
 
         deal(USDC, lender, lentAmount);
         deal(SBC, borrower, lentAmount);
@@ -95,7 +97,7 @@ contract BralePolygonSimple is Test {
         vm.stopPrank();
 
         vm.startPrank(borrower);
-        IERC20(SBC).approve(address(escrow), MAX_INT);
+        IERC20(SBC).approve(address(line.escrow()), MAX_INT);
         vm.stopPrank();
     }
 
