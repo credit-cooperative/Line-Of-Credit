@@ -36,11 +36,11 @@ contract BralePolygonSimple is Test {
     uint256 MAX_INT =
         115792089237316195423570985008687907853269984665640564039457584007913129639935;
 
-    address constant lineFactoryAddress ; // todo 
+    address constant lineFactoryAddress ;
     uint256 ttl = 60 days;
 
-    address constant SBC ; // todo
-    address constant USDC ;// todo
+    address constant SBC  = 0xfdcC3dd6671eaB0709A4C0f3F53De9a333d80798;
+    address constant USDC = 0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359;
 
     address constant arbiter = 0xFE002526dEc5B3e4b5134b75b20c065178323343;
     address constant borrower ; // todo
@@ -48,8 +48,8 @@ contract BralePolygonSimple is Test {
     address constant collateralMultisig ; // todo
 
     SBCPriceFeedPolygon public priceFeed;
-    address public polygonOracle ; // todo
-    address public owner ; // todo
+    address public polygonOracle = 0x80F61d6f386e1A4d9F2aa1CcEcAB25f8FB7c093e; // todo
+    address public owner = ; // todo
 
     uint256 FORK_BLOCK_NUMBER ; // todo
     uint256 polygonFork;
