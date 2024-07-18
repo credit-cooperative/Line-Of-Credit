@@ -120,10 +120,10 @@ contract BralePolygonSimple is Test {
         vm.stopPrank();
 
         vm.startPrank(borrower);
-        escrow.addCollateral(20001 ether, SBC);
+        escrow.addCollateral(25000 ether, SBC);
         vm.stopPrank();
 
-        assertEq(IERC20(SBC).balanceOf(address(escrow)), 20001 ether);
+        assertEq(IERC20(SBC).balanceOf(address(escrow)), 25000 ether);
 
 
         _addCredit();
