@@ -49,7 +49,7 @@ contract BralePolygonSimple is Test {
     address public polygonOracle = 0x034e4164f84580D22251ca944186Bb137d74A586; 
     address public oracleOwner = 0xf44B95991CaDD73ed769454A03b3820997f00873; 
 
-    uint256 FORK_BLOCK_NUMBER = 59_515_619;
+    uint256 FORK_BLOCK_NUMBER = 59_646_256;
     uint256 polygonFork;
     uint256 lentAmount = 100000 * 1e6; // 100k USDC
     uint256 MARGIN_OF_ERROR = 0.001e18; //.1% margin of error (1e18 is 100%)
@@ -120,10 +120,10 @@ contract BralePolygonSimple is Test {
         vm.stopPrank();
 
         vm.startPrank(borrower);
-        escrow.addCollateral(25000 ether, SBC);
+        escrow.addCollateral(20000 ether, SBC);
         vm.stopPrank();
 
-        assertEq(IERC20(SBC).balanceOf(address(escrow)), 25000 ether);
+        assertEq(IERC20(SBC).balanceOf(address(escrow)), 20000 ether);
 
 
         _addCredit();
@@ -135,7 +135,7 @@ contract BralePolygonSimple is Test {
         ILineOfCredit(lineAddress).borrow(id, lentAmount);
         vm.stopPrank();
 
-        assertGt(escrow.getCollateralRatio(), escrow.minimumCollateralRatio());
+        assertEq(escrow.getCollateralRatio(), escrow.minimumCollateralRatio());
         assertEq(IERC20(USDC).balanceOf(borrower), lentAmount);
     }
 }
