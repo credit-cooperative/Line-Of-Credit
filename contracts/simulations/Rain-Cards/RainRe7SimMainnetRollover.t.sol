@@ -56,7 +56,7 @@ contract RainRe7Sim is Test {
     // ISpigot spigot;
     ISpigot.Setting private settings;
     // ISecuredLine securedLine;
-    ILineOfCredit line;
+    SecuredLine line;
     // ISpigotedLine spigotedLine;
     // IEscrow escrow;
 
@@ -113,7 +113,7 @@ contract RainRe7Sim is Test {
 
     // Credit Coop Addresses
     address constant arbiterAddress = 0xeb0566b1EF38B95da2ed631eBB8114f3ac7b9a8a ; // Credit Coop MultiSig
-    address public securedLineAddress = 0xbF2d49EcfE657132F34863263D654d8e2eb1D72e; // Line address, to be defined in setUp()
+    address public securedLineAddress = 0xd30011367DFAC3B94BFb9A0B7Af34521EF70BE6c; // Line address, to be defined in setUp()
     address public spigotAddress = 0x78176f8723F48a72FE9d2bE10D456529a77F7458;
     address public escrowAddress = 0xf60e510104776414d4947Ca81C9066C8e7e05aFd;
     address public lineFactory = 0x07d5c33a3AFa24A25163D2afDD663BAb4C17b6d5;
@@ -135,8 +135,7 @@ contract RainRe7Sim is Test {
     uint128 fRate = 1000; // BPS
 
     // Fork Settings
-    //uint256 constant FORK_BLOCK_NUMBER = 19_591_810; // Forking mainnet at block on 7/6/23 at 7 40 PM EST
-    uint256 constant FORK_BLOCK_NUMBER = 19_613_983;
+    uint256 constant FORK_BLOCK_NUMBER = 20_464_516;
     uint256 ethMainnetFork;
 
     event log_named_bytes4(string key, bytes4 value);
@@ -157,9 +156,9 @@ contract RainRe7Sim is Test {
 
         // Create  Interfaces for CC infra
         oracle = IOracle(address(oracleAddress));
-        line = ILineOfCredit(address(securedLineAddress));
+        line = SecuredLine(payable(securedLineAddress));
         factory = ILineFactory(address(lineFactory));
-
+        spigot = Spigot(payable(spigotAddress));
 
         console.log("1");
         // Deal assets to all 3 parties (borrower, lender, arbiter)
@@ -184,28 +183,37 @@ contract RainRe7Sim is Test {
         // Define Interface for Rain Collateral Factory & Controller
         rainCollateralFactory = IRainCollateralFactory(rainCollateralFactoryAddress);
         rainCollateralController = IRainCollateralController(rainCollateralControllerAddress);
-
     }
 
     ///////////////////////////////////////////////////////
     //             S C E N A R I O   T E S T             //
     ///////////////////////////////////////////////////////
 
-    function test_rain_rollover_simulation_mainnet() public {
-        // repay existing line
-        // vm.startPrank(lenderAddress);
-        // IERC20(USDC).approve(rainBorrower, 2000000 * 10 ** 6);
-        // IERC20(USDC).transfer(rainBorrower, 2000000 * 10 ** 6);
-        // vm.stopPrank();
+    function test_rain_rollover_simulation_mainnet_xx() public {
+        // Users transfer funds to Spigot
+        deal(USDC, spigotAddress, 2000000 * 10 ** 6);
 
-        // vm.startPrank(rainBorrower);
+        // Servicer repays credit line
+        vm.startPrank(arbiterAddress);
+        bytes4 claimFunc = 0x000000;
+        uint256 claimed = _claimRevenueOnBehalfOfSpigot(claimFunc, rainCollateralControllerAddress);
+        line.claimAndRepay(USDC, "");
+        vm.stopPrank();
 
-        bytes32 id = 0x26a781a12de8f38d7d585ca913bfd4bd84b0715901b7557062d7251729be987c;
-        // uint256 interestAccrued = line.interestAccrued(id);
-        // line.depositAndClose();
-        // vm.stopPrank();
+        uint256 startingBalanceBorrower = IERC20(USDC).balanceOf(rainBorrower);
 
+        // Borrower closes credit line
+        vm.startPrank(rainBorrower);
+        bytes32 id = line.ids(0);
+        line.close(id);
+        assertEq(uint256(line.status()), 3, "line not repaid");
+        // TODO: assert line status is REPAID
+        // Borrower sweeps unused funds from credit line
+        line.sweep(rainBorrower, USDC, 0);
+        vm.stopPrank();
 
+        uint256 endingBalanceBorrower = IERC20(USDC).balanceOf(rainBorrower);
+        console.log('- borrower balance change: ', endingBalanceBorrower - startingBalanceBorrower);
 
         // call rollover on the factory
 
