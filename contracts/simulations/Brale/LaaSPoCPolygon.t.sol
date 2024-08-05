@@ -42,18 +42,18 @@ contract BralePolygonSimple is Test {
     address constant USDC = 0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359;
 
     address constant arbiter = 0xFE002526dEc5B3e4b5134b75b20c065178323343;
-    address borrower;
-    address lender;
+    address borrower = 0xB9227BCBf75e7EeD9f7d282161f5136529f53c10;
+    address lender = 0x4a37E79Fe607eD72bc4A4F164EA3bE2483c76BD1;
 
     SBCPriceFeedPolygon public priceFeed;
-    address public polygonOracle = 0x034e4164f84580D22251ca944186Bb137d74A586; 
-    address public oracleOwner = 0xf44B95991CaDD73ed769454A03b3820997f00873; 
+    address public polygonOracle = 0x034e4164f84580D22251ca944186Bb137d74A586;
+    address public oracleOwner = 0xf44B95991CaDD73ed769454A03b3820997f00873;
 
-    uint256 FORK_BLOCK_NUMBER = 59_646_256;
+    uint256 FORK_BLOCK_NUMBER = 60_003_647;
     uint256 polygonFork;
-    uint256 lentAmount = 100000 * 1e6; // 100k USDC
+    uint256 lentAmount = 150000 * 1e6; // 150k USDC
     uint256 MARGIN_OF_ERROR = 0.001e18; //.1% margin of error (1e18 is 100%)
-    address lineAddress;
+    address lineAddress = 0xC44f565356b2b6F43840A88eECF2ffA7604c0D47;
 
     function setUp() public {
         polygonFork = vm.createFork(vm.envString("POLYGON_RPC_URL"), FORK_BLOCK_NUMBER);
@@ -66,21 +66,21 @@ contract BralePolygonSimple is Test {
         // oracle.setPriceFeed(SBC, address(priceFeed));
         // vm.stopPrank();
 
-        borrower = makeAddr('borrower');
-        lender = makeAddr('lender');
+        // borrower = makeAddr('borrower');
+        // lender = makeAddr('lender');
 
-        deal(USDC, lender, lentAmount);
-        deal(SBC, borrower, 100000 ether);
+        // deal(USDC, lender, lentAmount);
+        // deal(SBC, borrower, 100000 ether);
 
-        // NOTE: Leftover from before deploying the line on Arbitrum
-        ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
-            borrower: borrower,
-            ttl: ttl,
-            cratio: 2000,
-            revenueSplit: 0
-        });
-        
-        lineAddress = ILineFactory(lineFactoryAddress).deploySecuredLineWithConfig(coreParams);
+        // // NOTE: Leftover from before deploying the line on Arbitrum
+        // ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
+        //     borrower: borrower,
+        //     ttl: ttl,
+        //     cratio: 2000,
+        //     revenueSplit: 0
+        // });
+
+        // lineAddress = ILineFactory(lineFactoryAddress).deploySecuredLineWithConfig(coreParams);
 
         line = SecuredLine(payable(lineAddress));
 
@@ -102,11 +102,11 @@ contract BralePolygonSimple is Test {
 
     function _addCredit() internal {
         vm.startPrank(lender);
-        ILineOfCredit(lineAddress).addCredit(700, 700, lentAmount, USDC, lender);
+        ILineOfCredit(lineAddress).addCredit(1400, 1400, lentAmount, USDC, lender);
         vm.stopPrank();
 
         vm.startPrank(borrower);
-        ILineOfCredit(lineAddress).addCredit(700, 700, lentAmount, USDC, lender);
+        ILineOfCredit(lineAddress).addCredit(1400, 1400, lentAmount, USDC, lender);
         vm.stopPrank();
     }
 
@@ -115,15 +115,20 @@ contract BralePolygonSimple is Test {
 
         // TODO borrower needs to add SBC to escrow
 
-        vm.startPrank(arbiter);
-        escrow.enableCollateral(SBC);
-        vm.stopPrank();
+        // vm.startPrank(arbiter);
+        // escrow.enableCollateral(SBC);
+        // vm.stopPrank();
+        console.log('xxx - escrow address: ', line.escrow());
+        console.log('xxx - SBC borrower balance: ', IERC20(SBC).balanceOf(address(borrower)));
 
         vm.startPrank(borrower);
-        escrow.addCollateral(20000 ether, SBC);
+        escrow.addCollateral(30000 ether, SBC);
         vm.stopPrank();
 
-        assertEq(IERC20(SBC).balanceOf(address(escrow)), 20000 ether);
+
+        console.log('xxx - escrow cratio: ', escrow.getCollateralRatio());
+        console.log('xxx - escrow min cratio: ', escrow.minimumCollateralRatio());
+        assertEq(IERC20(SBC).balanceOf(address(escrow)), 30001 ether);
 
 
         _addCredit();
