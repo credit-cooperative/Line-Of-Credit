@@ -249,6 +249,7 @@ contract RainRe7Sim is Test {
 
         uint256 balanceBefore = IERC20(USDC).balanceOf(lenderAddress);
 
+        assertEq(spigotAddress, address(spigotedLine.spigot()), "spigot not equal");
 
         // vm.startPrank(lenderAddress);
         // line.withdraw(id, 23412559884 + 1000000 * 10 ** 6);
@@ -258,7 +259,7 @@ contract RainRe7Sim is Test {
 
          uint256 diff = balanceAfter - balanceBefore;
 
-         console.log(diff);
+         console.log("Diff: ", diff);
 
         // confirm new line is created
         console.log("new line address is not equal to address(0)");
