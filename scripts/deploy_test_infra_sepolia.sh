@@ -14,10 +14,10 @@ source ../.env
 # ccCoinOne TOKEN ADDRESS: 0xbCfB1bC0ce6c04D1adBbcDEE13e9f94E6fbDc64d - 12/11/23
 # ccCoinTwo TOKEN ADDRESS: 0xcfEE544566ff8156bfC2C20d97f03882be4b5353 - 12/11/23
 
-Oracle=$(forge create --rpc-url $SEPOLIA_RPC_URL --constructor-args 0xF64fC04626d3f0CA01d7C23cA77110D2B5fd8893 0x72bBE4dF62D5956e1d640D0fcb16DEe0A30B7049 \
---private-key $SEPOLIA_PRIVATE_KEY --etherscan-api-key $MAINNET_ETHERSCAN_API_KEY  contracts/mock/SimpleOracle.sol:SimpleOracle  --verify --json)
-OracleAddress=$(echo "$Oracle" | jq -r '.deployedTo')
-echo $OracleAddress
+# Oracle=$(forge create --rpc-url $SEPOLIA_RPC_URL --constructor-args 0xF64fC04626d3f0CA01d7C23cA77110D2B5fd8893 0x72bBE4dF62D5956e1d640D0fcb16DEe0A30B7049 \
+# --private-key $SEPOLIA_PRIVATE_KEY --etherscan-api-key $MAINNET_ETHERSCAN_API_KEY  contracts/mock/SimpleOracle.sol:SimpleOracle  --verify --json)
+# OracleAddress=$(echo "$Oracle" | jq -r '.deployedTo')
+# echo $OracleAddress
 
 # ### DEPLOY SWAP TARGET ###
 
@@ -27,10 +27,19 @@ echo $OracleAddress
 
 # ### DEPLOY REV CONTRACT ###
 
-# SimpleRevenueContract=$(forge create --rpc-url $SEPOLIA_RPC_URL --constructor-args 0x06dae7Ba3958EF288adB0B9b3732eC204E48BC47 0xF64fC04626d3f0CA01d7C23cA77110D2B5fd8893 \
+# SimpleRevenueContract=$(forge create --rpc-url $SEPOLIA_RPC_URL --constructor-args 0x06dae7Ba3958EF288adB0B9b3732eC204E48BC47 0x1BF220B4e6E5ecA30D90a12ea369a68633c0065a \
 #  --private-key $SEPOLIA_PRIVATE_KEY --etherscan-api-key $MAINNET_ETHERSCAN_API_KEY contracts/mock/SimpleRevenueContract.sol:SimpleRevenueContract --verify --json)
 # SimpleRevenueContractAddress=$(echo "$SimpleRevenueContract" | jq -r '.deployedTo')
 # echo $SimpleRevenueContractAddress
+
+# Verify contract
+forge verify-contract \
+    --chain-id 11155111 \
+    --watch \
+    --constructor-args $(cast abi-encode "constructor(address,address)" 0x06dae7Ba3958EF288adB0B9b3732eC204E48BC47 0x1BF220B4e6E5ecA30D90a12ea369a68633c0065a)  \
+    --rpc-url $SEPOLIA_RPC_URL --etherscan-api-key $MAINNET_ETHERSCAN_API_KEY \
+    0x081B1f32434826f46652C0aAC20E1560aFC0Ce24 \
+    SimpleRevenueContract
 
 
 # forge create --rpc-url $POLYGON_RPC_URL --constructor-args 0xb7c75c110467B1c5dc1af60D0A3C245eD0b883f9 --private-key $POLYGON_PRIVATE_KEY --etherscan-api-key $POLYGON_ETHERSCAN_API_KEY  contracts/modules/oracle/Oracle.sol:Oracle  --verify
