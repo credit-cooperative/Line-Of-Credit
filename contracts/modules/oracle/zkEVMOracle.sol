@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: MIT
  pragma solidity ^0.8.16;
- 
+
 import "chainlink/interfaces/FeedRegistryInterface.sol";
 import "chainlink/shared/interfaces/AggregatorV3Interface.sol";
 import {Denominations} from "chainlink/Denominations.sol";
 
 import {LineLib} from "../../utils/LineLib.sol";
-import "../../interfaces/IArbitrumOracle.sol";
+import "../../interfaces/IOracle.sol";
 
 /**
  * @title   - Chainlink Feed Registry Wrapper
  * @notice  - simple contract that wraps Chainlink's Feed Registry to get asset prices for any tokens without needing to know the specific oracle address
  *          - only makes request for USD prices and returns results in standard 8 decimals for Chainlink USD feeds
  */
-contract ArbitrumOracle is IArbitrumOracle {
+contract zkEVMOracle is IOracle {
     /// @notice Price Feeds - Chainlink Feed Registry with aggregated prices across
     mapping(address => address) public priceFeed; // token => chainlink price feed
     /// @notice NULL_PRICE - null price when asset price feed is deemed invalid
@@ -37,10 +37,8 @@ contract ArbitrumOracle is IArbitrumOracle {
     // USDC/USD: 0x50834f3163758fcc1df9973b6e91f0f0f0434ad3
     // ETH/USD: 
 
-    constructor() {
-        priceFeed[0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1] = 0xc5C8E77B397E531B8EC06BFb0048328B30E9eCfB; // DAI 
-        priceFeed[0xaf88d065e77c8cC2239327C5EDb3A432268e5831] = 0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3; // USDC 
-        priceFeed[0x82aF49447D8a07e3bd95BD0d56f35241523fBab1] = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612; // WETH
+    constructor() { 
+        priceFeed[0xA8CE8aee21bC2A48a5EF670afCc9274C7bbbC035] = 0x0167D934CB7240e65c35e347F00Ca5b12567523a; // USDC 
         owner = msg.sender;
     }
 

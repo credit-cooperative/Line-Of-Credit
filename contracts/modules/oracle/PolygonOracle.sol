@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
  pragma solidity ^0.8.16;
 
-// import  'forge-std/console.sol';
 import "chainlink/interfaces/FeedRegistryInterface.sol";
-import "chainlink/interfaces/AggregatorV3Interface.sol";
+import "chainlink/shared/interfaces/AggregatorV3Interface.sol";
 import {Denominations} from "chainlink/Denominations.sol";
 
 import {LineLib} from "../../utils/LineLib.sol";
@@ -25,6 +24,8 @@ contract PolygonOracle is IOracle {
     /// Assumes Chainlink updates price minimum of once every 24hrs and 1 hour buffer for network issues
     uint256 public constant MAX_PRICE_LATENCY = 25 hours;
 
+    address public owner;
+
     event StalePrice(address indexed token, uint256 answerTimestamp);
     event NullPrice(address indexed token);
     event NoDecimalData(address indexed token, bytes errData);
@@ -37,6 +38,7 @@ contract PolygonOracle is IOracle {
     constructor() {
         priceFeed[0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063] = 0x4746DeC9e833A82EC7C2C1356372CcF2cfcD2F3D; // DAI
         priceFeed[0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174] = 0xfE4A8cc5b5B2366C1B58Bea3858e81843581b2F7; // USDC
+        owner = msg.sender;
     }
 
     /**
