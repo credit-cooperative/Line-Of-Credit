@@ -86,7 +86,7 @@ contract RainSimBase is Test {
     // Credit Coop Infra Addresses
     BaseOracle oracle;
 
-    address constant oracleAddress ;
+    address constant oracleAddress = 0xb370B80f85cD2A312f6B5f017D8AD5BD827F954C;
     address constant zeroExSwapTarget = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
 
     // Rain Cards Borrower Address
@@ -132,8 +132,8 @@ contract RainSimBase is Test {
     address public securedLineAddress; // Line address, to be defined in setUp()
 
     // Asset Addresses
-    address constant USDC ;
-    address constant rUSD ;
+    address constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
+    address constant rUSD = 0xd899C2254C1F4B11FfF038571D6cb02aB8860eC8;
 
     // Money Vars
     uint256 MAX_INT = type(uint256).max;
