@@ -18,6 +18,6 @@ echo $SimpleRevenueContractAddress
 #     SimpleRevenueContract
 
 
-# forge create --rpc-url $BASE_RPC_URL --constructor-args 0xb7c75c110467B1c5dc1af60D0A3C245eD0b883f9 --private-key $BASE_PRIVATE_KEY --etherscan-api-key $BASE_API_KEY  contracts/modules/oracle/Oracle.sol:Oracle  --verify
+# forge create --rpc-url $BASE_RPC_URL --private-key $BASE_PRIVATE_KEY --etherscan-api-key $BASE_API_KEY  contracts/modules/oracle/BaseOracle.sol:BaseOracle  --verify
 
 # forge create --rpc-url $BASE_RPC_URL  --private-key $BASE_PRIVATE_KEY --etherscan-api-key $BASE_API_KEY  contracts/modules/oracle/PolygonOracle.sol:PolygonOracle  --verify
