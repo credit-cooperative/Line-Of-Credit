@@ -113,14 +113,6 @@ contract BralePolygonSimple is Test {
     // NOTE: This is a simple end to end test of D8X
     function test_brale_credit_line() public {
 
-        // TODO borrower needs to add SBC to escrow
-
-        // vm.startPrank(arbiter);
-        // escrow.enableCollateral(SBC);
-        // vm.stopPrank();
-        console.log('xxx - escrow address: ', line.escrow());
-        console.log('xxx - SBC borrower balance: ', IERC20(SBC).balanceOf(address(borrower)));
-
         vm.startPrank(borrower);
         escrow.addCollateral(30000 ether, SBC);
         vm.stopPrank();
