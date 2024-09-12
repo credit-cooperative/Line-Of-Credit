@@ -41,11 +41,6 @@ contract RainRe7Sim is Test {
 
         assertGt(balanceOfLineAfter, balanceOfLineBefore);
 
-
-
-
-
-
     }
 
     function test_claim_and_trade() public {
