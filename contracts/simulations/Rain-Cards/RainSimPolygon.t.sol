@@ -438,7 +438,7 @@ contract RainRe7SimPolygon is Test {
         vm.startPrank(rainBorrower);
         emit log_named_string("\n \u2713 [Borrower] Calls the Spigot Claim Function", "");
 
-        uint256 claimedFromSpigot = _claimRevenueOnBehalfOfSpigot(
+        _claimRevenueOnBehalfOfSpigot(
             bytes4(0),
             rainCollateralContract0
         );
