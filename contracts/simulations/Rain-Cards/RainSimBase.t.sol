@@ -40,23 +40,6 @@ interface IRainCollateralController {
     function liquidateAsset(address _collateralProxy, address[] calldata _assets, uint256[] calldata _amounts) external;
 }
 
-interface IRainCollateralFactory {
-    function controller() external view returns (address);
-
-    function owner() external view returns (address);
-
-    function transferOwnership(address newOwner) external;
-
-    function updateController(address _controller) external;
-
-    function createCollateralContract(string calldata _name, address _user) external returns (address);
-}
-
-interface IRainCollateralBeacon {
-    function owner() external view returns (address);
-
-    function transferOwnership(address newOwner) external;
-}
 
 contract RainSimBase is Test {
     bytes32 constant DEFAULT_ADMIN_ROLE = 0x00;
@@ -94,38 +77,8 @@ contract RainSimBase is Test {
     address lenderAddress = makeAddr("lender");
 
     // Rain Controller Contract & Associated Addresses
-    address rainCollateralFactoryAddress = 0x3F95401d768F90Ab529060121499CDa7Dc8d95b1;
     address rainCollateralControllerAddress = 0x5d5Cef756412045617415FC78D510003238EAfFd;
-    address rainCollateralBeaconAddress = 0xD75242e1814aa587905d9Fbd6be6D456063F50f1;
-    address rainControllerAdminAddress = 0xB92949bdF09F4193599Ae7700211751ab5F74aCd;
-    address rainFactoryOwnerAddress = 0x21ebc2f23a91fD7eB8406CDCE2FD653de280B5fc;
-    address rainControllerOwnerAddress = 0x21ebc2f23a91fD7eB8406CDCE2FD653de280B5fc;
-    address rainTreasuryContractAddress = 0x318ea64575feA5333c845bccEb5A6211952283AD;
-    address rainCollateralBeaconOwnerAddress = 0x21ebc2f23a91fD7eB8406CDCE2FD653de280B5fc;
 
-    // Rain Collateral Contracts 0 - 3:
-    address rainCollateralContract0 = 0x3423097c1631629295185e8ae8a2586e30436f95;
-    address rainCollateralContract1 = 0x22fF15C7bfDf0bfF13FfFB80ec2bC53AD1ae80C2;
-    address rainCollateralContract2 = 0xc3b07b1c03E6611EE242736f94617B26668F3D03;
-    address rainCollateralContract3 = 0xf2a289df573bE02Bc4ec5C1025e3298dD243a00d;
-    address rainCollateralContract4 = 0x8eD1b998afB9A606B4e976AfcAccFE4b39069513;
-
-    // Rain (Fake) User Addresses
-    address rainUser0 = makeAddr("rainUser0");
-    address rainUser1 = makeAddr("rainUser1");
-    address rainUser2 = makeAddr("rainUser2");
-    address rainUser3 = makeAddr("rainUser3");
-    address rainUser4 = makeAddr("rainUser4");
-
-    uint256 rainUser0Amount = (30000 / 5) * 10 ** 6;
-    uint256 rainUser1Amount = (170000 / 5) * 10 ** 6;
-    uint256 rainUser2Amount = (120000 / 5) * 10 ** 6;
-    uint256 rainUser3Amount = (80000 / 5) * 10 ** 6;
-    uint256 rainUser4Amount = (20000 / 5) * 10 ** 6;
-    uint256 finalSpigotBalance =
-        rainUser0Amount + rainUser1Amount + rainUser2Amount + rainUser3Amount + rainUser4Amount;
-    uint256 finalOperatorTokensBalance = finalSpigotBalance / 2;
-    uint256 finalOwnerTokensBalance = finalSpigotBalance / 2;
 
     // Credit Coop Addresses
     address constant arbiterAddress; // Credit Coop MultiSig
@@ -175,17 +128,9 @@ contract RainSimBase is Test {
 
         deal(USDC, lenderAddress, loanSizeInUSDC);
 
-        // Deal USDC to Rain (Fake) User Addresses
-        deal(USDC, rainUser0, rainUser0Amount);
-        deal(USDC, rainUser1, rainUser1Amount);
-        deal(USDC, rainUser2, rainUser2Amount);
-        deal(USDC, rainUser3, rainUser3Amount);
-        deal(USDC, rainUser4, rainUser4Amount);
 
-        // Define Interface for Rain Collateral Factory & Controller
-        rainCollateralFactory = IRainCollateralFactory(rainCollateralFactoryAddress);
+        // Define Interface for Rain Controller
         rainCollateralController = IRainCollateralController(rainCollateralControllerAddress);
-        rainCollateralBeacon = IRainCollateralBeacon(rainCollateralBeaconAddress);
     }
 
     ///////////////////////////////////////////////////////
@@ -194,13 +139,7 @@ contract RainSimBase is Test {
 
     function test_rain_simulation_base() public {
         // Deploy Credit Coop Factory Contracts
-        ModuleFactory moduleFactory = new ModuleFactory();
-        LineFactory lineFactory = new LineFactory(
-            address(moduleFactory),
-            arbiterAddress,
-            oracleAddress,
-            payable(zeroExSwapTarget)
-        );
+
 
         // Borrower Deploys Line of Credit
         emit log_named_string("\n \u2713 Borrower Deploys Line of Credit", "");
@@ -232,12 +171,6 @@ contract RainSimBase is Test {
         assertEq(true, ISpigot(securedLine.spigot()).isWhitelisted(whitelistedFunc1));
         delete whitelistedFunc1;
 
-        emit log_named_string("\n \u2713 Arbiter Whitelists creaetCollateralContract function", "");
-        bytes4 whitelistedFunc2 = _getSelector("createCollateralContract(string,address)");
-        securedLine.updateWhitelist(whitelistedFunc2, true);
-        assertEq(true, ISpigot(securedLine.spigot()).isWhitelisted(whitelistedFunc2));
-        delete whitelistedFunc2;
-
         vm.stopPrank();
 
         // OPTIONAL - Rain transfers ownership of Rain Collateral Factory to a Joint Multisig
@@ -259,22 +192,6 @@ contract RainSimBase is Test {
         emit log_named_string("\n \u2713 Rain Collateral Controller Owner Transfers Ownership to Spigot", "");
         rainCollateralController.transferOwnership(address(securedLine.spigot()));
         assertEq(address(securedLine.spigot()), rainCollateralController.owner());
-
-        vm.stopPrank();
-
-        // Rain Collateral Factory Owner Transfers Ownership to Rain Collateral Controller Owner
-        vm.startPrank(rainFactoryOwnerAddress);
-        rainCollateralFactory.transferOwnership(address(securedLine.spigot()));
-        assertEq(address(securedLine.spigot()), rainCollateralFactory.owner());
-
-        vm.stopPrank();
-
-        // Rain Collateral Beacon Owner Transfers Ownership to Rain Collateral Controller Owner
-
-        vm.startPrank(rainCollateralBeaconOwnerAddress);
-
-        rainCollateralBeacon.transferOwnership(address(securedLine.spigot()));
-        assertEq(address(securedLine.spigot()), rainCollateralBeacon.owner());
 
         vm.stopPrank();
 
@@ -309,17 +226,6 @@ contract RainSimBase is Test {
         emit log_named_uint("- Rain Collateral 0 - Ending Nonce", endingNonce);
         assertEq(true, isNonceIncreased);
         assertEq(endingNonce, startingNonce + 1);
-
-        bytes4 createCollateralContractFunc = rainCollateralFactory.createCollateralContract.selector;
-        bytes memory createCollateralContractData = abi.encodeWithSelector(
-            createCollateralContractFunc,
-            "Rain Collateral 1",
-            address(10)
-        );
-        bool isCollateralContractCreated = spigot.operate(rainCollateralFactoryAddress, createCollateralContractData);
-        assertEq(true, isCollateralContractCreated);
-
-        vm.stopPrank();
 
         // fast forward 45 days
         emit log_named_string("\n<---------- Fast Forward 45 Days --------------------> ", "");
