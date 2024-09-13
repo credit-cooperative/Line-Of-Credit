@@ -263,14 +263,14 @@ contract RainSimBase is Test {
         uint256 claimedUSDCFromSpigpt = _claimRevenueOnBehalfOfSpigot(
             bytes4(0),
             USDC,
-            address(rainCollateralController)
+            dummyUSDCClaimAddress
         );
         // assertEq(finalSpigotBalance, IERC20(rUSD).balanceOf(address(spigot)));
 
         vm.stopPrank();
 
         // Rain claims their portion of cash flows from Spigot w/ claimOperatorTokens
-        vm.startPrank(rainControllerOwnerAddress);
+        vm.startPrank(rainBorrower);
         emit log_named_string("\n \u2713 [Borrower] Calls the Spigot Claim Operator Tokens Function", "");
         emit log_named_uint("- Spigot rUSD balance: ", IERC20(rUSD).balanceOf(address(spigot)));
         emit log_named_address("- Spigot operator: ", spigot.operator());
@@ -398,7 +398,7 @@ contract RainSimBase is Test {
 
         uint256 startingSpigotBalance = IERC20(token).balanceOf(address(spigot));
         emit log_named_uint("- starting Spigot balance ", startingSpigotBalance);
-        uint256 claimed = spigot.claimRevenue(rainCollateralControllerAddress, token, claimFuncData);
+        uint256 claimed = spigot.claimRevenue(revContract, token, claimFuncData);
         uint256 endingSpigotBalance = IERC20(token).balanceOf(address(spigot));
         emit log_named_uint("- amount claimed from Rain Collateral Controller ", claimed);
         emit log_named_uint("- ending Spigot balance ", endingSpigotBalance);
