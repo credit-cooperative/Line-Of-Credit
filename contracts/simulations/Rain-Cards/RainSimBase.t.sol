@@ -16,7 +16,6 @@ import {ISpigotedLine} from "../../interfaces/ISpigotedLine.sol";
 import {IEscrow} from "../../interfaces/IEscrow.sol";
 import {Escrow} from "../../modules/escrow/Escrow.sol";
 import {ISpigot} from "../../interfaces/ISpigot.sol";
-import {Spigot} from "../../modules/spigot/Spigot.sol";
 import {ILineOfCredit} from "../../interfaces/ILineOfCredit.sol";
 import {ISecuredLine} from "../../interfaces/ISecuredLine.sol";
 
@@ -52,15 +51,14 @@ contract RainSimBase is Test {
     ISpigot.Setting private settings2;
     ISpigot.Setting private settings3;
     // ISecuredLine securedLine;
-    ILineOfCredit line;
+    LineOfCredit line;
     // ISpigotedLine spigotedLine;
     // IEscrow escrow;
 
     // LineOfCredit line;
     SecuredLine securedLine;
-    LineOfCredit newLine;
-    Escrow escrow;
-    Spigot spigot;
+    IEscrow escrow;
+    ISpigot spigot;
 
     IRainCollateralController rainCollateralController;
 
@@ -73,7 +71,7 @@ contract RainSimBase is Test {
 
     // Rain Cards Borrower Address
     address rainBorrower = makeAddr("borrower"); // Rain Borrower Address
-    address lenderAddress = makeAddr("lender");
+    address constant lenderAddress = 0x9832FD4537F3143b5C2989734b11A54D4E85eEF6;
 
     // Rain Controller Contract & Associated Addresses
     address rainCollateralControllerAddress = 0x753Fb325Ca30f229E616eA8E6Eb620D0Bb29D0Df;
@@ -83,7 +81,7 @@ contract RainSimBase is Test {
 
     // Credit Coop Addresses
     address constant arbiterAddress = 0xC1aF21b9f237E3332843F63364A1599Aa722947c; // Credit Coop MultiSig
-    address securedLineAddress; // Line address, to be defined in setUp()
+    address payable securedLineAddress; // Line address, to be defined in setUp()
 
     // Asset Addresses
     address constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
@@ -102,7 +100,7 @@ contract RainSimBase is Test {
 
     // Fork Settings
     // uint256 constant FORK_BLOCK_NUMBER = 45_626_437; //17_638_122; // Forking mainnet at block on 7/6/23 at 7 40 PM EST
-    uint256 FORK_BLOCK_NUMBER; //17_638_122; // Forking mainnet at block on 7/6/23 at 7 40 PM EST
+    uint256 constant FORK_BLOCK_NUMBER = 19_735_563; //17_638_122; // Forking mainnet at block on 7/6/23 at 7 40 PM EST
     uint256 BaseFork;
 
     event log_named_bytes4(string key, bytes4 value);
@@ -126,9 +124,7 @@ contract RainSimBase is Test {
         vm.deal(lenderAddress, 100 ether);
         // vm.deal(rainControllerOwnerAddress, 100 ether);
         // deal(MATIC, rainControllerOwnerAddress, 100 ether);
-
-        deal(rUSD, lenderAddress, loanSizeInUSDC);
-
+        
 
         // Define Interface for Rain Controller
         rainCollateralController = IRainCollateralController(rainCollateralControllerAddress);
@@ -141,19 +137,18 @@ contract RainSimBase is Test {
     function test_rain_simulation_base() public {
         // Deploy Credit Coop Factory Contracts
 
-
+        deal(rUSD, lenderAddress, loanSizeInUSDC);
         // Borrower Deploys Line of Credit
         emit log_named_string("\n \u2713 Borrower Deploys Line of Credit", "");
-        ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams(
-            rainBorrower,
-            ttl,
-            0,
-            100
-        );
-        securedLineAddress = ILineFactory(lineFactoryAddress).deploySecuredLineWithConfig(coreParams);
+
+        securedLineAddress = payable(_deployLoCWithConfig());
 
         // Define interfaces for all CC modules
-        line = ILineOfCredit(securedLineAddress);
+        line = LineOfCredit(securedLineAddress);
+        securedLine = SecuredLine(securedLineAddress);
+
+        spigot = securedLine.spigot();
+        escrow = securedLine.escrow(); 
 
         // Check status == ACTIVE after LOC is deployed
         uint256 status = uint256(line.status());
@@ -468,5 +463,17 @@ contract RainSimBase is Test {
         // add spigot for revenue contract
         require(securedLine.addSpigot(rainCollateralControllerAddress, settings1), "Failed to add spigot");
         require(securedLine.addSpigot(dummyUSDCClaimAddress, settings2), "Failed to add spigot");
+    }
+
+    function _deployLoCWithConfig() internal returns (address){
+        ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
+            borrower: rainBorrower,
+            ttl: ttl,
+            cratio: 0,
+            revenueSplit: 100
+        });
+
+        securedLineAddress = payable(ILineFactory(lineFactoryAddress).deploySecuredLineWithConfig(coreParams));
+        return securedLineAddress;
     }
 }
