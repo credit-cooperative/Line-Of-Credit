@@ -320,8 +320,8 @@ contract RainRe7SimPolygon is Test {
 
         // vm.stopPrank();
 
-        // fast forward
-        emit log_named_string("\n<---------- Fast Forward 45 Days --------------------> ", "");
+        // fast forward 89 days
+        emit log_named_string("\n<---------- Fast Forward 89 Days --------------------> ", "");
         vm.warp(block.timestamp + (ttl - 1 days));
 
         // emit log_named_string("\n \u2713 Line Operator Calls increaseNonce Function on Rain Collateral Contract 1", "");
@@ -714,16 +714,12 @@ contract RainRe7SimPolygon is Test {
 
     function _initSpigot(uint8 split, bytes4 claimFunc, bytes4 newOwnerFunc) internal // bytes4[] memory _whitelist
     {
-        console.log('2.1');
         settings1 = ISpigot.Setting(split, claimFunc, newOwnerFunc);
         // settings2 = ISpigot.Setting(0, claimFunc, newOwnerFunc);
         // settings3 = ISpigot.Setting(0, claimFunc, newOwnerFunc);
 
-
         // add spigot for revenue contract
-        console.log('2.2', address(securedLine));
         require(securedLine.addSpigot(rainCollateralControllerAddress, settings1), "Failed to add spigot");
-        console.log('2.3');
         // require(securedLine.addSpigot(rainCollateralBeaconAddress, settings2), "Failed to add spigot");
         // require(securedLine.addSpigot(rainCollateralFactoryAddress, settings3), "Failed to add spigot");
     }

@@ -226,8 +226,8 @@ contract RainSimBase is Test {
         // assertEq(true, isNonceIncreased);
         // assertEq(endingNonce, startingNonce + 1);
 
-        // fast forward 45 days
-        emit log_named_string("\n<---------- Fast Forward 45 Days --------------------> ", "");
+        // fast forward 89 days
+        emit log_named_string("\n<---------- Fast Forward 89 Days --------------------> ", "");
         vm.warp(block.timestamp + (ttl - 1 days));
 
         // emit log_named_string("\n \u2713 Line Operator Calls increaseNonce Function on Rain Collateral Contract 1", "");
