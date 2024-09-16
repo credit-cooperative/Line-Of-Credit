@@ -365,7 +365,7 @@ contract RainSimBase is Test {
         emit log_named_string("\n \u2713 Borrower Removes Rain Collateral Controller from Spigot", "");
         spigot.removeSpigot(rainCollateralControllerAddress);
 
-        assertEq(rainControllerOwnerAddress, rainCollateralController.owner());
+        assertEq(rainOperator, rainCollateralController.owner());
 
         vm.stopPrank();
 

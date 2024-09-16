@@ -95,7 +95,7 @@ contract RainRe7SimPolygon is Test {
 
     // Rain Cards Borrower Address
     address constant rainBorrower = 0x318ea64575feA5333c845bccEb5A6211952283AD; // Rain Borrower Address
-    address constant rainOperator = 0x318ea64575feA5333c845bccEb5A6211952283AD; // TODO
+    address rainOperator = makeAddr("operator"); // TODO
     address lenderAddress = makeAddr("lender");
 
     // Rain Controller Contract & Associated Addresses
@@ -554,7 +554,7 @@ contract RainRe7SimPolygon is Test {
         // spigot.removeSpigot(rainCollateralBeaconAddress);
         // spigot.removeSpigot(rainCollateralFactoryAddress);
 
-        assertEq(rainControllerOwnerAddress, rainCollateralController.owner());
+        assertEq(rainOperator, rainCollateralController.owner());
         // assertEq(rainControllerOwnerAddress, rainCollateralBeacon.owner());
         // assertEq(rainControllerOwnerAddress, rainCollateralFactory.owner());
 
