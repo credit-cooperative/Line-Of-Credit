@@ -226,9 +226,9 @@ contract RainSimBase is Test {
         // assertEq(true, isNonceIncreased);
         // assertEq(endingNonce, startingNonce + 1);
 
-        // // fast forward 45 days
-        // emit log_named_string("\n<---------- Fast Forward 45 Days --------------------> ", "");
-        // vm.warp(block.timestamp + (ttl - 1 days));
+        // fast forward 45 days
+        emit log_named_string("\n<---------- Fast Forward 45 Days --------------------> ", "");
+        vm.warp(block.timestamp + (ttl - 1 days));
 
         // emit log_named_string("\n \u2713 Line Operator Calls increaseNonce Function on Rain Collateral Contract 1", "");
         // vm.startPrank(rainControllerOwnerAddress);
@@ -289,6 +289,12 @@ contract RainSimBase is Test {
         emit log_named_uint("- Owner Tokens in Spigot after repayment: ", spigot.getOwnerTokens(rUSD));
         vm.stopPrank();
 
+        // Lender can withdraw interest before line is closed
+        vm.startPrank(lenderAddress);
+        emit log_named_string("\n \u2713 Lender Withdraws Repaid Interest", "");
+        emit log_named_uint("- Withdrawal Amount (interest only): ", interestAccrued);
+        securedLine.withdraw(id, interestAccrued);
+
         // Rain closes the Line of Credit
         emit log_named_string("\n \u2713 Borrower Calls close Function to Close Line of Credit", "");
         vm.startPrank(rainBorrower);
@@ -332,11 +338,11 @@ contract RainSimBase is Test {
 
         vm.stopPrank();
 
-        // Lender withdraws principal + interest owed
+        // Lender withdraws principal after line is closed
         vm.startPrank(lenderAddress);
-        emit log_named_string("\n \u2713 Lender Withdraws All Repaid Principal and Interest", "");
-        emit log_named_uint("- Withdrawal Amount: ", interestAccrued + loanSizeInRainUSD);
-        securedLine.withdraw(id, interestAccrued + loanSizeInRainUSD);
+        emit log_named_string("\n \u2713 Lender Withdraws All Principal", "");
+        emit log_named_uint("- Withdrawal Amount (principal only): ", loanSizeInRainUSD);
+        securedLine.withdraw(id, loanSizeInRainUSD);
         uint256 lenderBalanceAfterRepayment = IERC20(rUSD).balanceOf(lenderAddress);
         uint256 borrowerBalanceAfterRepayment = IERC20(rUSD).balanceOf(rainBorrower);
 

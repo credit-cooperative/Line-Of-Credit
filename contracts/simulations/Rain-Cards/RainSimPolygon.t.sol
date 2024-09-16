@@ -232,11 +232,11 @@ contract RainRe7SimPolygon is Test {
         assertEq(true, ISpigot(securedLine.spigot()).isWhitelisted(whitelistedFunc1));
         delete whitelistedFunc1;
 
-        emit log_named_string("\n \u2713 Arbiter Whitelists creaetCollateralContract function", "");
-        bytes4 whitelistedFunc2 = _getSelector("createCollateralContract(string,address)");
-        securedLine.updateWhitelist(whitelistedFunc2, true);
-        assertEq(true, ISpigot(securedLine.spigot()).isWhitelisted(whitelistedFunc2));
-        delete whitelistedFunc2;
+        // emit log_named_string("\n \u2713 Arbiter Whitelists creaetCollateralContract function", "");
+        // bytes4 whitelistedFunc2 = _getSelector("createCollateralContract(string,address)");
+        // securedLine.updateWhitelist(whitelistedFunc2, true);
+        // assertEq(true, ISpigot(securedLine.spigot()).isWhitelisted(whitelistedFunc2));
+        // delete whitelistedFunc2;
 
         vm.stopPrank();
 
@@ -320,9 +320,9 @@ contract RainRe7SimPolygon is Test {
 
         // vm.stopPrank();
 
-        // // fast forward 45 days
-        // emit log_named_string("\n<---------- Fast Forward 45 Days --------------------> ", "");
-        // vm.warp(block.timestamp + (ttl - 1 days));
+        // fast forward
+        emit log_named_string("\n<---------- Fast Forward 45 Days --------------------> ", "");
+        vm.warp(block.timestamp + (ttl - 1 days));
 
         // emit log_named_string("\n \u2713 Line Operator Calls increaseNonce Function on Rain Collateral Contract 1", "");
         // vm.startPrank(rainControllerOwnerAddress);
@@ -476,10 +476,16 @@ contract RainRe7SimPolygon is Test {
         emit log_named_uint("- Owner Tokens in Spigot after repayment: ", spigot.getOwnerTokens(USDC));
         vm.stopPrank();
 
+
+        // Lender can withdraw interest before line is closed
+        vm.startPrank(lenderAddress);
+        emit log_named_string("\n \u2713 Lender Withdraws Repaid Interest", "");
+        emit log_named_uint("- Withdrawal Amount (interest only): ", interestAccrued);
+        securedLine.withdraw(id, interestAccrued);
+
         // Rain closes the Line of Credit
         emit log_named_string("\n \u2713 Borrower Calls close Function to Close Line of Credit", "");
         vm.startPrank(rainBorrower);
-
 
         securedLine.close(id);
 
@@ -519,11 +525,11 @@ contract RainRe7SimPolygon is Test {
 
         vm.stopPrank();
 
-        // Lender withdraws principal + interest owed
+        // Lender withdraws principal after line is closed
         vm.startPrank(lenderAddress);
-        emit log_named_string("\n \u2713 Lender Withdraws All Repaid Principal and Interest", "");
-        emit log_named_uint("- Withdrawal Amount: ", interestAccrued + loanSizeInUSDC);
-        securedLine.withdraw(id, interestAccrued + loanSizeInUSDC);
+        emit log_named_string("\n \u2713 Lender Withdraws All Principal", "");
+        emit log_named_uint("- Withdrawal Amount (principal only): ", loanSizeInUSDC);
+        securedLine.withdraw(id, loanSizeInUSDC);
         uint256 lenderBalanceAfterRepayment = IERC20(USDC).balanceOf(lenderAddress);
         uint256 borrowerBalanceAfterRepayment = IERC20(USDC).balanceOf(rainBorrower);
 
