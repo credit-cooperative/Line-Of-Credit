@@ -71,6 +71,7 @@ contract RainSimBase is Test {
 
     // Rain Cards Borrower Address
     address rainBorrower = makeAddr("borrower"); // Rain Borrower Address
+    address rainOperator = makeAddr("operator"); // Rain Operator address
     address constant lenderAddress = 0x9832FD4537F3143b5C2989734b11A54D4E85eEF6;
 
     // Rain Controller Contract & Associated Addresses
@@ -135,17 +136,16 @@ contract RainSimBase is Test {
         // Deploy Credit Coop Factory Contracts
 
         deal(rUSD, lenderAddress, loanSizeInRainUSD);
-        // Borrower Deploys Line of Credit
+
+        // Arbiter Deploys Line of Credit on behalf of Borrower
         emit log_named_string("\n \u2713 Borrower Deploys Line of Credit", "");
+        securedLineAddress = payable(_deployLoCWithModules());
 
-        securedLineAddress = payable(_deployLoCWithConfig());
-
-        // Define interfaces for all CC modules
-        line = LineOfCredit(securedLineAddress);
-        securedLine = SecuredLine(securedLineAddress);
-
-        spigot = securedLine.spigot();
-        escrow = securedLine.escrow();
+        // line, spigot, escrow are configured appropriately
+        assertEq(spigot.operator(), rainOperator);
+        assertEq(spigot.owner(), securedLineAddress);
+        assertEq(escrow.line(), securedLineAddress);
+        assertEq(1, uint256(securedLine.status()));
 
         // Check status == ACTIVE after LOC is deployed
         uint256 status = uint256(line.status());
@@ -459,6 +459,49 @@ contract RainSimBase is Test {
         });
 
         securedLineAddress = payable(ILineFactory(lineFactoryAddress).deploySecuredLineWithConfig(coreParams));
+        return securedLineAddress;
+    }
+
+function _deployLoCWithModules() internal returns (address){
+
+        // deploy spigot and escrow modules
+        vm.startPrank(arbiterAddress);
+        address payable spigotAddress = payable(ILineFactory(lineFactoryAddress).deploySpigot(arbiterAddress, rainOperator));
+        address payable escrowAddress = payable(ILineFactory(lineFactoryAddress).deployEscrow(0, arbiterAddress, rainBorrower));
+
+        // deploy secured line
+        ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
+            borrower: rainBorrower,
+            ttl: ttl,
+            cratio: 0,
+            revenueSplit: 100
+        });
+        securedLineAddress = payable(ILineFactory(lineFactoryAddress).deploySecuredLineWithModules(coreParams, spigotAddress, escrowAddress));
+
+        // Define interfaces for all CC modules
+        line = LineOfCredit(securedLineAddress);
+        securedLine = SecuredLine(securedLineAddress);
+
+        // line is UNINITIALIZED
+        assertEq(0, uint256(securedLine.status()));
+
+        // Transfer ownership of escrow and spigot
+        Spigot(spigotAddress).updateOwner(securedLineAddress);
+        Escrow(escrowAddress).updateLine(securedLineAddress);
+        vm.stopPrank();
+
+        // line is still UNINITIALIZED
+        assertEq(0, uint256(securedLine.status()));
+
+        // Initialize line
+        securedLine.init();
+
+        // line is ACTIVE
+        assertEq(1, uint256(securedLine.status()));
+
+        spigot = securedLine.spigot();
+        escrow = securedLine.escrow();
+
         return securedLineAddress;
     }
 }
