@@ -94,9 +94,13 @@ contract RainRe7SimPolygon is Test {
     address constant lineFactoryAddress = 0x3e59121ce72F1a66F0eb14b5130C142542F93aD6;
 
     // Rain Cards Borrower Address
-    address constant rainBorrower = 0x318ea64575feA5333c845bccEb5A6211952283AD; // Rain Borrower Address
-    address rainOperator = makeAddr("operator"); // TODO
+    address constant rainBorrower = 0x9713ce42E4A965684D0cB757Ec2F38d8D3FDc490; // Rain Borrower Address
+    address rainOperator = 0x8961BE2a91c3f6D623f2057aFa9ae2AdE6cE55D0; // TODO
     address lenderAddress = makeAddr("lender");
+
+    // Polygon Joint Multisigs
+    address constant jointMultisig = 0xB7D82Dd261706b03b98f83C602831F0184a7945C;
+    address constant ccMultisig = 0x7816a17aCCB15b0E0498E854964c15053eF382D9;
 
     // Rain Controller Contract & Associated Addresses
     address rainCollateralFactoryAddress = 0x3F95401d768F90Ab529060121499CDa7Dc8d95b1;
@@ -259,7 +263,18 @@ contract RainRe7SimPolygon is Test {
         emit log_named_string("\n \u2713 Rain Collateral Controller Owner Transfers Ownership to Spigot", "");
         rainCollateralController.transferOwnership(address(securedLine.spigot()));
         assertEq(address(securedLine.spigot()), rainCollateralController.owner());
+        vm.stopPrank();
 
+        vm.startPrank(rainFactoryOwnerAddress);
+        emit log_named_string("\n \u2713 Rain Factory Owner Transfers Ownership to Joint Spigot", "");
+        rainCollateralFactory.transferOwnership(address(jointMultisig));
+        assertEq(address(jointMultisig), rainCollateralFactory.owner());
+        vm.stopPrank();
+
+        emit log_named_string("\n \u2713 Rain Beacon Owner Transfers Ownership to Joint Spigot", "");
+        vm.startPrank(rainCollateralBeaconOwnerAddress);
+        rainCollateralBeacon.transferOwnership(address(jointMultisig));
+        assertEq(address(jointMultisig), rainCollateralBeacon.owner());
         vm.stopPrank();
 
         // // Rain Collateral Factory Owner Transfers Ownership to Rain Collateral Controller Owner
@@ -564,6 +579,15 @@ contract RainRe7SimPolygon is Test {
         // assertEq(rainControllerOwnerAddress, rainCollateralBeacon.owner());
         // assertEq(rainControllerOwnerAddress, rainCollateralFactory.owner());
 
+        vm.stopPrank();
+
+
+        emit log_named_string("\n \u2713 Joint Multisig Transfers Ownership of Factory and Beacon to Factory Owner Address", "");
+        vm.startPrank(jointMultisig);
+        rainCollateralFactory.transferOwnership(address(rainFactoryOwnerAddress));
+        rainCollateralBeacon.transferOwnership(address(rainCollateralBeaconOwnerAddress));
+        assertEq(rainFactoryOwnerAddress, rainCollateralFactory.owner());
+        assertEq(rainCollateralBeaconOwnerAddress, rainCollateralBeacon.owner());
         vm.stopPrank();
 
         // // OPTIONAL - Joint Multisig Transfers Ownership of Rain Collateral Factory Back to Rain Collateral Factory Owner Address
