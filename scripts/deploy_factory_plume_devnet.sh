@@ -30,17 +30,17 @@ forge verify-contract 0x26055b843446557bbcf8Bd3b7b49449dDF4BCB29 contracts/modul
 
 
 
-# Constructor Arguments: ModuleFactory Address, Arbiter Address, Oracle Address, Swap Target Address (same as Mainnet, ModuleFactory
+# Constructor Arguments: ModuleFactory Address, Arbiter Address, Oracle Address, Swap Target Address
 
 LineFactory=$(forge create --rpc-url $PLUME_DEVNET_RPC_URL \
---constructor-args 0x1529A4AaCc4f8F7Ed1708c1c7879536BeEd5a715 <arbiter> 0x26055b843446557bbcf8Bd3b7b49449dDF4BCB29 <swap>  \
+--constructor-args 0x1529A4AaCc4f8F7Ed1708c1c7879536BeEd5a715 0xf44B95991CaDD73ed769454A03b3820997f00873 0x26055b843446557bbcf8Bd3b7b49449dDF4BCB29 0xf44B95991CaDD73ed769454A03b3820997f00873  \
 --private-key $PlUME_DEVNET_PRIVATE_KEY \
 contracts/modules/factories/LineFactory.sol:LineFactory --verify --json)
 LineFactoryAddress=$(echo "$LineFactory" | jq -r '.deployedTo')
 echo $LineFactoryAddress
 
 
-forge verify-contract <LineFactory Address> contracts/modules/factories/LineFactory.sol:LineFactory \
+forge verify-contract 0x268B02858C32FBDbC33a8453339DB033B4326485 contracts/modules/factories/LineFactory.sol:LineFactory \
   --rpc-url https://devnet-rpc.plumenetwork.xyz \
   --verifier oklink --verifier-url \
   https://www.oklink.com/api/v5/explorer/contract/verify-source-code-plugin/PLUME_DEVNET \
