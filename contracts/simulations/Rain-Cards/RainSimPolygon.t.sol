@@ -77,8 +77,8 @@ contract RainRe7SimPolygon is Test {
     // LineOfCredit line;
     SecuredLine securedLine;
     LineOfCredit newLine;
-    Escrow escrow;
-    Spigot spigot;
+    IEscrow escrow;
+    ISpigot spigot;
 
     IRainCollateralFactory rainCollateralFactory;
     IRainCollateralController rainCollateralController;
@@ -89,12 +89,18 @@ contract RainRe7SimPolygon is Test {
 
     // address constant oracleAddress = 0x570ff5021d3F4bAFb8c688d73ECD13A43FaB4304;
     // address oracleAddress;
-    address constant oracleAddress = 0xF1baA8242e3AAF65D4Eb030459854cddE209acb9;
+    address constant oracleAddress = 0x034e4164f84580D22251ca944186Bb137d74A586;
     address constant zeroExSwapTarget = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
+    address constant lineFactoryAddress = 0x3e59121ce72F1a66F0eb14b5130C142542F93aD6;
 
     // Rain Cards Borrower Address
-    address constant rainBorrower = 0x318ea64575feA5333c845bccEb5A6211952283AD; // Rain Borrower Address
+    address constant rainBorrower = 0x9713ce42E4A965684D0cB757Ec2F38d8D3FDc490; // Rain Borrower Address
+    address rainOperator = 0x8961BE2a91c3f6D623f2057aFa9ae2AdE6cE55D0; // TODO
     address lenderAddress = makeAddr("lender");
+
+    // Polygon Joint Multisigs
+    address constant jointMultisig = 0xB7D82Dd261706b03b98f83C602831F0184a7945C;
+    address constant ccMultisig = 0x7816a17aCCB15b0E0498E854964c15053eF382D9;
 
     // Rain Controller Contract & Associated Addresses
     address rainCollateralFactoryAddress = 0x3F95401d768F90Ab529060121499CDa7Dc8d95b1;
@@ -120,38 +126,38 @@ contract RainRe7SimPolygon is Test {
     address rainUser3 = makeAddr("rainUser3");
     address rainUser4 = makeAddr("rainUser4");
 
-    uint256 rainUser0Amount = (30000 / 5) * 10 ** 6;
-    uint256 rainUser1Amount = (170000 / 5) * 10 ** 6;
-    uint256 rainUser2Amount = (120000 / 5) * 10 ** 6;
-    uint256 rainUser3Amount = (80000 / 5) * 10 ** 6;
-    uint256 rainUser4Amount = (20000 / 5) * 10 ** 6;
+    uint256 rainUser0Amount = 100000 * 10 ** 6;
+    uint256 rainUser1Amount = 170000 * 10 ** 6;
+    uint256 rainUser2Amount = 120000 * 10 ** 6;
+    uint256 rainUser3Amount = 80000 * 10 ** 6;
+    uint256 rainUser4Amount = 50000 * 10 ** 6;
     uint256 finalSpigotBalance =
         rainUser0Amount + rainUser1Amount + rainUser2Amount + rainUser3Amount + rainUser4Amount;
-    uint256 finalOperatorTokensBalance = finalSpigotBalance / 2;
-    uint256 finalOwnerTokensBalance = finalSpigotBalance / 2;
+    // uint256 finalOperatorTokensBalance = finalSpigotBalance / 2;
+    // uint256 finalOwnerTokensBalance = finalSpigotBalance / 2;
+    uint256 finalOwnerTokensBalance = finalSpigotBalance;
 
     // Credit Coop Addresses
     address constant arbiterAddress = 0xFE002526dEc5B3e4b5134b75b20c065178323343; // Credit Coop MultiSig
-    address public securedLineAddress; // Line address, to be defined in setUp()
+    address payable securedLineAddress; // Line address, to be defined in setUp()
 
     // Asset Addresses
-    address constant USDC = 0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174;
+    address constant USDC = 0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359;
     address constant MATIC = 0x0000000000000000000000000000000000001010;
 
     // Money Vars
     uint256 MAX_INT = type(uint256).max;
 
     // Loan Terms
-    uint256 ttl = 45 days;
+    uint256 ttl = 90 days;
     uint32 minCRatio = 0; // BPS
-    uint8 revenueSplit = 50;
-    uint256 loanSizeInUSDC = 40000 * 10 ** 6; // TODO: 40000
+    uint8 revenueSplit = 100;
+    uint256 loanSizeInUSDC = 500000 * 10 ** 6; // TODO: 40000
     uint128 dRate = 1000; // BPS
     uint128 fRate = 1000; // BPS
 
     // Fork Settings
-    // uint256 constant FORK_BLOCK_NUMBER = 45_626_437; //17_638_122; // Forking mainnet at block on 7/6/23 at 7 40 PM EST
-    uint256 constant FORK_BLOCK_NUMBER = 45_828_079; //17_638_122; // Forking mainnet at block on 7/6/23 at 7 40 PM EST
+    uint256 constant FORK_BLOCK_NUMBER = 61_790_715;
     uint256 polygonFork;
 
     event log_named_bytes4(string key, bytes4 value);
@@ -196,24 +202,18 @@ contract RainRe7SimPolygon is Test {
     //             S C E N A R I O   T E S T             //
     ///////////////////////////////////////////////////////
 
-    function test_rain_re7_simulation_polygon() public {
-        // Deploy Credit Coop Factory Contracts
-        ModuleFactory moduleFactory = new ModuleFactory();
-        LineFactory lineFactory = new LineFactory(
-            address(moduleFactory),
-            arbiterAddress,
-            oracleAddress,
-            payable(zeroExSwapTarget)
-        );
-
-        // Borrower Deploys Line of Credit
+    function test_rain_simulation_polygon() public {
+        // Arbiter Deploys Line of Credit on behalf of Borrower
         emit log_named_string("\n \u2713 Borrower Deploys Line of Credit", "");
-        securedLineAddress = _deployLoCWithConfig(lineFactory);
+        securedLineAddress = payable(_deployLoCWithModules());
 
-        // Define interfaces for all CC modules
-        line = ILineOfCredit(securedLineAddress);
+        // line, spigot, escrow are configured appropriately
+        assertEq(spigot.operator(), rainOperator);
+        assertEq(spigot.owner(), securedLineAddress);
+        assertEq(escrow.line(), securedLineAddress);
+        assertEq(1, uint256(securedLine.status()));
 
-        // Check status == ACTIVE after LOC is deployed
+        // Check status == ACTIVE after LOC is deployed and initialized
         uint256 status = uint256(line.status());
         assertEq(1, status);
         emit log_named_uint("- status (1 == ACTIVE) ", status);
@@ -236,11 +236,11 @@ contract RainRe7SimPolygon is Test {
         assertEq(true, ISpigot(securedLine.spigot()).isWhitelisted(whitelistedFunc1));
         delete whitelistedFunc1;
 
-        emit log_named_string("\n \u2713 Arbiter Whitelists creaetCollateralContract function", "");
-        bytes4 whitelistedFunc2 = _getSelector("createCollateralContract(string,address)");
-        securedLine.updateWhitelist(whitelistedFunc2, true);
-        assertEq(true, ISpigot(securedLine.spigot()).isWhitelisted(whitelistedFunc2));
-        delete whitelistedFunc2;
+        // emit log_named_string("\n \u2713 Arbiter Whitelists creaetCollateralContract function", "");
+        // bytes4 whitelistedFunc2 = _getSelector("createCollateralContract(string,address)");
+        // securedLine.updateWhitelist(whitelistedFunc2, true);
+        // assertEq(true, ISpigot(securedLine.spigot()).isWhitelisted(whitelistedFunc2));
+        // delete whitelistedFunc2;
 
         vm.stopPrank();
 
@@ -263,24 +263,34 @@ contract RainRe7SimPolygon is Test {
         emit log_named_string("\n \u2713 Rain Collateral Controller Owner Transfers Ownership to Spigot", "");
         rainCollateralController.transferOwnership(address(securedLine.spigot()));
         assertEq(address(securedLine.spigot()), rainCollateralController.owner());
-
         vm.stopPrank();
 
-        // Rain Collateral Factory Owner Transfers Ownership to Rain Collateral Controller Owner
         vm.startPrank(rainFactoryOwnerAddress);
-        rainCollateralFactory.transferOwnership(address(securedLine.spigot()));
-        assertEq(address(securedLine.spigot()), rainCollateralFactory.owner());
-
+        emit log_named_string("\n \u2713 Rain Factory Owner Transfers Ownership to Joint Spigot", "");
+        rainCollateralFactory.transferOwnership(address(jointMultisig));
+        assertEq(address(jointMultisig), rainCollateralFactory.owner());
         vm.stopPrank();
+
+        emit log_named_string("\n \u2713 Rain Beacon Owner Transfers Ownership to Joint Spigot", "");
+        vm.startPrank(rainCollateralBeaconOwnerAddress);
+        rainCollateralBeacon.transferOwnership(address(jointMultisig));
+        assertEq(address(jointMultisig), rainCollateralBeacon.owner());
+        vm.stopPrank();
+
+        // // Rain Collateral Factory Owner Transfers Ownership to Rain Collateral Controller Owner
+        // vm.startPrank(rainFactoryOwnerAddress);
+        // rainCollateralFactory.transferOwnership(address(securedLine.spigot()));
+        // assertEq(address(securedLine.spigot()), rainCollateralFactory.owner());
+
+        // vm.stopPrank();
 
         // Rain Collateral Beacon Owner Transfers Ownership to Rain Collateral Controller Owner
+        // vm.startPrank(rainCollateralBeaconOwnerAddress);
 
-        vm.startPrank(rainCollateralBeaconOwnerAddress);
+        // rainCollateralBeacon.transferOwnership(address(securedLine.spigot()));
+        // assertEq(address(securedLine.spigot()), rainCollateralBeacon.owner());
 
-        rainCollateralBeacon.transferOwnership(address(securedLine.spigot()));
-        assertEq(address(securedLine.spigot()), rainCollateralBeacon.owner());
-
-        vm.stopPrank();
+        // vm.stopPrank();
 
 
         // Re7 proposes position
@@ -302,44 +312,44 @@ contract RainRe7SimPolygon is Test {
 
         emit log_named_string("\n \u2713 Line Operator Calls increaseNonce Function on Rain Collateral Contract 0", "");
 
-        vm.startPrank(rainControllerOwnerAddress);
-        uint256 startingNonce = rainCollateralController.nonce(rainCollateralContract0);
-        emit log_named_uint("- Rain Collateral 0 - Starting Nonce", startingNonce);
+        // vm.startPrank(rainControllerOwnerAddress);
+        // uint256 startingNonce = rainCollateralController.nonce(rainCollateralContract0);
+        // emit log_named_uint("- Rain Collateral 0 - Starting Nonce", startingNonce);
 
-        bytes4 increaseNonceFunc = rainCollateralController.increaseNonce.selector;
-        bytes memory increaseNonceData = abi.encodeWithSelector(increaseNonceFunc, address(rainCollateralContract0));
-        bool isNonceIncreased = spigot.operate(rainCollateralControllerAddress, increaseNonceData);
-        uint256 endingNonce = rainCollateralController.nonce(rainCollateralContract0);
-        emit log_named_uint("- Rain Collateral 0 - Ending Nonce", endingNonce);
-        assertEq(true, isNonceIncreased);
-        assertEq(endingNonce, startingNonce + 1);
+        // bytes4 increaseNonceFunc = rainCollateralController.increaseNonce.selector;
+        // bytes memory increaseNonceData = abi.encodeWithSelector(increaseNonceFunc, address(rainCollateralContract0));
+        // bool isNonceIncreased = spigot.operate(rainCollateralControllerAddress, increaseNonceData);
+        // uint256 endingNonce = rainCollateralController.nonce(rainCollateralContract0);
+        // emit log_named_uint("- Rain Collateral 0 - Ending Nonce", endingNonce);
+        // assertEq(true, isNonceIncreased);
+        // assertEq(endingNonce, startingNonce + 1);
 
-        bytes4 createCollateralContractFunc = rainCollateralFactory.createCollateralContract.selector;
-        bytes memory createCollateralContractData = abi.encodeWithSelector(
-            createCollateralContractFunc,
-            "Rain Collateral 1",
-            address(10)
-        );
-        bool isCollateralContractCreated = spigot.operate(rainCollateralFactoryAddress, createCollateralContractData);
-        assertEq(true, isCollateralContractCreated);
+        // bytes4 createCollateralContractFunc = rainCollateralFactory.createCollateralContract.selector;
+        // bytes memory createCollateralContractData = abi.encodeWithSelector(
+        //     createCollateralContractFunc,
+        //     "Rain Collateral 1",
+        //     address(10)
+        // );
+        // bool isCollateralContractCreated = spigot.operate(rainCollateralFactoryAddress, createCollateralContractData);
+        // assertEq(true, isCollateralContractCreated);
 
-        vm.stopPrank();
+        // vm.stopPrank();
 
-        // fast forward 45 days
-        emit log_named_string("\n<---------- Fast Forward 45 Days --------------------> ", "");
+        // fast forward 89 days
+        emit log_named_string("\n<---------- Fast Forward 89 Days --------------------> ", "");
         vm.warp(block.timestamp + (ttl - 1 days));
 
-        emit log_named_string("\n \u2713 Line Operator Calls increaseNonce Function on Rain Collateral Contract 1", "");
-        vm.startPrank(rainControllerOwnerAddress);
-        uint256 startingNonce1 = rainCollateralController.nonce(rainCollateralContract1);
-        emit log_named_uint("- Rain Collateral 1 - Starting Nonce", startingNonce1);
-        bytes memory increaseNonceData1 = abi.encodeWithSelector(increaseNonceFunc, address(rainCollateralContract1));
-        bool isNonceIncreased1 = spigot.operate(rainCollateralControllerAddress, increaseNonceData1);
-        uint256 endingNonce1 = rainCollateralController.nonce(rainCollateralContract1);
-        emit log_named_uint("- Rain Collateral 1 - Ending Nonce", endingNonce1);
-        assertEq(true, isNonceIncreased1);
-        assertEq(endingNonce1, startingNonce1 + 1);
-        vm.stopPrank();
+        // emit log_named_string("\n \u2713 Line Operator Calls increaseNonce Function on Rain Collateral Contract 1", "");
+        // vm.startPrank(rainControllerOwnerAddress);
+        // uint256 startingNonce1 = rainCollateralController.nonce(rainCollateralContract1);
+        // emit log_named_uint("- Rain Collateral 1 - Starting Nonce", startingNonce1);
+        // bytes memory increaseNonceData1 = abi.encodeWithSelector(increaseNonceFunc, address(rainCollateralContract1));
+        // bool isNonceIncreased1 = spigot.operate(rainCollateralControllerAddress, increaseNonceData1);
+        // uint256 endingNonce1 = rainCollateralController.nonce(rainCollateralContract1);
+        // emit log_named_uint("- Rain Collateral 1 - Ending Nonce", endingNonce1);
+        // assertEq(true, isNonceIncreased1);
+        // assertEq(endingNonce1, startingNonce1 + 1);
+        // vm.stopPrank();
 
         // Rain Collateral Contracts 0 - 3 receive USDC deposits from Rain Card users
         emit log_named_string("\n \u2713 Rain User 0 Transfers USDC to Rain Collateral Contract 0 ", "");
@@ -443,7 +453,7 @@ contract RainRe7SimPolygon is Test {
         vm.startPrank(rainBorrower);
         emit log_named_string("\n \u2713 [Borrower] Calls the Spigot Claim Function", "");
 
-        uint256 claimedFromSpigot = _claimRevenueOnBehalfOfSpigot(
+        _claimRevenueOnBehalfOfSpigot(
             bytes4(0),
             rainCollateralContract0
         );
@@ -451,17 +461,17 @@ contract RainRe7SimPolygon is Test {
 
         vm.stopPrank();
 
-        // Rain claims their portion of cash flows from Spigot w/ claimOperatorTokens
-        vm.startPrank(rainControllerOwnerAddress);
-        emit log_named_string("\n \u2713 [Borrower] Calls the Spigot Claim Operator Tokens Function", "");
-        emit log_named_uint("- Spigot USDC balance: ", IERC20(USDC).balanceOf(address(spigot)));
-        emit log_named_address("- Spigot operator: ", spigot.operator());
-        emit log_named_address("- rain controller owner: ", rainControllerOwnerAddress);
-        uint256 claimedOperatorTokens = spigot.claimOperatorTokens(address(USDC));
-        emit log_named_uint("- Rain Borrower - Claimed Operator Tokens ", claimedOperatorTokens);
-        assertEq(claimedOperatorTokens, finalOperatorTokensBalance);
-        assertEq(finalOperatorTokensBalance, IERC20(USDC).balanceOf(address(spigot)));
-        vm.stopPrank();
+        // // Rain claims their portion of cash flows from Spigot w/ claimOperatorTokens
+        // vm.startPrank(rainControllerOwnerAddress);
+        // emit log_named_string("\n \u2713 [Borrower] Calls the Spigot Claim Operator Tokens Function", "");
+        // emit log_named_uint("- Spigot USDC balance: ", IERC20(USDC).balanceOf(address(spigot)));
+        // emit log_named_address("- Spigot operator: ", spigot.operator());
+        // emit log_named_address("- rain controller owner: ", rainControllerOwnerAddress);
+        // uint256 claimedOperatorTokens = spigot.claimOperatorTokens(address(USDC));
+        // emit log_named_uint("- Rain Borrower - Claimed Operator Tokens ", claimedOperatorTokens);
+        // assertEq(claimedOperatorTokens, finalOperatorTokensBalance);
+        // assertEq(finalOperatorTokensBalance, IERC20(USDC).balanceOf(address(spigot)));
+        // vm.stopPrank();
 
         // interest accrued
         bytes32 id = securedLine.ids(0);
@@ -481,10 +491,16 @@ contract RainRe7SimPolygon is Test {
         emit log_named_uint("- Owner Tokens in Spigot after repayment: ", spigot.getOwnerTokens(USDC));
         vm.stopPrank();
 
+
+        // Lender can withdraw interest before line is closed
+        vm.startPrank(lenderAddress);
+        emit log_named_string("\n \u2713 Lender Withdraws Repaid Interest", "");
+        emit log_named_uint("- Withdrawal Amount (interest only): ", interestAccrued);
+        securedLine.withdraw(id, interestAccrued);
+
         // Rain closes the Line of Credit
         emit log_named_string("\n \u2713 Borrower Calls close Function to Close Line of Credit", "");
         vm.startPrank(rainBorrower);
- 
 
         securedLine.close(id);
 
@@ -524,11 +540,11 @@ contract RainRe7SimPolygon is Test {
 
         vm.stopPrank();
 
-        // Lender withdraws principal + interest owed
+        // Lender withdraws principal after line is closed
         vm.startPrank(lenderAddress);
-        emit log_named_string("\n \u2713 Lender Withdraws All Repaid Principal and Interest", "");
-        emit log_named_uint("- Withdrawal Amount: ", interestAccrued + loanSizeInUSDC);
-        securedLine.withdraw(id, interestAccrued + loanSizeInUSDC);
+        emit log_named_string("\n \u2713 Lender Withdraws All Principal", "");
+        emit log_named_uint("- Withdrawal Amount (principal only): ", loanSizeInUSDC);
+        securedLine.withdraw(id, loanSizeInUSDC);
         uint256 lenderBalanceAfterRepayment = IERC20(USDC).balanceOf(lenderAddress);
         uint256 borrowerBalanceAfterRepayment = IERC20(USDC).balanceOf(rainBorrower);
 
@@ -556,13 +572,22 @@ contract RainRe7SimPolygon is Test {
         vm.startPrank(rainControllerOwnerAddress);
         emit log_named_string("\n \u2713 Borrower Removes Rain Collateral Controller from Spigot", "");
         spigot.removeSpigot(rainCollateralControllerAddress);
-        spigot.removeSpigot(rainCollateralBeaconAddress);
-        spigot.removeSpigot(rainCollateralFactoryAddress);
+        // spigot.removeSpigot(rainCollateralBeaconAddress);
+        // spigot.removeSpigot(rainCollateralFactoryAddress);
 
-        assertEq(rainControllerOwnerAddress, rainCollateralController.owner());
-        assertEq(rainControllerOwnerAddress, rainCollateralBeacon.owner());
-        assertEq(rainControllerOwnerAddress, rainCollateralFactory.owner());
+        assertEq(rainOperator, rainCollateralController.owner());
+        // assertEq(rainControllerOwnerAddress, rainCollateralBeacon.owner());
+        // assertEq(rainControllerOwnerAddress, rainCollateralFactory.owner());
 
+        vm.stopPrank();
+
+
+        emit log_named_string("\n \u2713 Joint Multisig Transfers Ownership of Factory and Beacon to Factory Owner Address", "");
+        vm.startPrank(jointMultisig);
+        rainCollateralFactory.transferOwnership(address(rainFactoryOwnerAddress));
+        rainCollateralBeacon.transferOwnership(address(rainCollateralBeaconOwnerAddress));
+        assertEq(rainFactoryOwnerAddress, rainCollateralFactory.owner());
+        assertEq(rainCollateralBeaconOwnerAddress, rainCollateralBeacon.owner());
         vm.stopPrank();
 
         // // OPTIONAL - Joint Multisig Transfers Ownership of Rain Collateral Factory Back to Rain Collateral Factory Owner Address
@@ -574,51 +599,61 @@ contract RainRe7SimPolygon is Test {
     //          I N T E R N A L   H E L P E R S          //
     ///////////////////////////////////////////////////////
 
-    function _deployLoCWithConfig(LineFactory lineFactory) internal returns (address) {
-        // create Escrow and Spigot
-        escrow = new Escrow(minCRatio, oracleAddress, rainControllerOwnerAddress, rainBorrower);
-        spigot = new Spigot(rainControllerOwnerAddress, rainControllerOwnerAddress);
+    function _deployLoCWithConfig() internal returns (address){
+        ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
+            borrower: rainBorrower,
+            ttl: ttl,
+            cratio: 0,
+            revenueSplit: 100
+        });
 
-        // create SecuredLine
-        emit log_named_address(" - create new line with oracle ", oracleAddress);
-        securedLine = new SecuredLine(
-            oracleAddress,
-            arbiterAddress,
-            rainBorrower,
-            payable(zeroExSwapTarget),
-            address(spigot),
-            address(escrow),
-            ttl,
-            revenueSplit
-        );
-
-        // transfer ownership of both Spigot and Escrow to SecuredLine
-        vm.startPrank(rainControllerOwnerAddress);
-        spigot.updateOwner(address(securedLine));
-        escrow.updateLine(address(securedLine));
-        vm.stopPrank();
-
-        // call init() on Line of Credit, register on Line Factory
-        securedLine.init();
-        console.log("3");
-
-        // Arbiter registers Spigot, Escrow, and SecuredLine using Factory Contracts to appear in Subgraph & Dapp
-        vm.startPrank(arbiterAddress);
-
-        lineFactory.registerSecuredLine(
-            address(securedLine),
-            address(spigot),
-            address(escrow),
-            rainBorrower,
-            rainBorrower,
-            revenueSplit,
-            minCRatio
-        );
-
-        vm.stopPrank();
-
-        return address(securedLine);
+        securedLineAddress = payable(ILineFactory(lineFactoryAddress).deploySecuredLineWithConfig(coreParams));
+        return securedLineAddress;
     }
+
+    function _deployLoCWithModules() internal returns (address){
+
+        // deploy spigot and escrow modules
+        vm.startPrank(arbiterAddress);
+        address payable spigotAddress = payable(ILineFactory(lineFactoryAddress).deploySpigot(arbiterAddress, rainOperator));
+        address payable escrowAddress = payable(ILineFactory(lineFactoryAddress).deployEscrow(0, arbiterAddress, rainBorrower));
+
+        // deploy secured line
+        ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
+            borrower: rainBorrower,
+            ttl: ttl,
+            cratio: 0,
+            revenueSplit: 100
+        });
+        securedLineAddress = payable(ILineFactory(lineFactoryAddress).deploySecuredLineWithModules(coreParams, spigotAddress, escrowAddress));
+
+        // Define interfaces for all CC modules
+        line = LineOfCredit(securedLineAddress);
+        securedLine = SecuredLine(securedLineAddress);
+
+        // line is UNINITIALIZED
+        assertEq(0, uint256(securedLine.status()));
+
+        // Transfer ownership of escrow and spigot
+        Spigot(spigotAddress).updateOwner(securedLineAddress);
+        Escrow(escrowAddress).updateLine(securedLineAddress);
+        vm.stopPrank();
+
+        // line is still UNINITIALIZED
+        assertEq(0, uint256(securedLine.status()));
+
+        // Initialize line
+        securedLine.init();
+
+        // line is ACTIVE
+        assertEq(1, uint256(securedLine.status()));
+
+        spigot = securedLine.spigot();
+        escrow = securedLine.escrow();
+
+        return securedLineAddress;
+    }
+
 
     function _liquidateCollateralContractAssets(
         address rainCollateralContract,
@@ -704,13 +739,12 @@ contract RainRe7SimPolygon is Test {
     function _initSpigot(uint8 split, bytes4 claimFunc, bytes4 newOwnerFunc) internal // bytes4[] memory _whitelist
     {
         settings1 = ISpigot.Setting(split, claimFunc, newOwnerFunc);
-        settings2 = ISpigot.Setting(0, claimFunc, newOwnerFunc);
-        settings3 = ISpigot.Setting(0, claimFunc, newOwnerFunc);
-
+        // settings2 = ISpigot.Setting(0, claimFunc, newOwnerFunc);
+        // settings3 = ISpigot.Setting(0, claimFunc, newOwnerFunc);
 
         // add spigot for revenue contract
         require(securedLine.addSpigot(rainCollateralControllerAddress, settings1), "Failed to add spigot");
-        require(securedLine.addSpigot(rainCollateralBeaconAddress, settings2), "Failed to add spigot");
-        require(securedLine.addSpigot(rainCollateralFactoryAddress, settings3), "Failed to add spigot");
+        // require(securedLine.addSpigot(rainCollateralBeaconAddress, settings2), "Failed to add spigot");
+        // require(securedLine.addSpigot(rainCollateralFactoryAddress, settings3), "Failed to add spigot");
     }
 }
