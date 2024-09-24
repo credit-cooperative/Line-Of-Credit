@@ -64,7 +64,7 @@ contract D8XLaaSzkEVM is Test {
     uint256 zkEVMMainnetFork;
 
     function setUp() public {
-        zkEVMMainnetFork = vm.createFork(vm.envString("ZKEMV_RPC_URL"), FORK_BLOCK_NUMBER);
+        zkEVMMainnetFork = vm.createFork(vm.envString("ZKEVM_RPC_URL"), FORK_BLOCK_NUMBER);
         vm.selectFork(zkEVMMainnetFork);
 
         deal(USDC, lender, 500000000000);
@@ -78,7 +78,7 @@ contract D8XLaaSzkEVM is Test {
     }
 
     function _mintAndApprove() public {
-        
+
         vm.startPrank(lender);
         IERC20(USDC).approve(address(spigot), MAX_INT);
         vm.stopPrank();
@@ -88,7 +88,7 @@ contract D8XLaaSzkEVM is Test {
         vm.startPrank(borrower);
         settings = ISpigot.Setting(0, claimFunc, newOwnerFunc);
         spigot.addSpigot(treasuryAddress, settings);
-        
+
         spigot.updateWhitelistedFunction(increaseLiquidity, true);
         spigot.updateWhitelistedFunction(decreaseLiquidity, true);
         spigot.updateWhitelistedFunction(executeLiquidityWithdrawal, true);

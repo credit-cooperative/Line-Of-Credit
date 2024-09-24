@@ -128,6 +128,17 @@ libraries = []
 [profile.zkevm]
 libraries = []
 
+[profile.base]
+libraries = [
+    "contracts/utils/LineLib.sol:LineLib:0x33a321Ff02578190BE33b7c7F0da59d616a1365d",
+    "contracts/utils/CreditLib.sol:CreditLib:0x1086847B9c1C19cEEE43885d3B3f9d94DDcd1f6C",
+    "contracts/utils/CreditListLib.sol:CreditListLib:0xAC2ff4c766730b8c4D31DbD5858f32448f89e0f0",
+    "contracts/utils/SpigotLib.sol:SpigotLib:0x03f92Ae5Ae26C299ed70B9466b7dc56Fa6515526",
+    "contracts/utils/EscrowLib.sol:EscrowLib:0x159a92130798e8F3d1a9F4165E870F1465AE5338",
+    "contracts/utils/SpigotedLineLib.sol:SpigotedLineLib:0xfCD3A0468aA851aeAfD3df5299Ca62C38e8D404F",
+    "contracts/utils/LineFactoryLib.sol:LineFactoryLib:0x202AA2Cd166B7aa6EaA6dfC42e60f899a9bEEF14",
+]
+
 [profile.default.rpc_storage_caching]
 chains = 'all'
 endpoints = 'all'
