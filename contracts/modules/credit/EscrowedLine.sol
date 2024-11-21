@@ -11,7 +11,12 @@ import {ILineOfCredit} from "../../interfaces/ILineOfCredit.sol";
 // used for importing NATSPEC docs, not used
 import {LineOfCredit} from "./LineOfCredit.sol";
 
-// import { SecuredLine } from "./SecuredLine.sol";
+/**
+ * @title  - Escrowed Line
+ * @author - Credit Cooperative
+ * @notice - Escrowed Line manages the interactions with escrowed collateral
+ * @dev    - If covenance is broken, the collateral is liquidated to repay the credit
+ */
 
 abstract contract EscrowedLine is IEscrowedLine, ILineOfCredit {
     // contract holding all collateral for borrower
