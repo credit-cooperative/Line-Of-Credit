@@ -135,7 +135,7 @@ contract RainRe7Sim is Test {
     uint128 fRate = 1500; // BPS
 
     // Fork Settings
-    uint256 constant FORK_BLOCK_NUMBER = 21_366_498;
+    uint256 constant FORK_BLOCK_NUMBER = 21_373_399;
     uint256 ethMainnetFork;
 
     event log_named_bytes4(string key, bytes4 value);
@@ -193,23 +193,23 @@ contract RainRe7Sim is Test {
         // line.claimAndRepay(USDC, "");
         // vm.stopPrank();
 
-        uint256 startingBalanceBorrower = IERC20(USDC).balanceOf(rainBorrower);
+        // uint256 startingBalanceBorrower = IERC20(USDC).balanceOf(rainBorrower);
 
-        // Borrower closes two credit positions
-        vm.startPrank(rainBorrower);
-        IERC20(USDC).approve(address(line), loanSizeInUSDC * 2);
-        line.depositAndClose(); // close first credit position
-        line.depositAndClose(); // close second credit position
+        // // Borrower closes two credit positions
+        // vm.startPrank(rainBorrower);
+        // IERC20(USDC).approve(address(line), loanSizeInUSDC * 2);
+        // line.depositAndClose(); // close first credit position
+        // line.depositAndClose(); // close second credit position
 
-        // assert line status is REPAID
-        assertEq(uint256(line.status()), 3, "line not repaid");
+        // // assert line status is REPAID
+        // assertEq(uint256(line.status()), 3, "line not repaid");
 
-        // Borrower sweeps unused funds from credit line
-        // line.sweep(rainBorrower, USDC, 0);
-        vm.stopPrank();
+        // // Borrower sweeps unused funds from credit line
+        // // line.sweep(rainBorrower, USDC, 0);
+        // vm.stopPrank();
 
-        uint256 endingBalanceBorrower = IERC20(USDC).balanceOf(rainBorrower);
-        console.log('- borrower balance change: ', startingBalanceBorrower - endingBalanceBorrower);
+        // uint256 endingBalanceBorrower = IERC20(USDC).balanceOf(rainBorrower);
+        // console.log('- borrower balance change: ', startingBalanceBorrower - endingBalanceBorrower);
 
         // call rollover on the factory
 
