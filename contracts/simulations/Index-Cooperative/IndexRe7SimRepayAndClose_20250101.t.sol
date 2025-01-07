@@ -2,6 +2,7 @@ pragma solidity ^0.8.9;
 
 import "forge-std/Test.sol";
 import {IERC20} from "openzeppelin/token/ERC20/IERC20.sol";
+import {IERC721} from "openzeppelin/token/ERC721/IERC721.sol";
 import {Spigot} from "../../modules/spigot/Spigot.sol";
 import {IOracle} from "../../interfaces/IOracle.sol";
 import {MockRegistry} from "../../mock/MockRegistry.sol";
@@ -16,6 +17,7 @@ import {IEscrow} from "../../interfaces/IEscrow.sol";
 import {ISpigot} from "../../interfaces/ISpigot.sol";
 import {ILineOfCredit} from "../../interfaces/ILineOfCredit.sol";
 import {ISecuredLine} from "../../interfaces/ISecuredLine.sol";
+
 
 
 interface IWeth {
@@ -229,7 +231,6 @@ contract IndexRe7Sim is Test {
         securedLine.releaseSpigot(borrowerAddress);
         spigot.removeSpigot(address(icETHManager));
         IManager(icETHManager).setMethodologist(icETHOperator);
-        vm.stopPrank();
 
         assertEq(address(spigot.owner()), borrowerAddress, "spigot should be owned by borrower");
         assertEq(IManager(icETHManager).methodologist(), IManager(icETHManager).operator(), "icETH manager should be Index Coop operator");
@@ -240,25 +241,22 @@ contract IndexRe7Sim is Test {
         uint256 tokenId2 = 670996; // icETH/WETH - $487k liquidity
         uint256 tokenId3 = 671021; // dsETH/WETH - $277k liquidity
 
-        assertEq(INFTPositionManager(uniswapNFTPositionManager).ownerOf(tokenId1), borrowerAddress, "borrower does not own NFT 1");
-        assertEq(INFTPositionManager(uniswapNFTPositionManager).ownerOf(tokenId2), borrowerAddress, "borrower does not own NFT 2");
-        assertEq(INFTPositionManager(uniswapNFTPositionManager).ownerOf(tokenId3), borrowerAddress, "borrower does not own NFT 3");
-        vm.stopPrank();
+        assertEq(IERC721(uniswapNFTPositionManager).ownerOf(tokenId1), borrowerAddress, "borrower does not own NFT 1");
+        assertEq(IERC721(uniswapNFTPositionManager).ownerOf(tokenId2), borrowerAddress, "borrower does not own NFT 2");
+        assertEq(IERC721(uniswapNFTPositionManager).ownerOf(tokenId3), borrowerAddress, "borrower does not own NFT 3");
 
         // transfer NFTs to Index Coop Liquidity Operations
-        // INFTPositionManager(uniswapNFTPositionManager).approve(indexCoopLiquidityOperations, tokenId1);
-        // INFTPositionManager(uniswapNFTPositionManager).approve(indexCoopLiquidityOperations, tokenId2);
-        // INFTPositionManager(uniswapNFTPositionManager).approve(indexCoopLiquidityOperations, tokenId3);
+        IERC721(uniswapNFTPositionManager).approve(indexCoopLiquidityOperations, tokenId1);
+        IERC721(uniswapNFTPositionManager).approve(indexCoopLiquidityOperations, tokenId2);
+        IERC721(uniswapNFTPositionManager).approve(indexCoopLiquidityOperations, tokenId3);
 
-        // console.log('borrowerAddress', borrowerAddress);
-        // console.log('indexCoopLiquidityOperations', indexCoopLiquidityOperations);
-        INFTPositionManager(uniswapNFTPositionManager).safeTransferFrom(borrowerAddress, indexCoopLiquidityOperations, tokenId1);
-        INFTPositionManager(uniswapNFTPositionManager).safeTransferFrom(borrowerAddress, indexCoopLiquidityOperations, tokenId2);
-        INFTPositionManager(uniswapNFTPositionManager).safeTransferFrom(borrowerAddress, indexCoopLiquidityOperations, tokenId3);
+        IERC721(uniswapNFTPositionManager).safeTransferFrom(borrowerAddress, indexCoopLiquidityOperations, tokenId1);
+        IERC721(uniswapNFTPositionManager).safeTransferFrom(borrowerAddress, indexCoopLiquidityOperations, tokenId2);
+        IERC721(uniswapNFTPositionManager).safeTransferFrom(borrowerAddress, indexCoopLiquidityOperations, tokenId3);
 
-        assertEq(INFTPositionManager(uniswapNFTPositionManager).ownerOf(tokenId1), indexCoopLiquidityOperations, "borrower does not own NFT 1");
-        assertEq(INFTPositionManager(uniswapNFTPositionManager).ownerOf(tokenId2), indexCoopLiquidityOperations, "borrower does not own NFT 2");
-        assertEq(INFTPositionManager(uniswapNFTPositionManager).ownerOf(tokenId3), indexCoopLiquidityOperations, "borrower does not own NFT 3");
+        assertEq(IERC721(uniswapNFTPositionManager).ownerOf(tokenId1), indexCoopLiquidityOperations, "borrower does not own NFT 1");
+        assertEq(IERC721(uniswapNFTPositionManager).ownerOf(tokenId2), indexCoopLiquidityOperations, "borrower does not own NFT 2");
+        assertEq(IERC721(uniswapNFTPositionManager).ownerOf(tokenId3), indexCoopLiquidityOperations, "borrower does not own NFT 3");
         vm.stopPrank();
 
     }
