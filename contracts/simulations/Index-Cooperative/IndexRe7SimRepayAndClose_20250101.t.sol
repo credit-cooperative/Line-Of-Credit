@@ -125,6 +125,7 @@ contract IndexRe7Sim is Test {
     // Asset Addresses
     address constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address constant icETHToken = 0x7C07F7aBe10CE8e33DC6C5aD68FE033085256A84;
 
     // Money Vars
     uint256 MAX_INT =
@@ -137,6 +138,7 @@ contract IndexRe7Sim is Test {
     uint32 minCRatio = 1250; // BPS
     uint8 revenueSplit = 100;
     uint256 loanSizeInWETH = 220 ether;
+    uint256 collateralAmtWETH = 28.7 ether;
     uint128 dRate = 1250; // BPS
     uint128 fRate = 1250; // BPS
 
@@ -229,12 +231,25 @@ contract IndexRe7Sim is Test {
         emit log_named_string("\n \u2713 Borrower Releases Spigot and Removes icETH manager contract", "");
         vm.startPrank(borrowerAddress);
         securedLine.releaseSpigot(borrowerAddress);
+
+        emit log_named_string("\n \u2713 Borrower Claims icETH revenue tokens from Spigot", "");
+        uint256 borrowerBalanceBefore = IERC20(icETHToken).balanceOf(borrowerAddress);
+        uint256 spigotBalanceBefore = IERC20(icETHToken).balanceOf(address(spigot));
+        spigot.claimRevenue(icETHManager, icETHToken, abi.encodeWithSelector(0x000000));
+        spigot.claimOwnerTokens(icETHToken);
+        assertEq(IERC20(icETHToken).balanceOf(borrowerAddress), borrowerBalanceBefore + spigotBalanceBefore, "borrower should receive icETH from Spigot");
+
         spigot.removeSpigot(address(icETHManager));
         IManager(icETHManager).setMethodologist(icETHOperator);
 
         assertEq(address(spigot.owner()), borrowerAddress, "spigot should be owned by borrower");
         assertEq(IManager(icETHManager).methodologist(), IManager(icETHManager).operator(), "icETH manager should be Index Coop operator");
         assertEq(IManager(icETHManager).operator(), icETHOperator, "icETH operator should be Index Coop operator");
+
+        emit log_named_string("\n \u2713 Borrower Releases Collateral from Escrow", "");
+        borrowerBalanceBefore = IERC20(WETH).balanceOf(borrowerAddress);
+        escrow.releaseCollateral(collateralAmtWETH, WETH, borrowerAddress);
+        assertEq(IERC20(WETH).balanceOf(borrowerAddress), borrowerBalanceBefore + collateralAmtWETH, "borrower should receive collateral");
 
         emit log_named_string("\n \u2713 Uni-v3 NFTs are transferred to Index Coop Liquidity Operations", "");
         uint256 tokenId1 = 544566; // icETH/WETH - $38k liquidity
@@ -246,9 +261,9 @@ contract IndexRe7Sim is Test {
         assertEq(IERC721(uniswapNFTPositionManager).ownerOf(tokenId3), borrowerAddress, "borrower does not own NFT 3");
 
         // transfer NFTs to Index Coop Liquidity Operations
-        IERC721(uniswapNFTPositionManager).approve(indexCoopLiquidityOperations, tokenId1);
-        IERC721(uniswapNFTPositionManager).approve(indexCoopLiquidityOperations, tokenId2);
-        IERC721(uniswapNFTPositionManager).approve(indexCoopLiquidityOperations, tokenId3);
+        // IERC721(uniswapNFTPositionManager).approve(indexCoopLiquidityOperations, tokenId1);
+        // IERC721(uniswapNFTPositionManager).approve(indexCoopLiquidityOperations, tokenId2);
+        // IERC721(uniswapNFTPositionManager).approve(indexCoopLiquidityOperations, tokenId3);
 
         IERC721(uniswapNFTPositionManager).safeTransferFrom(borrowerAddress, indexCoopLiquidityOperations, tokenId1);
         IERC721(uniswapNFTPositionManager).safeTransferFrom(borrowerAddress, indexCoopLiquidityOperations, tokenId2);
