@@ -109,7 +109,7 @@ contract RainRe7Sim is Test {
     uint256 ttl = 120 days;
     uint32 minCRatio = 0; // BPS
     uint8 revenueSplit = 100;
-    uint256 loanSizeInUSDC = 200000 * 10 ** 6;
+    uint256 loanSizeInUSDC = 3750000 * 10 ** 6;
     uint128 dRate = 1000; // BPS
     uint128 fRate = 1000; // BPS
 
@@ -199,8 +199,7 @@ contract RainRe7Sim is Test {
         line.sweep(rainBorrower, USDC, 0);
         vm.stopPrank();
 
-        uint256 endingBalanceBorrower = IERC20(USDC).balanceOf(rainBorrower);
-        console.log('- borrower balance change: ', startingBalanceBorrower - endingBalanceBorrower);
+        console.log('- borrower balance change: ', startingBalanceBorrower - IERC20(USDC).balanceOf(rainBorrower));
 
 
         (uint256 deposit1,,,uint256 interestRepaid1,,,,) = line.credits(id);
@@ -217,10 +216,10 @@ contract RainRe7Sim is Test {
         // Lender withdraws funds from credit line
         line.withdraw(id, (position1toal));
         
-        uint256 lenderEndingBalance = IERC20(USDC).balanceOf(lenderAddress);
-        console.log('- lender balance change: ', lenderEndingBalance - lenderStartingBalance);
 
-        assertEq(lenderEndingBalance - lenderStartingBalance, position1toal, "lender balance not equal");
+        console.log('- lender balance change: ', IERC20(USDC).balanceOf(lenderAddress) - lenderStartingBalance);
+
+        assertEq(IERC20(USDC).balanceOf(lenderAddress) - lenderStartingBalance, position1toal, "lender balance not equal");
         vm.stopPrank();
 
         vm.startPrank(lenderAddress2);
@@ -257,27 +256,12 @@ contract RainRe7Sim is Test {
 
         SpigotedLine spigotedLine = SpigotedLine(payable(newLine));
 
-        uint256 split = spigotedLine.defaultRevenueSplit();
+        assertEq(spigotedLine.defaultRevenueSplit(), revenueSplit, "revenue split not equal");
 
-        assertEq(split, revenueSplit, "revenue split not equal");
-
-        address currentBorrower = spigotedLine.borrower();
-
-        assertEq(currentBorrower, rainBorrower, "borrower not equal");
-
-        uint256 balanceBefore = IERC20(USDC).balanceOf(lenderAddress);
+        assertEq(spigotedLine.borrower(), rainBorrower, "borrower not equal");
 
         assertEq(spigotAddress, address(spigotedLine.spigot()), "spigot not equal");
 
-        // vm.startPrank(lenderAddress);
-        // line.withdraw(id, 23412559884 + 1000000 * 10 ** 6);
-        // vm.stopPrank();
-
-         uint256 balanceAfter = IERC20(USDC).balanceOf(lenderAddress);
-
-         uint256 diff = balanceAfter - balanceBefore;
-
-         console.log("Diff: ", diff);
 
         // confirm new line is created
         console.log("new line address is not equal to address(0)");
@@ -296,7 +280,19 @@ contract RainRe7Sim is Test {
         console.log("newLine status is active");
         assertEq(uint256(ILineOfCredit(newLine).status()), 1, "line not active");
 
+        // _lenderFundLoan();
 
+        // vm.startPrank(rainBorrower);
+
+        // startingBalanceBorrower = IERC20(USDC).balanceOf(rainBorrower);
+
+        // ILineOfCredit(newLine).borrow(id, loanSizeInUSDC);
+
+        // console.log('- borrower balance change: ', IERC20(USDC).balanceOf(rainBorrower) - startingBalanceBorrower);
+
+        // assertEq(IERC20(USDC).balanceOf(rainBorrower) - startingBalanceBorrower, loanSizeInUSDC, "borrower balance not equal");
+
+        // vm.stopPrank();
     }
 
 
