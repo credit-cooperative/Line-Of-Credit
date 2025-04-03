@@ -78,7 +78,8 @@ contract RainRe7Sim is Test {
 
     // Rain Cards Borrower Address
     address rainBorrower = 0x34FB953287cF28B3404C1D21E56c495545CCb600; // Rain Borrower Address
-    address lenderAddress = 0x6a73204dB71F8e054bf9A0680b02Ae96f700b595;
+    address lenderAddress = 0xb8dEF7C89A5ddC324Bd12A0F47CD1CF2063bf38e; // Lender Address re7
+    address lenderAddress2 = 0xb991B5dD8e6cb2d9D517572CD736f37480bF07DD; // Lender Address nate
 
     // Rain Controller Contract & Associated Addresses
     address rainCollateralFactoryAddress = 0x31EBf70312f488D0bdAc374b340f0D01dBf153B5;
@@ -88,32 +89,10 @@ contract RainRe7Sim is Test {
     address rainControllerOwnerAddress = 0x21ebc2f23a91fD7eB8406CDCE2FD653de280B5fc;
     address rainTreasuryContractAddress = 0x0204C22BE67968C3B787D2699Bd05cf2b9432c60;
 
-    // Rain Collateral Contracts 0 - 3:
-    address rainCollateralContract0 = 0xbAf9c4b4318AEfCd3a7c2ABec68eFE567c797d74;
-    address rainCollateralContract1 = 0x9bf0fA5bBd9448190C9CBFe3adE8D7466913d861;
-    address rainCollateralContract2 = 0x5C82f4928899a91752083dd8F1b6D8bf23D4eeb2;
-    address rainCollateralContract3 = 0xCF3d82CD86b25c87dcf2Fc6d9Abe9580a8e0E981;
-    address rainCollateralContract4 = 0x7030f1486Cc691F8C3e0D703671B5E6f45C940e8;
-
-    // Rain (Fake) User Addresses
-    address rainUser0 = makeAddr("rainUser0");
-    address rainUser1 = makeAddr("rainUser1");
-    address rainUser2 = makeAddr("rainUser2");
-    address rainUser3 = makeAddr("rainUser3");
-    address rainUser4 = makeAddr("rainUser4");
-
-    uint256 rainUser0Amount = 30000 * 10 ** 6;
-    uint256 rainUser1Amount = 170000 * 10 ** 6;
-    uint256 rainUser2Amount = 120000 * 10 ** 6;
-    uint256 rainUser3Amount = 80000 * 10 ** 6;
-    uint256 rainUser4Amount = 20000 * 10 ** 6;
-    uint256 finalSpigotBalance = rainUser0Amount + rainUser1Amount + rainUser2Amount + rainUser3Amount + rainUser4Amount;
-    uint256 finalOperatorTokensBalance = finalSpigotBalance / 2;
-    uint256 finalOwnerTokensBalance = finalSpigotBalance / 2;
 
     // Credit Coop Addresses
     address constant arbiterAddress = 0xeb0566b1EF38B95da2ed631eBB8114f3ac7b9a8a ; // Credit Coop MultiSig
-    address public securedLineAddress = 0xd30011367DFAC3B94BFb9A0B7Af34521EF70BE6c; // Line address, to be defined in setUp()
+    address public securedLineAddress = 0x7e43D0C5860002796A749c6D8e0e864210c85c6A; // Line address, to be defined in setUp()
     address public spigotAddress = 0x78176f8723F48a72FE9d2bE10D456529a77F7458;
     address public escrowAddress = 0xf60e510104776414d4947Ca81C9066C8e7e05aFd;
     address public lineFactory = 0x07d5c33a3AFa24A25163D2afDD663BAb4C17b6d5;
@@ -135,7 +114,7 @@ contract RainRe7Sim is Test {
     uint128 fRate = 1000; // BPS
 
     // Fork Settings
-    uint256 constant FORK_BLOCK_NUMBER = 20_472_543;
+    uint256 constant FORK_BLOCK_NUMBER = 22190027; // Block number to fork at 4/3/25
     uint256 ethMainnetFork;
 
     event log_named_bytes4(string key, bytes4 value);
@@ -168,17 +147,10 @@ contract RainRe7Sim is Test {
 
         console.log("2");
 
-        deal(USDC, lenderAddress, 2000000 * 10 ** 6);
-        deal(USDC, rainBorrower, 2000000 * 10 ** 6);
+        deal(USDC, lenderAddress, 4000000 * 10 ** 6);
+        // deal(USDC, rainBorrower, 2000000 * 10 ** 6);
 
         console.log("3");
-
-        // Deal USDC to Rain (Fake) User Addresses
-        deal(USDC, rainUser0, 30000 * 10 ** 6);
-        deal(USDC, rainUser1, 170000 * 10 ** 6);
-        deal(USDC, rainUser2, 120000 * 10 ** 6);
-        deal(USDC, rainUser3, 80000 * 10 ** 6);
-        deal(USDC, rainUser4, 20000 * 10 ** 6);
 
         // Define Interface for Rain Collateral Factory & Controller
         rainCollateralFactory = IRainCollateralFactory(rainCollateralFactoryAddress);
@@ -191,21 +163,36 @@ contract RainRe7Sim is Test {
 
     function test_rain_rollover_simulation_mainnet_xx() public {
         // Users transfer funds to Spigot
-        deal(USDC, spigotAddress, 2000000 * 10 ** 6);
+        deal(USDC, rainBorrower, 4000000 * 10 ** 6);
 
         // Servicer repays credit line
-        vm.startPrank(arbiterAddress);
-        bytes4 claimFunc = 0x000000;
-        uint256 claimed = _claimRevenueOnBehalfOfSpigot(claimFunc, rainCollateralControllerAddress);
-        line.claimAndRepay(USDC, "");
-        vm.stopPrank();
+        // vm.startPrank(arbiterAddress);
+        // bytes4 claimFunc = 0x000000;
+        // uint256 claimed = _claimRevenueOnBehalfOfSpigot(claimFunc, rainCollateralControllerAddress);
+        // line.claimAndRepay(USDC, "");
+        // vm.stopPrank();
 
         uint256 startingBalanceBorrower = IERC20(USDC).balanceOf(rainBorrower);
 
         // Borrower closes credit line
         vm.startPrank(rainBorrower);
         bytes32 id = line.ids(0);
-        line.close(id);
+        bytes32 id2 = line.ids(1);
+
+        IERC20(USDC).approve(address(line), MAX_INT);
+        // close re7 position
+        line.depositAndClose();
+        (,,,,,,, bool isOpen1) = line.credits(id);
+        
+
+        assertEq(isOpen1, false, "line not closed");
+
+        // close nate position
+        line.depositAndClose();
+        (,,,,,,, bool isOpen2) = line.credits(id2);
+        assertEq(isOpen2, false, "line not closed");
+
+
         assertEq(uint256(line.status()), 3, "line not repaid");
         // TODO: assert line status is REPAID
         // Borrower sweeps unused funds from credit line
@@ -213,22 +200,53 @@ contract RainRe7Sim is Test {
         vm.stopPrank();
 
         uint256 endingBalanceBorrower = IERC20(USDC).balanceOf(rainBorrower);
-        console.log('- borrower balance change: ', endingBalanceBorrower - startingBalanceBorrower);
+        console.log('- borrower balance change: ', startingBalanceBorrower - endingBalanceBorrower);
+
+
+        (uint256 deposit1,,,uint256 interestRepaid1,,,,) = line.credits(id);
+        (uint256 deposit2,,,uint256 interestRepaid2,,,,) = line.credits(id2);
+
+        uint256 position1toal = deposit1 + interestRepaid1;
+        uint256 position2total = deposit2 + interestRepaid2;
+        console.log("- position 1 total: ", position1toal);
+        console.log("- position 2 total: ", position2total);
+
+        vm.startPrank(lenderAddress);
+
+        uint256 lenderStartingBalance = IERC20(USDC).balanceOf(lenderAddress);
+        // Lender withdraws funds from credit line
+        line.withdraw(id, (position1toal));
+        
+        uint256 lenderEndingBalance = IERC20(USDC).balanceOf(lenderAddress);
+        console.log('- lender balance change: ', lenderEndingBalance - lenderStartingBalance);
+
+        assertEq(lenderEndingBalance - lenderStartingBalance, position1toal, "lender balance not equal");
+        vm.stopPrank();
+
+        vm.startPrank(lenderAddress2);
+
+        uint256 lenderStartingBalance2 = IERC20(USDC).balanceOf(lenderAddress2);
+        line.withdraw(id2, (position2total));
+
+        uint256 lenderEndingBalance2 = IERC20(USDC).balanceOf(lenderAddress2);
+        console.log('- lender balance change: ', lenderEndingBalance2 - lenderStartingBalance2);
+        assertEq(lenderEndingBalance2 - lenderStartingBalance2, position2total, "lender balance not equal");
+        vm.stopPrank();
 
         // call rollover on the factory
 
-        // vm.startPrank(deployer);
+        vm.startPrank(deployer);
 
-        // ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
-        //     borrower: rainBorrower,
-        //     ttl: ttl,
-        //     cratio: minCRatio,
-        //     revenueSplit: revenueSplit
-        // });
+        ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
+            borrower: rainBorrower,
+            ttl: ttl,
+            cratio: minCRatio,
+            revenueSplit: revenueSplit
+        });
 
-        // address newLine = factory.deploySecuredLineWithModules(coreParams, spigotAddress, escrowAddress);
-        address newLine = 0x49845FCf0934A3114424fCf4A0ebF7F537d24dae;
-        // vm.stopPrank();
+        address newLine = factory.deploySecuredLineWithModules(coreParams, spigotAddress, escrowAddress);
+
+        vm.stopPrank();
 
 
         vm.startPrank(rainBorrower);
