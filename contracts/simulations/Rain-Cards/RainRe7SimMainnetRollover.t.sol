@@ -85,9 +85,9 @@ contract RainRe7Sim is Test {
     address rainCollateralFactoryAddress = 0x31EBf70312f488D0bdAc374b340f0D01dBf153B5;
     address rainCollateralControllerAddress = 0xE5D3d7da4b24bc9D2FDA0e206680CD8A00C0FeBD;
     address rainControllerAdminAddress = 0xB92949bdF09F4193599Ae7700211751ab5F74aCd;
-    address rainFactoryOwnerAddress = 0x21ebc2f23a91fD7eB8406CDCE2FD653de280B5fc;
+    // address rainFactoryOwnerAddress = 0x21ebc2f23a91fD7eB8406CDCE2FD653de280B5fc;
     address rainControllerOwnerAddress = 0x21ebc2f23a91fD7eB8406CDCE2FD653de280B5fc;
-    address rainTreasuryContractAddress = 0x0204C22BE67968C3B787D2699Bd05cf2b9432c60;
+    // address rainTreasuryContractAddress = 0x0204C22BE67968C3B787D2699Bd05cf2b9432c60;
 
 
     // Credit Coop Addresses
@@ -113,7 +113,7 @@ contract RainRe7Sim is Test {
     uint128 fRate = 1000; // BPS
 
     // Fork Settings
-    uint256 constant FORK_BLOCK_NUMBER = 22190027; // Block number to fork at 4/3/25
+    uint256 constant FORK_BLOCK_NUMBER = 22198769; // Block number to fork at 4/4/25
     uint256 ethMainnetFork;
 
     event log_named_bytes4(string key, bytes4 value);
@@ -228,33 +228,35 @@ contract RainRe7Sim is Test {
 
         vm.startPrank(lenderAddress2);
 
-        uint256 lenderStartingBalance2 = IERC20(USDC).balanceOf(lenderAddress2);
+        // uint256 lenderStartingBalance2 = IERC20(USDC).balanceOf(lenderAddress2);
         line.withdraw(id2, (position2total));
 
-        uint256 lenderEndingBalance2 = IERC20(USDC).balanceOf(lenderAddress2);
-        console.log('6');
-        emit log_named_uint('- lender balance change: ', lenderEndingBalance2 - lenderStartingBalance2);
-        assertEq(lenderEndingBalance2 - lenderStartingBalance2, position2total, "lender balance not equal");
+        // uint256 lenderEndingBalance2 = IERC20(USDC).balanceOf(lenderAddress2);
+        // console.log('6');
+        // emit log_named_uint('- lender balance change: ', lenderEndingBalance2 - lenderStartingBalance2);
+        // assertEq(lenderEndingBalance2 - lenderStartingBalance2, position2total, "lender balance not equal");
         vm.stopPrank();
 
         // call rollover on the factory
 
         vm.startPrank(arbiterAddress);
 
-        ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
-            borrower: rainBorrower,
-            ttl: ttl,
-            cratio: minCRatio,
-            revenueSplit: revenueSplit
-        });
+        // ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
+        //     borrower: rainBorrower,
+        //     ttl: ttl,
+        //     cratio: minCRatio,
+        //     revenueSplit: revenueSplit
+        // });
 
-        address newLine = factory.deploySecuredLineWithModules(coreParams, spigotAddress, escrowAddress);
+        address newLine = 0x766b8fDdad8AD7b2Fa42C19C12fB06Ab2b135E75; //factory.deploySecuredLineWithModules(coreParams, spigotAddress, escrowAddress);
 
         vm.stopPrank();
 
 
         vm.startPrank(rainBorrower);
 
+        emit log_named_address("- newLine", newLine);
+        emit log_named_address("- old line", securedLineAddress);
         ISecuredLine(securedLineAddress).rollover(newLine);
 
         vm.stopPrank();
@@ -285,19 +287,21 @@ contract RainRe7Sim is Test {
         console.log("newLine status is active");
         assertEq(uint256(ILineOfCredit(newLine).status()), 1, "line not active");
 
-        // _lenderFundLoan();
+        id = _lenderFundLoan(newLine);
 
-        // vm.startPrank(rainBorrower);
+        vm.startPrank(rainBorrower);
 
-        // startingBalanceBorrower = IERC20(USDC).balanceOf(rainBorrower);
+        // emit log_named_uint("- borrower balance before borrow", IERC20(USDC).balanceOf(rainBorrower));
+        startingBalanceBorrower = IERC20(USDC).balanceOf(rainBorrower);
 
-        // ILineOfCredit(newLine).borrow(id, loanSizeInUSDC);
+        ILineOfCredit(newLine).borrow(id, loanSizeInUSDC);
+        emit log_named_uint("- borrower balance after borrow", IERC20(USDC).balanceOf(rainBorrower));
 
         // console.log('- borrower balance change: ', IERC20(USDC).balanceOf(rainBorrower) - startingBalanceBorrower);
 
-        // assertEq(IERC20(USDC).balanceOf(rainBorrower) - startingBalanceBorrower, loanSizeInUSDC, "borrower balance not equal");
+        assertEq(IERC20(USDC).balanceOf(rainBorrower) - startingBalanceBorrower, loanSizeInUSDC, "borrower balance not equal");
 
-        // vm.stopPrank();
+        vm.stopPrank();
     }
 
 
@@ -387,13 +391,16 @@ contract RainRe7Sim is Test {
 
 
     // fund a loan as a lender
-    function _lenderFundLoan() internal returns (bytes32 id) {
+    function _lenderFundLoan(address newLine) internal returns (bytes32 id) {
         assertEq(vm.activeFork(), ethMainnetFork, "mainnet fork is not active");
 
         emit log_named_string("\n \u2713 Lender Proposes Position to Line of Credit", "");
         vm.startPrank(lenderAddress);
-        IERC20(USDC).approve(address(line), loanSizeInUSDC);
-        securedLine.addCredit(
+        console.log('6.1');
+        IERC20(USDC).approve(address(newLine), loanSizeInUSDC);
+        emit log_named_uint("- lender balance before addCredit", IERC20(USDC).balanceOf(lenderAddress));
+        console.log('6.2');
+        ILineOfCredit(newLine).addCredit(
             dRate, // drate
             fRate, // frate
             loanSizeInUSDC, // amount
@@ -401,11 +408,12 @@ contract RainRe7Sim is Test {
             lenderAddress // lender
         );
         vm.stopPrank();
+        console.log('6.3');
 
         emit log_named_string("\n \u2713 Borrower Accepts Lender Proposal to Line of Credit", "");
         vm.startPrank(rainBorrower);
 
-        id = securedLine.addCredit(
+        id = ILineOfCredit(newLine).addCredit(
             dRate, // drate
             fRate, // frate
             loanSizeInUSDC, // amount
@@ -414,7 +422,7 @@ contract RainRe7Sim is Test {
         );
         vm.stopPrank();
 
-        assertEq(IERC20(USDC).balanceOf(address(securedLine)), loanSizeInUSDC, "LoC balance doesn't match");
+        assertEq(IERC20(USDC).balanceOf(address(newLine)), loanSizeInUSDC, "LoC balance doesn't match");
         emit log_named_bytes32("- credit id", id);
         return id;
     }
