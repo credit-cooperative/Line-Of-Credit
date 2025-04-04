@@ -97,7 +97,6 @@ contract RainRe7Sim is Test {
     address public escrowAddress = 0xf60e510104776414d4947Ca81C9066C8e7e05aFd;
     address public lineFactory = 0x07d5c33a3AFa24A25163D2afDD663BAb4C17b6d5;
     address public zeroEx = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
-    address public deployer = 0x06dae7Ba3958EF288adB0B9b3732eC204E48BC47;
 
     // Asset Addresses
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -199,16 +198,21 @@ contract RainRe7Sim is Test {
         line.sweep(rainBorrower, USDC, 0);
         vm.stopPrank();
 
-        console.log('- borrower balance change: ', startingBalanceBorrower - IERC20(USDC).balanceOf(rainBorrower));
-
+        console.log('4');
+        emit log_named_uint('- borrower balance change', startingBalanceBorrower - IERC20(USDC).balanceOf(rainBorrower));
 
         (uint256 deposit1,,,uint256 interestRepaid1,,,,) = line.credits(id);
         (uint256 deposit2,,,uint256 interestRepaid2,,,,) = line.credits(id2);
 
         uint256 position1toal = deposit1 + interestRepaid1;
         uint256 position2total = deposit2 + interestRepaid2;
-        console.log("- position 1 total: ", position1toal);
-        console.log("- position 2 total: ", position2total);
+        console.log('5');
+        emit log_named_uint('- position 1 total', position1toal);
+        emit log_named_uint('- position 2 total', position2total);
+        console.log('5.1');
+        console.log(position2total);
+ 
+        console.log('5.2');
 
         vm.startPrank(lenderAddress);
 
@@ -217,7 +221,7 @@ contract RainRe7Sim is Test {
         line.withdraw(id, (position1toal));
         
 
-        console.log('- lender balance change: ', IERC20(USDC).balanceOf(lenderAddress) - lenderStartingBalance);
+        emit log_named_uint('- lender balance change: ', IERC20(USDC).balanceOf(lenderAddress) - lenderStartingBalance);
 
         assertEq(IERC20(USDC).balanceOf(lenderAddress) - lenderStartingBalance, position1toal, "lender balance not equal");
         vm.stopPrank();
@@ -228,13 +232,14 @@ contract RainRe7Sim is Test {
         line.withdraw(id2, (position2total));
 
         uint256 lenderEndingBalance2 = IERC20(USDC).balanceOf(lenderAddress2);
-        console.log('- lender balance change: ', lenderEndingBalance2 - lenderStartingBalance2);
+        console.log('6');
+        emit log_named_uint('- lender balance change: ', lenderEndingBalance2 - lenderStartingBalance2);
         assertEq(lenderEndingBalance2 - lenderStartingBalance2, position2total, "lender balance not equal");
         vm.stopPrank();
 
         // call rollover on the factory
 
-        vm.startPrank(deployer);
+        vm.startPrank(arbiterAddress);
 
         ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
             borrower: rainBorrower,
