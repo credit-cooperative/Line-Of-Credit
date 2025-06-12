@@ -143,6 +143,8 @@ libraries = [
 chains = 'all'
 endpoints = 'all'
 
+[rpc_endpoints]
+base = "${BASE_RPC_URL"
 [fmt]
 line_length = 120
 tab_width = 4

@@ -1,0 +1,1 @@
+forge create --rpc-url $BASE_RPC_URL --constructor-args  0xf44B95991CaDD73ed769454A03b3820997f00873 0xf44B95991CaDD73ed769454A03b3820997f00873 contracts/modules/spigot/Spigot.sol:Spigot --private-key $PRIVATE_KEY --etherscan-api-key $BASESCAN_API_KEY  --verify
