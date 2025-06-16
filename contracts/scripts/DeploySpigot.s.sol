@@ -11,7 +11,8 @@ contract DeploySpigot is Script {
         
 
         // Load the private key from environment variables
-        uint256 deployerPrivateKey = vm.envUint("BASE_PRIVATE_KEY");
+        // uint256 deployerPrivateKey = vm.envUint("BASE_PRIVATE_KEY");
+        uint256 deployerPrivateKey = vm.envUint("MAINNET_PRIVATE_KEY");
 
         // Start broadcasting transactions
         vm.startBroadcast(deployerPrivateKey);
