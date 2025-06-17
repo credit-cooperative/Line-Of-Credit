@@ -85,9 +85,9 @@ contract RainRe7Sim is Test {
     address rainCollateralFactoryAddress = 0x31EBf70312f488D0bdAc374b340f0D01dBf153B5;
     address rainCollateralControllerAddress = 0xE5D3d7da4b24bc9D2FDA0e206680CD8A00C0FeBD;
     address rainControllerAdminAddress = 0xB92949bdF09F4193599Ae7700211751ab5F74aCd;
-    // address rainFactoryOwnerAddress = 0x21ebc2f23a91fD7eB8406CDCE2FD653de280B5fc;
+    address rainFactoryOwnerAddress = 0x21ebc2f23a91fD7eB8406CDCE2FD653de280B5fc;
     address rainControllerOwnerAddress = 0x21ebc2f23a91fD7eB8406CDCE2FD653de280B5fc;
-    // address rainTreasuryContractAddress = 0x0204C22BE67968C3B787D2699Bd05cf2b9432c60;
+    address rainTreasuryContractAddress = 0x0204C22BE67968C3B787D2699Bd05cf2b9432c60;
 
 
     // Credit Coop Addresses
@@ -97,6 +97,7 @@ contract RainRe7Sim is Test {
     address public escrowAddress = 0xf60e510104776414d4947Ca81C9066C8e7e05aFd;
     address public lineFactory = 0x07d5c33a3AFa24A25163D2afDD663BAb4C17b6d5;
     address public zeroEx = 0xDef1C0ded9bec7F1a1670819833240f027b25EfF;
+    address public deployer = 0x06dae7Ba3958EF288adB0B9b3732eC204E48BC47;
 
     // Asset Addresses
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -113,7 +114,7 @@ contract RainRe7Sim is Test {
     uint128 fRate = 1000; // BPS
 
     // Fork Settings
-    uint256 constant FORK_BLOCK_NUMBER = 22198769; // Block number to fork at 4/4/25
+    uint256 constant FORK_BLOCK_NUMBER = 22190027; // Block number to fork at 4/3/25
     uint256 ethMainnetFork;
 
     event log_named_bytes4(string key, bytes4 value);
@@ -160,7 +161,7 @@ contract RainRe7Sim is Test {
     //             S C E N A R I O   T E S T             //
     ///////////////////////////////////////////////////////
 
-    function test_rain_rollover_simulation_mainnet_xx() public {
+    function test_rain_winddown_simulation_mainnet_xx() public {
         // Users transfer funds to Spigot
         deal(USDC, rainBorrower, 4000000 * 10 ** 6);
 
@@ -198,21 +199,16 @@ contract RainRe7Sim is Test {
         line.sweep(rainBorrower, USDC, 0);
         vm.stopPrank();
 
-        console.log('4');
-        emit log_named_uint('- borrower balance change', startingBalanceBorrower - IERC20(USDC).balanceOf(rainBorrower));
+        console.log('- borrower balance change: ', startingBalanceBorrower - IERC20(USDC).balanceOf(rainBorrower));
+
 
         (uint256 deposit1,,,uint256 interestRepaid1,,,,) = line.credits(id);
         (uint256 deposit2,,,uint256 interestRepaid2,,,,) = line.credits(id2);
 
         uint256 position1toal = deposit1 + interestRepaid1;
         uint256 position2total = deposit2 + interestRepaid2;
-        console.log('5');
-        emit log_named_uint('- position 1 total', position1toal);
-        emit log_named_uint('- position 2 total', position2total);
-        console.log('5.1');
-        console.log(position2total);
- 
-        console.log('5.2');
+        console.log("- position 1 total: ", position1toal);
+        console.log("- position 2 total: ", position2total);
 
         vm.startPrank(lenderAddress);
 
@@ -221,86 +217,33 @@ contract RainRe7Sim is Test {
         line.withdraw(id, (position1toal));
         
 
-        emit log_named_uint('- lender balance change: ', IERC20(USDC).balanceOf(lenderAddress) - lenderStartingBalance);
+        console.log('- lender balance change: ', IERC20(USDC).balanceOf(lenderAddress) - lenderStartingBalance);
 
         assertEq(IERC20(USDC).balanceOf(lenderAddress) - lenderStartingBalance, position1toal, "lender balance not equal");
         vm.stopPrank();
 
         vm.startPrank(lenderAddress2);
 
-        // uint256 lenderStartingBalance2 = IERC20(USDC).balanceOf(lenderAddress2);
+        uint256 lenderStartingBalance2 = IERC20(USDC).balanceOf(lenderAddress2);
         line.withdraw(id2, (position2total));
 
-        // uint256 lenderEndingBalance2 = IERC20(USDC).balanceOf(lenderAddress2);
-        // console.log('6');
-        // emit log_named_uint('- lender balance change: ', lenderEndingBalance2 - lenderStartingBalance2);
-        // assertEq(lenderEndingBalance2 - lenderStartingBalance2, position2total, "lender balance not equal");
+        uint256 lenderEndingBalance2 = IERC20(USDC).balanceOf(lenderAddress2);
+        console.log('- lender balance change: ', lenderEndingBalance2 - lenderStartingBalance2);
+        assertEq(lenderEndingBalance2 - lenderStartingBalance2, position2total, "lender balance not equal");
         vm.stopPrank();
-
-        // call rollover on the factory
-
-        vm.startPrank(arbiterAddress);
-
-        // ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
-        //     borrower: rainBorrower,
-        //     ttl: ttl,
-        //     cratio: minCRatio,
-        //     revenueSplit: revenueSplit
-        // });
-
-        address newLine = 0x766b8fDdad8AD7b2Fa42C19C12fB06Ab2b135E75; //factory.deploySecuredLineWithModules(coreParams, spigotAddress, escrowAddress);
-
-        vm.stopPrank();
-
 
         vm.startPrank(rainBorrower);
+        line.releaseSpigot(rainBorrower);
+        assertEq(spigot.owner(), rainBorrower, "spigot not released");
 
-        emit log_named_address("- newLine", newLine);
-        emit log_named_address("- old line", securedLineAddress);
-        ISecuredLine(securedLineAddress).rollover(newLine);
+        spigot.removeSpigot(rainCollateralControllerAddress);
+
+        assertEq(spigot.operator(), rainCollateralController.owner(), "spigot not removed");
 
         vm.stopPrank();
-
-        SpigotedLine spigotedLine = SpigotedLine(payable(newLine));
-
-        assertEq(spigotedLine.defaultRevenueSplit(), revenueSplit, "revenue split not equal");
-
-        assertEq(spigotedLine.borrower(), rainBorrower, "borrower not equal");
-
-        assertEq(spigotAddress, address(spigotedLine.spigot()), "spigot not equal");
-
-
-        // confirm new line is created
-        console.log("new line address is not equal to address(0)");
-        assertEq(newLine != address(0), true, "new line not created");
-        // confirm new line owns old modules
-        console.log("escrowAddress is owned by newLine");
-        assertEq(IEscrow(escrowAddress).line(), newLine, "escrowAddress not transferred");
-        console.log("spigotAddress is owned by newLine");
-        assertEq(ISpigot(spigotAddress).owner(), newLine, "spigot not transferred");
-
-        // confirm new line has same borrower
-        console.log("newLine borrower is rainBorrower");
-        assertEq(ILineOfCredit(newLine).borrower(), rainBorrower, "borrower not transferred");
-
-        //confirm line is active
-        console.log("newLine status is active");
-        assertEq(uint256(ILineOfCredit(newLine).status()), 1, "line not active");
-
-        id = _lenderFundLoan(newLine);
-
-        vm.startPrank(rainBorrower);
-
-        // emit log_named_uint("- borrower balance before borrow", IERC20(USDC).balanceOf(rainBorrower));
-        startingBalanceBorrower = IERC20(USDC).balanceOf(rainBorrower);
-
-        ILineOfCredit(newLine).borrow(id, loanSizeInUSDC);
-        emit log_named_uint("- borrower balance after borrow", IERC20(USDC).balanceOf(rainBorrower));
-
-        // console.log('- borrower balance change: ', IERC20(USDC).balanceOf(rainBorrower) - startingBalanceBorrower);
-
-        assertEq(IERC20(USDC).balanceOf(rainBorrower) - startingBalanceBorrower, loanSizeInUSDC, "borrower balance not equal");
-
+        vm.startPrank(rainCollateralController.owner());
+        rainCollateralController.updateTreasury(rainTreasuryContractAddress);
+        assertEq(rainCollateralController.treasury(), rainTreasuryContractAddress, "treasury not updated");
         vm.stopPrank();
     }
 
@@ -391,16 +334,13 @@ contract RainRe7Sim is Test {
 
 
     // fund a loan as a lender
-    function _lenderFundLoan(address newLine) internal returns (bytes32 id) {
+    function _lenderFundLoan() internal returns (bytes32 id) {
         assertEq(vm.activeFork(), ethMainnetFork, "mainnet fork is not active");
 
         emit log_named_string("\n \u2713 Lender Proposes Position to Line of Credit", "");
         vm.startPrank(lenderAddress);
-        console.log('6.1');
-        IERC20(USDC).approve(address(newLine), loanSizeInUSDC);
-        emit log_named_uint("- lender balance before addCredit", IERC20(USDC).balanceOf(lenderAddress));
-        console.log('6.2');
-        ILineOfCredit(newLine).addCredit(
+        IERC20(USDC).approve(address(line), loanSizeInUSDC);
+        securedLine.addCredit(
             dRate, // drate
             fRate, // frate
             loanSizeInUSDC, // amount
@@ -408,12 +348,11 @@ contract RainRe7Sim is Test {
             lenderAddress // lender
         );
         vm.stopPrank();
-        console.log('6.3');
 
         emit log_named_string("\n \u2713 Borrower Accepts Lender Proposal to Line of Credit", "");
         vm.startPrank(rainBorrower);
 
-        id = ILineOfCredit(newLine).addCredit(
+        id = securedLine.addCredit(
             dRate, // drate
             fRate, // frate
             loanSizeInUSDC, // amount
@@ -422,7 +361,7 @@ contract RainRe7Sim is Test {
         );
         vm.stopPrank();
 
-        assertEq(IERC20(USDC).balanceOf(address(newLine)), loanSizeInUSDC, "LoC balance doesn't match");
+        assertEq(IERC20(USDC).balanceOf(address(securedLine)), loanSizeInUSDC, "LoC balance doesn't match");
         emit log_named_bytes32("- credit id", id);
         return id;
     }

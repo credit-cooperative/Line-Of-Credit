@@ -113,7 +113,7 @@ contract RainRe7Sim is Test {
     uint128 fRate = 1000; // BPS
 
     // Fork Settings
-    uint256 constant FORK_BLOCK_NUMBER = 22198769; // Block number to fork at 4/4/25
+    uint256 constant FORK_BLOCK_NUMBER = 21525850; // Block number to fork at 12/31/2024
     uint256 ethMainnetFork;
 
     event log_named_bytes4(string key, bytes4 value);
@@ -160,148 +160,32 @@ contract RainRe7Sim is Test {
     //             S C E N A R I O   T E S T             //
     ///////////////////////////////////////////////////////
 
-    function test_rain_rollover_simulation_mainnet_xx() public {
-        // Users transfer funds to Spigot
-        deal(USDC, rainBorrower, 4000000 * 10 ** 6);
+    function test_get_rain_credit_balances() public {
 
-        // Servicer repays credit line
-        // vm.startPrank(arbiterAddress);
-        // bytes4 claimFunc = 0x000000;
-        // uint256 claimed = _claimRevenueOnBehalfOfSpigot(claimFunc, rainCollateralControllerAddress);
-        // line.claimAndRepay(USDC, "");
-        // vm.stopPrank();
-
-        uint256 startingBalanceBorrower = IERC20(USDC).balanceOf(rainBorrower);
-
-        // Borrower closes credit line
-        vm.startPrank(rainBorrower);
         bytes32 id = line.ids(0);
         bytes32 id2 = line.ids(1);
 
-        IERC20(USDC).approve(address(line), MAX_INT);
-        // close re7 position
-        line.depositAndClose();
-        (,,,,,,, bool isOpen1) = line.credits(id);
-        
 
-        assertEq(isOpen1, false, "line not closed");
+        (uint256 deposit1,uint256 principal1,uint256 interestAccruedPosition1,uint256 interestRepaid1,,,,) = line.credits(id);
+        (uint256 deposit2,uint256 principal2,uint256 interestAccruedPosition2,uint256 interestRepaid2,,,,) = line.credits(id2);
 
-        // close nate position
-        line.depositAndClose();
-        (,,,,,,, bool isOpen2) = line.credits(id2);
-        assertEq(isOpen2, false, "line not closed");
+        uint256 interestAccrued1 = line.interestAccrued(id);
+        uint256 interestAccrued2 = line.interestAccrued(id2);
 
-
-        assertEq(uint256(line.status()), 3, "line not repaid");
-        // TODO: assert line status is REPAID
-        // Borrower sweeps unused funds from credit line
-        line.sweep(rainBorrower, USDC, 0);
-        vm.stopPrank();
-
-        console.log('4');
-        emit log_named_uint('- borrower balance change', startingBalanceBorrower - IERC20(USDC).balanceOf(rainBorrower));
-
-        (uint256 deposit1,,,uint256 interestRepaid1,,,,) = line.credits(id);
-        (uint256 deposit2,,,uint256 interestRepaid2,,,,) = line.credits(id2);
-
-        uint256 position1toal = deposit1 + interestRepaid1;
-        uint256 position2total = deposit2 + interestRepaid2;
-        console.log('5');
-        emit log_named_uint('- position 1 total', position1toal);
-        emit log_named_uint('- position 2 total', position2total);
-        console.log('5.1');
-        console.log(position2total);
- 
-        console.log('5.2');
-
-        vm.startPrank(lenderAddress);
-
-        uint256 lenderStartingBalance = IERC20(USDC).balanceOf(lenderAddress);
-        // Lender withdraws funds from credit line
-        line.withdraw(id, (position1toal));
-        
-
-        emit log_named_uint('- lender balance change: ', IERC20(USDC).balanceOf(lenderAddress) - lenderStartingBalance);
-
-        assertEq(IERC20(USDC).balanceOf(lenderAddress) - lenderStartingBalance, position1toal, "lender balance not equal");
-        vm.stopPrank();
-
-        vm.startPrank(lenderAddress2);
-
-        // uint256 lenderStartingBalance2 = IERC20(USDC).balanceOf(lenderAddress2);
-        line.withdraw(id2, (position2total));
-
-        // uint256 lenderEndingBalance2 = IERC20(USDC).balanceOf(lenderAddress2);
-        // console.log('6');
-        // emit log_named_uint('- lender balance change: ', lenderEndingBalance2 - lenderStartingBalance2);
-        // assertEq(lenderEndingBalance2 - lenderStartingBalance2, position2total, "lender balance not equal");
-        vm.stopPrank();
-
-        // call rollover on the factory
-
-        vm.startPrank(arbiterAddress);
-
-        // ILineFactory.CoreLineParams memory coreParams = ILineFactory.CoreLineParams({
-        //     borrower: rainBorrower,
-        //     ttl: ttl,
-        //     cratio: minCRatio,
-        //     revenueSplit: revenueSplit
-        // });
-
-        address newLine = 0x766b8fDdad8AD7b2Fa42C19C12fB06Ab2b135E75; //factory.deploySecuredLineWithModules(coreParams, spigotAddress, escrowAddress);
-
-        vm.stopPrank();
+        uint256 total1 = principal1 + principal2 + interestAccruedPosition1 + interestAccruedPosition2;
+        uint256 total2 = principal1 + principal2 + interestAccrued1 + interestAccrued2;
+        emit log_named_uint("Total Credit Balance on Secured Line 1", total1);
+        emit log_named_uint("Total Credit Balance on Secured Line 2", total2);
+        emit log_named_uint("Total Principal Balance on Secured Line 2", principal1 + principal2);
+        emit log_named_uint("Total Deposit on Secured Line 1: %s", deposit1 + deposit2);
+        emit log_named_uint("Credit 1 - Deposit", deposit1);
+        emit log_named_uint("Credit 1 - Principal", principal1);
+        emit log_named_uint("Credit 1 - Interest Accrued", interestAccrued1);
+        emit log_named_uint("Credit 2 - Deposit", deposit2);
+        emit log_named_uint("Credit 2 - Principal", principal2);
+        emit log_named_uint("Credit 2 - Interest Accrued", interestAccrued2);
 
 
-        vm.startPrank(rainBorrower);
-
-        emit log_named_address("- newLine", newLine);
-        emit log_named_address("- old line", securedLineAddress);
-        ISecuredLine(securedLineAddress).rollover(newLine);
-
-        vm.stopPrank();
-
-        SpigotedLine spigotedLine = SpigotedLine(payable(newLine));
-
-        assertEq(spigotedLine.defaultRevenueSplit(), revenueSplit, "revenue split not equal");
-
-        assertEq(spigotedLine.borrower(), rainBorrower, "borrower not equal");
-
-        assertEq(spigotAddress, address(spigotedLine.spigot()), "spigot not equal");
-
-
-        // confirm new line is created
-        console.log("new line address is not equal to address(0)");
-        assertEq(newLine != address(0), true, "new line not created");
-        // confirm new line owns old modules
-        console.log("escrowAddress is owned by newLine");
-        assertEq(IEscrow(escrowAddress).line(), newLine, "escrowAddress not transferred");
-        console.log("spigotAddress is owned by newLine");
-        assertEq(ISpigot(spigotAddress).owner(), newLine, "spigot not transferred");
-
-        // confirm new line has same borrower
-        console.log("newLine borrower is rainBorrower");
-        assertEq(ILineOfCredit(newLine).borrower(), rainBorrower, "borrower not transferred");
-
-        //confirm line is active
-        console.log("newLine status is active");
-        assertEq(uint256(ILineOfCredit(newLine).status()), 1, "line not active");
-
-        id = _lenderFundLoan(newLine);
-
-        vm.startPrank(rainBorrower);
-
-        // emit log_named_uint("- borrower balance before borrow", IERC20(USDC).balanceOf(rainBorrower));
-        startingBalanceBorrower = IERC20(USDC).balanceOf(rainBorrower);
-
-        ILineOfCredit(newLine).borrow(id, loanSizeInUSDC);
-        emit log_named_uint("- borrower balance after borrow", IERC20(USDC).balanceOf(rainBorrower));
-
-        // console.log('- borrower balance change: ', IERC20(USDC).balanceOf(rainBorrower) - startingBalanceBorrower);
-
-        assertEq(IERC20(USDC).balanceOf(rainBorrower) - startingBalanceBorrower, loanSizeInUSDC, "borrower balance not equal");
-
-        vm.stopPrank();
     }
 
 
